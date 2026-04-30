@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+
+@layer base {
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  /* Root variables for B&W Theme */
+  :root {
+    --primary-black: #000000;
+    --secondary-black: #1a1a1a;
+    --background-light: #f9fafb;
+    --border-color: #e5e7eb;
+  }
+
+  body {
+    background-color: var(--background-light);
+    color: var(--secondary-black);
+  }
+}
