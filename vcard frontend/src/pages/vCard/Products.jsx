@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon } from 'lucide-reac
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = 'http://localhost:5000/api/products';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/products';
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 

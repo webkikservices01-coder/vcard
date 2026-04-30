@@ -13,7 +13,7 @@ const QrCode = () => {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/vcard/me', {
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/me', {
           headers: { 'x-auth-token': token }
         });
         setSlug(res.data.username || '');

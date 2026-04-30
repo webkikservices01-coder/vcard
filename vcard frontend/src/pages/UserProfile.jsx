@@ -16,7 +16,7 @@ const UserProfile = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/settings/profile', { headers: headers() });
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/settings/profile', { headers: headers() });
         const u = res.data;
         const nameParts = (u.name || '').split(' ');
         setProfile({
@@ -36,7 +36,7 @@ const UserProfile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.put('http://localhost:5000/api/settings/profile', profile, { headers: headers() });
+      await axios.put('https://vcard-backend-uuq6.onrender.com/api/settings/profile', profile, { headers: headers() });
       toast.success('Profile updated!');
     } catch { toast.error('Failed to update profile'); }
     finally { setSaving(false); }
@@ -48,7 +48,7 @@ const UserProfile = () => {
     if (passwords.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setSavingPwd(true);
     try {
-      await axios.post('http://localhost:5000/api/settings/change-password', { password: passwords.password }, { headers: headers() });
+      await axios.post('https://vcard-backend-uuq6.onrender.com/api/settings/change-password', { password: passwords.password }, { headers: headers() });
       toast.success('Password changed!');
       setPasswords({ password: '', confirm: '' });
     } catch { toast.error('Failed to change password'); }

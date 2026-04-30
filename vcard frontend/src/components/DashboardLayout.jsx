@@ -39,7 +39,7 @@
 //     const fetchUser = async () => {
 //       try {
 //         const token = localStorage.getItem('token');
-//         const res = await axios.get('http://localhost:5000/api/stats', {
+//         const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/stats', {
 //           headers: { 'x-auth-token': token }
 //         });
 //         if (res.data?.user) setUser(res.data.user);
@@ -216,7 +216,7 @@ const DashboardLayout = () => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/stats', {
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/stats', {
           headers: { 'x-auth-token': token }
         });
         if (res.data?.user) setUser(res.data.user);

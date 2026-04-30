@@ -12,7 +12,7 @@ const AllVcards = () => {
   const fetchCards = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/vcard/all', {
+      const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/all', {
         headers: { 'x-auth-token': token }
       });
       setCards(res.data);
@@ -29,7 +29,7 @@ const AllVcards = () => {
     if (!window.confirm('Delete this vCard? This cannot be undone.')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/vcard/${id}`, {
+      await axios.delete(`https://vcard-backend-uuq6.onrender.com/api/vcard/${id}`, {
         headers: { 'x-auth-token': token }
       });
       toast.success('vCard deleted');

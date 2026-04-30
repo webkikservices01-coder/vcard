@@ -8,7 +8,7 @@ const AdminRoute = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { setStatus('denied'); return; }
-    axios.get('http://localhost:5000/api/admin/stats', { headers: { 'x-auth-token': token } })
+    axios.get('https://vcard-backend-uuq6.onrender.com/api/admin/stats', { headers: { 'x-auth-token': token } })
       .then(() => setStatus('ok'))
       .catch(() => setStatus('denied'));
   }, []);

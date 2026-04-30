@@ -30,7 +30,7 @@ const ReorderSections = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/settings', { headers: headers() });
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/settings', { headers: headers() });
         const order = res.data?.sectionOrder;
         if (Array.isArray(order) && order.length > 0) {
           // Build ordered list, include any missing at the end
@@ -103,7 +103,7 @@ const ReorderSections = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.post('http://localhost:5000/api/settings', {
+      await axios.post('https://vcard-backend-uuq6.onrender.com/api/settings', {
         sectionOrder: sections.map(s => s.id)
       }, { headers: headers() });
       toast.success('Section order saved!');

@@ -180,7 +180,7 @@ const Plans = () => {
       const token = localStorage.getItem('token');
       const axios = (await import('axios')).default;
       const amount = billing === 'yearly' ? plan.price.yearly : plan.price.monthly;
-      const res = await axios.post('http://localhost:5000/api/transactions/create-order', {
+      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/transactions/create-order', {
         amount, plan: plan.name
       }, { headers: { 'x-auth-token': token } });
 
@@ -192,7 +192,7 @@ const Plans = () => {
         description: plan.name,
         order_id: res.data.orderId,
         handler: async (response) => {
-          await axios.post('http://localhost:5000/api/transactions/verify', {
+          await axios.post('https://vcard-backend-uuq6.onrender.com/api/transactions/verify', {
             ...response,
             txnId: res.data.txnId,
             plan: plan.name,

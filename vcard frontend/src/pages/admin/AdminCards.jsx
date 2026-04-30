@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Eye, ExternalLink } from 'lucide-react';
 
-const API = 'http://localhost:5000/api/admin';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 const planColor = { 'Free Trial': 'bg-gray-700 text-gray-300', 'DIGITAL CARD': 'bg-blue-900 text-blue-300', 'SMART AI CARD': 'bg-purple-900 text-purple-300', 'AI AGENT PRO': 'bg-green-900 text-green-300' };
 

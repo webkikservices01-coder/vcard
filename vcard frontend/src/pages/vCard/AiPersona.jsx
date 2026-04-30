@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Bot, Plus, Trash2, Save, Lock } from 'lucide-react';
 
-const API = 'http://localhost:5000/api';
+const API = 'https://vcard-backend-uuq6.onrender.com/api';
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
 const AI_PLANS = ['SMART AI CARD', 'AI AGENT PRO'];

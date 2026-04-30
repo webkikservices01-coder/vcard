@@ -11,7 +11,7 @@ const Transactions = () => {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/transactions', {
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/transactions', {
           headers: { 'x-auth-token': token }
         });
         setTransactions(res.data);

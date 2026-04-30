@@ -73,7 +73,7 @@ const ContactDetails = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/vcard/me', {
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/me', {
           headers: { 'x-auth-token': token }
         });
         if (res.data && res.data.dynamicLinks) {
@@ -115,7 +115,7 @@ const ContactDetails = () => {
   const handleSaveAll = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/vcard', { dynamicLinks: links }, {
+      await axios.post('https://vcard-backend-uuq6.onrender.com/api/vcard', { dynamicLinks: links }, {
         headers: { 'x-auth-token': token }
       });
       alert('All Links Saved Successfully!');

@@ -15,7 +15,7 @@ const Register = () => {
     if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
+      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/auth/register', {
         name: form.name, email: form.email, phone: form.phone, password: form.password
       });
       localStorage.setItem('token', res.data.token);

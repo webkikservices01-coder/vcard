@@ -323,7 +323,7 @@ const PublicVcard = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/vcard/public/${slug}`);
+        const res = await axios.get(`https://vcard-backend-uuq6.onrender.com/api/vcard/public/${slug}`);
         setData(res.data);
       } catch (err) {
         if (err.response?.status === 404) setNotFound(true);
@@ -337,7 +337,7 @@ const PublicVcard = () => {
   // Check if AI chat is enabled for this card
   useEffect(() => {
     if (!slug) return;
-    axios.get(`http://localhost:5000/api/ai/public/${slug}`)
+    axios.get(`https://vcard-backend-uuq6.onrender.com/api/ai/public/${slug}`)
       .then(res => {
         if (res.data?.enabled) {
           setAiConfig(res.data);
@@ -379,7 +379,7 @@ const PublicVcard = () => {
     setChatInput('');
     setChatLoading(true);
     try {
-      const res = await axios.post(`http://localhost:5000/api/ai/chat/${slug}`, {
+      const res = await axios.post(`https://vcard-backend-uuq6.onrender.com/api/ai/chat/${slug}`, {
         messages: updated.filter(m => m.role !== 'system')
       });
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.reply }]);

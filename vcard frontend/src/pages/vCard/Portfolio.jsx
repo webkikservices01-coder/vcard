@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon, ExternalLink } fro
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = 'http://localhost:5000/api/portfolio';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/portfolio';
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 const emptyForm = { title: '', description: '', url: '', coverImage: null };

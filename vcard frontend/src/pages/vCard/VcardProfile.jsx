@@ -18,7 +18,7 @@ const VcardProfile = () => {
   const fetchProfileData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/vcard/me', {
+      const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/me', {
         headers: { 'x-auth-token': token }
       });
 
@@ -44,7 +44,7 @@ const VcardProfile = () => {
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('blob:') || url.startsWith('http')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+    return `https://vcard-backend-uuq6.onrender.com${url.startsWith('/') ? url : '/' + url}`;
   };
 
   // Image Preview Logic
@@ -77,7 +77,7 @@ const VcardProfile = () => {
     if (bannerFileInput?.files[0]) data.append('bannerImage', bannerFileInput.files[0]);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/vcard', data, {
+      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/vcard', data, {
         headers: {
           'x-auth-token': token,
           'Content-Type': 'multipart/form-data'

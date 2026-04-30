@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/admin';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 const statusStyle = { completed: 'bg-green-900 text-green-300', pending: 'bg-yellow-900 text-yellow-300', failed: 'bg-red-900 text-red-300' };
 

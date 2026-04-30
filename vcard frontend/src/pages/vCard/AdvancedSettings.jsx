@@ -34,7 +34,7 @@ const AdvancedSettings = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/settings', { headers: headers() });
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/settings', { headers: headers() });
         if (res.data && Object.keys(res.data).length > 0) {
           setSettings(prev => ({ ...prev, ...res.data }));
         }
@@ -46,7 +46,7 @@ const AdvancedSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.post('http://localhost:5000/api/settings', settings, { headers: headers() });
+      await axios.post('https://vcard-backend-uuq6.onrender.com/api/settings', settings, { headers: headers() });
       toast.success('Settings saved!');
     } catch { toast.error('Failed to save settings'); }
     finally { setSaving(false); }

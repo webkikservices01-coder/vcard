@@ -30,7 +30,7 @@ const Dashboard = () => {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/stats', {
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/stats', {
           headers: { 'x-auth-token': token }
         });
         setStats(res.data);

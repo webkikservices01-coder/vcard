@@ -196,7 +196,7 @@ const Theme = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/vcard/me', { headers: headers() });
+        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/me', { headers: headers() });
         if (res.data?.theme) setSelected(res.data.theme);
         if (res.data?.customTheme) setCt(prev => ({ ...prev, ...res.data.customTheme }));
       } catch {} finally { setLoading(false); }
@@ -210,7 +210,7 @@ const Theme = () => {
     try {
       const fd = new FormData();
       fd.append('image', file);
-      const res = await axios.post('http://localhost:5000/api/vcard/upload-image', fd, {
+      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/vcard/upload-image', fd, {
         headers: { ...headers(), 'Content-Type': 'multipart/form-data' }
       });
       setCt(p => ({ ...p, [key]: res.data.url }));
@@ -224,11 +224,11 @@ const Theme = () => {
     try {
       if (selected === 'custom') {
         await Promise.all([
-          axios.post('http://localhost:5000/api/vcard', { theme: 'custom' }, { headers: headers() }),
-          axios.put('http://localhost:5000/api/vcard/custom-theme', ct, { headers: headers() }),
+          axios.post('https://vcard-backend-uuq6.onrender.com/api/vcard', { theme: 'custom' }, { headers: headers() }),
+          axios.put('https://vcard-backend-uuq6.onrender.com/api/vcard/custom-theme', ct, { headers: headers() }),
         ]);
       } else {
-        await axios.post('http://localhost:5000/api/vcard', { theme: selected }, { headers: headers() });
+        await axios.post('https://vcard-backend-uuq6.onrender.com/api/vcard', { theme: selected }, { headers: headers() });
       }
       toast.success('Theme saved!');
     } catch { toast.error('Failed to save. Make sure you have created a vCard profile first.'); }

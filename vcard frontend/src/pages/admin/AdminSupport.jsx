@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 
-const API = 'http://localhost:5000/api/admin';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 const statusStyle = { open: 'bg-red-900 text-red-300', 'in-progress': 'bg-yellow-900 text-yellow-300', closed: 'bg-green-900 text-green-300' };
 

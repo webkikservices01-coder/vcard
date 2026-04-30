@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Search, X, Layout } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = 'http://localhost:5000/api/custom-sections';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/custom-sections';
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 const emptyForm = { title: '', content: '' };

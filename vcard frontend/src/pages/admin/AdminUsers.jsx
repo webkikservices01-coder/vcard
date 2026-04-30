@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Search, Eye, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 
-const API = 'http://localhost:5000/api/admin';
+const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
 const PLANS = ['Free Trial', 'DIGITAL CARD', 'SMART AI CARD', 'AI AGENT PRO'];
