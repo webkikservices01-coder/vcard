@@ -100,6 +100,7 @@ router.get('/users/:id', adminAuth, async (req, res) => {
 // PUT /api/admin/users/:id — update user plan / status
 router.put('/users/:id', adminAuth, async (req, res) => {
     try {
+        const PLAN_LIMITS = { 'Free Trial': 1, 'DIGITAL CARD': 3, 'SMART AI CARD': 7, 'AI AGENT PRO': 7 };
         const { plan, status, cardLimit } = req.body;
         const update = {};
         if (plan !== undefined) {
@@ -107,6 +108,7 @@ router.put('/users/:id', adminAuth, async (req, res) => {
             const expiry = new Date();
             expiry.setFullYear(expiry.getFullYear() + 1);
             update.planExpiry = expiry;
+            update.cardLimit = PLAN_LIMITS[plan] || 1;
         }
         if (status !== undefined) update.status = status;
         if (cardLimit !== undefined) update.cardLimit = cardLimit;

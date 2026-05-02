@@ -20,6 +20,10 @@ router.get('/', auth, async (req, res) => {
             testimonialCount: 0,
             viewCount: card ? card.viewCount || 0 : 0,
             scanCount: card ? card.scanCount || 0 : 0,
+            cardSlug: card?.username || null,
+            cardProfilePic: card?.personalInfo?.profilePic || null,
+            cardName: card?.personalInfo?.name || null,
+            cardDesignation: card?.personalInfo?.designation || null,
             user: {
                 name: user.name,
                 email: user.email,
@@ -28,7 +32,8 @@ router.get('/', auth, async (req, res) => {
                 phone: user.phone,
                 plan: user.plan,
                 status: user.status,
-                isAdmin: user.isAdmin || false
+                isAdmin: user.isAdmin || false,
+                cardLimit: user.cardLimit || 1
             }
         };
 

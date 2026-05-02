@@ -82,14 +82,10 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// GET /public/:username - Public card page (no auth, increments view count)
+// GET /public/:username - Fetch card data (no increment)
 router.get('/public/:username', async (req, res) => {
     try {
-        const card = await vCard.findOneAndUpdate(
-            { username: req.params.username },
-            { $inc: { viewCount: 1 } },
-            { new: true }
-        );
+        const card = await vCard.findOne({ username: req.params.username });
         if (!card) return res.status(404).json({ msg: 'Card not found' });
 
         const [products, portfolio, testimonials, gallery, customSections, settings] = await Promise.all([
@@ -102,6 +98,19 @@ router.get('/public/:username', async (req, res) => {
         ]);
 
         res.json({ card, products, portfolio, testimonials, gallery, customSections, settings: settings || {} });
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// POST /public/:username/view - Increment view count (called once per visit from frontend)
+router.post('/public/:username/view', async (req, res) => {
+    try {
+        const card = await vCard.findOneAndUpdate(
+            { username: req.params.username },
+            { $inc: { viewCount: 1 } },
+            { new: true, select: 'viewCount' }
+        );
+        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        res.json({ viewCount: card.viewCount });
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
