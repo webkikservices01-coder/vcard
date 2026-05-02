@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -15,7 +15,7 @@ const Register = () => {
     if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     try {
-      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/auth/register', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         name: form.name, email: form.email, phone: form.phone, password: form.password
       });
       localStorage.setItem('token', res.data.token);

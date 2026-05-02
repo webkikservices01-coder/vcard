@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Eye, Pencil, Trash2, Plus, Search, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -12,7 +12,7 @@ const AllVcards = () => {
   const fetchCards = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/all', {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/all`, {
         headers: { 'x-auth-token': token }
       });
       setCards(res.data);
@@ -29,7 +29,7 @@ const AllVcards = () => {
     if (!window.confirm('Delete this vCard? This cannot be undone.')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`https://vcard-backend-uuq6.onrender.com/api/vcard/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/vcard/${id}`, {
         headers: { 'x-auth-token': token }
       });
       toast.success('vCard deleted');

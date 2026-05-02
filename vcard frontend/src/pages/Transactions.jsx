@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Receipt } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -11,7 +11,7 @@ const Transactions = () => {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/transactions', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/transactions`, {
           headers: { 'x-auth-token': token }
         });
         setTransactions(res.data);

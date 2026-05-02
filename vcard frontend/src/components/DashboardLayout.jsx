@@ -1,4 +1,4 @@
-// import React, { useState, useEffect, useRef } from 'react';
+﻿// import React, { useState, useEffect, useRef } from 'react';
 // import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 // import { Menu, Bell, User, ChevronDown, Settings, LogOut } from 'lucide-react';
 // import Sidebar from './Sidebar';
@@ -39,7 +39,7 @@
 //     const fetchUser = async () => {
 //       try {
 //         const token = localStorage.getItem('token');
-//         const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/stats', {
+//         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
 //           headers: { 'x-auth-token': token }
 //         });
 //         if (res.data?.user) setUser(res.data.user);
@@ -183,7 +183,6 @@ const breadcrumbMap = {
   '/dashboard/profile': 'My Profile',
 };
 
-// Jo items sidebar se hataye the, woh ab horizontal tabs ke liye yahan hain
 const vcardTabs = [
   { name: 'All vCards',      icon: FolderOpen,  path: '/dashboard/vcard/all' },
   { name: 'Profile',         icon: User,        path: '/dashboard/vcard/profile' },
@@ -207,16 +206,21 @@ const DashboardLayout = () => {
   const [user, setUser] = useState({ name: 'User', plan: 'Free Trial' });
   const dropdownRef = useRef(null);
 
+  // Mobile Tabs Dropdown State
+  const [mobileTabMenuOpen, setMobileTabMenuOpen] = useState(false);
+  const tabMenuRef = useRef(null);
+
   const pageTitle = breadcrumbMap[location.pathname] || 'Dashboard';
-  
-  // Check if we are in the vCard section (to show horizontal tabs)
   const isVcardSection = location.pathname.includes('/dashboard/vcard') && !location.pathname.includes('/dashboard/vcard/ai-persona');
+  
+  // Current Active Tab Find karna mobile dropdown ke liye
+  const activeTab = vcardTabs.find(tab => tab.path === location.pathname) || vcardTabs[0];
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/stats', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
           headers: { 'x-auth-token': token }
         });
         if (res.data?.user) setUser(res.data.user);
@@ -225,10 +229,14 @@ const DashboardLayout = () => {
     fetchUser();
   }, []);
 
+  // Handle clicking outside for both dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
+      }
+      if (tabMenuRef.current && !tabMenuRef.current.contains(e.target)) {
+        setMobileTabMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -340,23 +348,61 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        {/* Horizontal Navigation Tabs (Only visible when in vCard section) */}
+        {/* 🔥 NO SCROLL MENU NAVIGATION 🔥 */}
         {isVcardSection && (
-          <div className="bg-white border-b border-gray-200 overflow-x-auto custom-scrollbar shrink-0">
-            <div className="flex px-4 md:px-6 min-w-max">
+          <div className="bg-white border-b border-gray-200 z-10 relative ">
+            
+            {/* 📱 MOBILE VIEW: SLEEK DROPDOWN MENU */}
+            <div className="lg:hidden px-4 py-3" ref={tabMenuRef} >
+              <button
+                onClick={() => setMobileTabMenuOpen(!mobileTabMenuOpen)}
+                className="flex items-center justify-between w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-sm font-semibold text-gray-900 shadow-sm"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <activeTab.icon className="w-4 h-4 text-black" />
+                  <span>{activeTab.name}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${mobileTabMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {mobileTabMenuOpen && (
+                <div className="absolute left-4 right-4 top-[60px] bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 max-h-[60vh] overflow-y-auto">
+                  {vcardTabs.map((tab) => {
+                    const isActive = location.pathname === tab.path;
+                    return (
+                      <Link
+                        key={tab.path}
+                        to={tab.path}
+                        onClick={() => setMobileTabMenuOpen(false)}
+                        className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors ${
+                          isActive ? 'bg-gray-50 text-black font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                        }`}
+                      >
+                        <tab.icon className={`w-4 h-4 ${isActive ? 'text-black' : 'opacity-60'}`} />
+                        <span>{tab.name}</span>
+                        {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-black" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 💻 DESKTOP VIEW: FLEX WRAPPED PILLS (NO SCROLL) */}
+            <div className="hidden lg:flex px-6 py-4 flex-wrap justify-center gap-2.5">
               {vcardTabs.map((tab) => {
                 const isActive = location.pathname === tab.path;
                 return (
                   <Link
                     key={tab.path}
                     to={tab.path}
-                    className={`flex items-center space-x-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`flex items-center space-x-2 px-3.5 py-2 text-sm font-semibold rounded-xl transition-all duration-200 border ${
                       isActive 
-                        ? 'border-black text-black' 
-                        : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
+                        ? 'bg-black text-white border-black shadow-md' 
+                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-black'
                     }`}
                   >
-                    <tab.icon className="w-4 h-4" />
+                    <tab.icon className={`w-4 h-4 ${isActive ? 'text-white' : 'opacity-60'}`} />
                     <span>{tab.name}</span>
                   </Link>
                 );

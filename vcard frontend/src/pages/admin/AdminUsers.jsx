@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Search, Eye, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 
-const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
+const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
 const PLANS = ['Free Trial', 'DIGITAL CARD', 'SMART AI CARD', 'AI AGENT PRO'];

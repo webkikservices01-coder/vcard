@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, X, LifeBuoy } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API = 'https://vcard-backend-uuq6.onrender.com/api/support';
+const API = `${import.meta.env.VITE_API_URL}/api/support`;
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 

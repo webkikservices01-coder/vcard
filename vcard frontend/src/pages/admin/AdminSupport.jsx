@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 
-const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
+const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 const statusStyle = { open: 'bg-red-900 text-red-300', 'in-progress': 'bg-yellow-900 text-yellow-300', closed: 'bg-green-900 text-green-300' };
 

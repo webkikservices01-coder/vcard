@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, ExternalLink, Copy } from 'lucide-react';
 import axios from 'axios';
@@ -13,7 +13,7 @@ const QrCode = () => {
     const fetch = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('https://vcard-backend-uuq6.onrender.com/api/vcard/me', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/me`, {
           headers: { 'x-auth-token': token }
         });
         setSlug(res.data.username || '');

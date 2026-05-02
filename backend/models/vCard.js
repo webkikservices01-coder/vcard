@@ -55,6 +55,9 @@ const vCardSchema = new mongoose.Schema({
 
     services: [{ title: String, description: String, price: String }],
 
+    viewCount: { type: Number, default: 0 },
+    scanCount:  { type: Number, default: 0 },
+
     customTheme: {
         layout:            { type: String, default: 'classic' },
         bg:                { type: String, default: '#ffffff' },

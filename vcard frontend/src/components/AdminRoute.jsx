@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -8,7 +8,7 @@ const AdminRoute = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { setStatus('denied'); return; }
-    axios.get('https://vcard-backend-uuq6.onrender.com/api/admin/stats', { headers: { 'x-auth-token': token } })
+    axios.get(`${import.meta.env.VITE_API_URL}/api/admin/stats`, { headers: { 'x-auth-token': token } })
       .then(() => setStatus('ok'))
       .catch(() => setStatus('denied'));
   }, []);

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Bot, Plus, Trash2, Save, Lock } from 'lucide-react';
 
-const API = 'https://vcard-backend-uuq6.onrender.com/api';
+const API = `${import.meta.env.VITE_API_URL}/api`;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
 const AI_PLANS = ['SMART AI CARD', 'AI AGENT PRO'];

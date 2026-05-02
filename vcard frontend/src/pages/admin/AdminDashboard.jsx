@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Users, CreditCard, Eye, LifeBuoy, TrendingUp, Activity } from 'lucide-react';
 
-const API = 'https://vcard-backend-uuq6.onrender.com/api/admin';
+const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
 const Stat = ({ label, value, sub, icon: Icon, color }) => (

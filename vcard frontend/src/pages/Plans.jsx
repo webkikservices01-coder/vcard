@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Check, X as XIcon, Zap, Bot, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -180,7 +180,7 @@ const Plans = () => {
       const token = localStorage.getItem('token');
       const axios = (await import('axios')).default;
       const amount = billing === 'yearly' ? plan.price.yearly : plan.price.monthly;
-      const res = await axios.post('https://vcard-backend-uuq6.onrender.com/api/transactions/create-order', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/transactions/create-order`, {
         amount, plan: plan.name
       }, { headers: { 'x-auth-token': token } });
 
@@ -192,7 +192,7 @@ const Plans = () => {
         description: plan.name,
         order_id: res.data.orderId,
         handler: async (response) => {
-          await axios.post('https://vcard-backend-uuq6.onrender.com/api/transactions/verify', {
+          await axios.post(`${import.meta.env.VITE_API_URL}/api/transactions/verify`, {
             ...response,
             txnId: res.data.txnId,
             plan: plan.name,
@@ -312,57 +312,61 @@ const Plans = () => {
           <h3 className="text-sm font-bold text-gray-900">Full Feature Comparison</h3>
         </div>
 
-        {/* Table Header */}
-        <div className="grid grid-cols-4 border-b border-gray-100">
-          <div className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Feature</div>
-          {plans.map(p => (
-            <div key={p.id} className={`px-4 py-3 text-center text-xs font-black tracking-wide ${
-              p.popular ? 'bg-black text-white' : 'text-gray-700'
-            }`}>
-              {p.name}
-            </div>
-          ))}
-        </div>
-
-        {featureSections.map((section) => (
-          <div key={section.label}>
-            {/* Section Header */}
-            <div className={`grid grid-cols-4 border-b border-gray-100 ${
-              section.highlight ? 'bg-gray-950' : 'bg-gray-50'
-            }`}>
-              <div className={`px-6 py-2.5 col-span-4 text-xs font-bold uppercase tracking-widest ${
-                section.highlight ? 'text-white' : 'text-gray-500'
-              }`}>
-                {section.highlight ? '🤖 ' : ''}{section.label}
-              </div>
+        <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-[560px]">
+            {/* Table Header */}
+            <div className="grid grid-cols-4 border-b border-gray-100">
+              <div className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Feature</div>
+              {plans.map(p => (
+                <div key={p.id} className={`px-3 py-3 text-center text-xs font-black tracking-wide ${
+                  p.popular ? 'bg-black text-white' : 'text-gray-700'
+                }`}>
+                  {p.name}
+                </div>
+              ))}
             </div>
 
-            {/* Features */}
-            {section.features.map(({ key, label, type }) => (
-              <div key={key} className="grid grid-cols-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                <div className="px-6 py-3 text-xs text-gray-600">{label}</div>
-                {plans.map(plan => {
-                  const val = plan.features[key];
-                  return (
-                    <div key={plan.id} className={`px-4 py-3 flex items-center justify-center ${
-                      plan.popular ? 'bg-gray-50' : ''
-                    }`}>
-                      {type === 'count' ? (
-                        <span className="text-xs font-bold text-gray-900">{val}</span>
-                      ) : type === 'text' ? (
-                        <span className="text-xs font-semibold text-gray-700">{val}</span>
-                      ) : val ? (
-                        <Check className="w-4 h-4 text-black" />
-                      ) : (
-                        <XIcon className="w-3.5 h-3.5 text-gray-200" />
-                      )}
-                    </div>
-                  );
-                })}
+            {featureSections.map((section) => (
+              <div key={section.label}>
+                {/* Section Header */}
+                <div className={`grid grid-cols-4 border-b border-gray-100 ${
+                  section.highlight ? 'bg-gray-950' : 'bg-gray-50'
+                }`}>
+                  <div className={`px-4 py-2.5 col-span-4 text-xs font-bold uppercase tracking-widest ${
+                    section.highlight ? 'text-white' : 'text-gray-500'
+                  }`}>
+                    {section.highlight ? '🤖 ' : ''}{section.label}
+                  </div>
+                </div>
+
+                {/* Features */}
+                {section.features.map(({ key, label, type }) => (
+                  <div key={key} className="grid grid-cols-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <div className="px-4 py-3 text-xs text-gray-600">{label}</div>
+                    {plans.map(plan => {
+                      const val = plan.features[key];
+                      return (
+                        <div key={plan.id} className={`px-3 py-3 flex items-center justify-center ${
+                          plan.popular ? 'bg-gray-50' : ''
+                        }`}>
+                          {type === 'count' ? (
+                            <span className="text-xs font-bold text-gray-900">{val}</span>
+                          ) : type === 'text' ? (
+                            <span className="text-xs font-semibold text-gray-700">{val}</span>
+                          ) : val ? (
+                            <Check className="w-4 h-4 text-black" />
+                          ) : (
+                            <XIcon className="w-3.5 h-3.5 text-gray-200" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Coming Soon Badge */}
