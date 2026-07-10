@@ -265,16 +265,18 @@ import {
   FaPhoneAlt, FaWhatsapp, FaGlobe, FaLinkedin, FaInstagram, FaFacebook, FaTwitter 
 } from "react-icons/fa";
 import { MdEmail, MdOutlineLink } from "react-icons/md";
-import { FiPlus, FiTrash2, FiEdit2, FiSave } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit2, FiSave, FiMic } from "react-icons/fi";
 
 // STEP 1: Import Router and Popup
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 
 const ContactDetails = () => {
   // STEP 2: Initiate navigate and popup states
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
+  const [showVoiceFill, setShowVoiceFill] = useState(false);
   const [slug, setSlug] = useState('');
 
   const [links, setLinks] = useState([]);
@@ -356,6 +358,10 @@ const ContactDetails = () => {
       }
     };
     fetchData();
+
+    // Jarvis voice assistant can add/remove links from anywhere in the dashboard — refetch when it does
+    window.addEventListener('vcard:data-changed', fetchData);
+    return () => window.removeEventListener('vcard:data-changed', fetchData);
   }, []);
 
   const handleAddOrUpdate = () => {
@@ -410,15 +416,35 @@ const ContactDetails = () => {
   const handleNext = () => {
     setShowPopup(false);
     // YAHAN APNE NEXT TAB KA LINK DAAL LENA (e.g., Products/Services)
-    navigate('/dashboard/vcard/products'); 
+    navigate('/dashboard/vcard/products');
+  };
+
+  // Voice assistant se aaye naye links ko existing list me merge karta hai (duplicates skip)
+  const handleVoiceFill = (fields) => {
+    const newLinks = fields?.links || [];
+    setLinks(prev => {
+      const existingKeys = new Set(prev.map(l => `${l.fieldType}|${l.url}`));
+      const toAdd = newLinks.filter(l => l.url && !existingKeys.has(`${l.fieldType}|${l.url}`));
+      return [...prev, ...toAdd];
+    });
   };
 
   return (
     <>
       <div className="max-w-5xl bg-white p-8 rounded-xl shadow-sm border border-gray-200 font-['Inter'] relative">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-black tracking-tight">Contact & Social Links</h2>
-          <p className="text-sm text-gray-500 mt-1">Add your phone numbers, emails, social media, and custom URLs here.</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-black tracking-tight">Contact & Social Links</h2>
+            <p className="text-sm text-gray-500 mt-1">Add your phone numbers, emails, social media, and custom URLs here.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowVoiceFill(true)}
+            className="shrink-0 flex items-center space-x-2 bg-black text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
+          >
+            <FiMic className="w-4 h-4" />
+            <span>Fill with Voice</span>
+          </button>
         </div>
 
         {/* Add New Link Section */}
@@ -537,12 +563,21 @@ const ContactDetails = () => {
       </div>
 
       {/* STEP 5: Add Popup Component here */}
-      <ActionPopup 
-        isOpen={showPopup} 
+      <ActionPopup
+        isOpen={showPopup}
         onClose={() => setShowPopup(false)}
         onPreview={handlePreview}
         onNext={handleNext}
       />
+
+      {showVoiceFill && (
+        <VoiceFillAssistant
+          page="contact"
+          onFill={handleVoiceFill}
+          getKnown={() => ({ links })}
+          onClose={() => setShowVoiceFill(false)}
+        />
+      )}
     </>
   );
 };

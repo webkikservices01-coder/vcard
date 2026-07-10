@@ -23,13 +23,31 @@ const AiPersona = () => {
   });
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [statsRes, personaRes] = await Promise.all([
-          axios.get(`${API}/stats`, { headers: headers() }),
-          axios.get(`${API}/ai/persona`, { headers: headers() }),
-        ]);
-        setPlan(statsRes.data?.user?.plan || '');
+  const load = async () => {
+    try {
+      // Dono APIs ko alag-alag call karein aur unke individual errors yahi catch kar lein
+      const fetchStats = axios.get(`${API}/stats`, { headers: headers() }).catch(err => {
+        console.error('Stats API Error:', err);
+        return null;
+      });
+      
+      const fetchPersona = axios.get(`${API}/ai/persona`, { headers: headers() }).catch(err => {
+        console.error('Persona API Error:', err);
+        return null; // Agar persona nahi hai, toh fail hone dein bina poora function roke
+      });
+
+      const [statsRes, personaRes] = await Promise.all([fetchStats, fetchPersona]);
+
+      // 1. Set Plan (agar statsRes success hua)
+      if (statsRes && statsRes.data) {
+        // Ek bar console log karke check kar lein ki data ka structure kya hai
+        console.log('Stats Data:', statsRes.data); 
+        setPlan(statsRes.data?.user?.plan || statsRes.data?.plan || ''); 
+      }
+
+      // 2. Set Persona Form (agar personaRes success hua)
+      if (personaRes && personaRes.data) {
+        console.log('Loaded AI Persona:', personaRes.data);
         if (personaRes.data?._id) {
           setForm({
             enabled:   personaRes.data.enabled ?? true,
@@ -40,11 +58,17 @@ const AiPersona = () => {
             faqs:      personaRes.data.faqs     || [],
           });
         }
-      } catch {}
-      finally { setLoading(false); }
-    };
-    load();
-  }, []);
+      }
+
+    } catch (error) {
+      console.error('Unexpected Load Error:', error);
+    } finally { 
+      setLoading(false); 
+    }
+  };
+  
+  load();
+}, []);
 
   const addFaq = () => setForm(f => ({ ...f, faqs: [...f.faqs, { question: '', answer: '' }] }));
   const removeFaq = (i) => setForm(f => ({ ...f, faqs: f.faqs.filter((_, idx) => idx !== i) }));

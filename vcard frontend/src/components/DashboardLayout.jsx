@@ -160,6 +160,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck } from 'lucide-react';
 import Sidebar from './Sidebar';
+import JarvisWidget from './JarvisWidget';
 import axios from 'axios';
 
 const breadcrumbMap = {
@@ -415,6 +416,8 @@ const DashboardLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      <JarvisWidget />
     </div>
   );
 };

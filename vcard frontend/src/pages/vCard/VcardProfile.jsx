@@ -243,9 +243,10 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { Upload, Copy, Eye, Save, Image as ImageIcon, UserCircle } from 'lucide-react';
+import { Upload, Copy, Eye, Save, Image as ImageIcon, UserCircle, Mic } from 'lucide-react';
 import axios from 'axios';
 import ActionPopup from '../../components/ActionPopup'; // Path check kar lena agar alag folder me ho
+import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { useNavigate } from 'react-router-dom';
 
 const VcardProfile = () => {
@@ -261,6 +262,7 @@ const VcardProfile = () => {
   });
 
   const [showPopup, setShowPopup] = useState(false);
+  const [showVoiceFill, setShowVoiceFill] = useState(false);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -272,7 +274,7 @@ const VcardProfile = () => {
 
         if (res.data) {
           setFormData({
-            profileImage: res.data.personalInfo?.profilePic || null, 
+            profileImage: res.data.personalInfo?.profilePic || null,
             bannerImage: res.data.personalInfo?.bannerImage || null,
             slug: res.data.username || '',
             title: res.data.personalInfo?.name || '',
@@ -285,6 +287,10 @@ const VcardProfile = () => {
       }
     };
     fetchProfileData();
+
+    // Jarvis voice assistant can update this profile from anywhere in the dashboard — refetch when it does
+    window.addEventListener('vcard:data-changed', fetchProfileData);
+    return () => window.removeEventListener('vcard:data-changed', fetchProfileData);
   }, []);
 
   const getImageUrl = (url) => {
@@ -356,15 +362,34 @@ const VcardProfile = () => {
   const handleNext = () => {
     setShowPopup(false);
     navigate('/dashboard/vcard/theme');
-    
+
+  };
+
+  const handleVoiceFill = (fields) => {
+    setFormData(prev => ({
+      ...prev,
+      title: fields.title ?? prev.title,
+      subTitle: fields.subTitle ?? prev.subTitle,
+      description: fields.description ?? prev.description,
+    }));
   };
 
   return (
     <>
       <div className="max-w-4xl bg-white p-4 sm:p-8 rounded-xl shadow-sm border border-gray-200">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-black tracking-tight">Profile Details</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage your card's identity, images, and short bio.</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-black tracking-tight">Profile Details</h2>
+            <p className="text-sm text-gray-500 mt-1">Manage your card's identity, images, and short bio.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowVoiceFill(true)}
+            className="shrink-0 flex items-center space-x-2 bg-black text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
+          >
+            <Mic className="w-4 h-4" />
+            <span>Fill with Voice</span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -499,12 +524,21 @@ const VcardProfile = () => {
         </form>
       </div>
 
-      <ActionPopup 
-        isOpen={showPopup} 
+      <ActionPopup
+        isOpen={showPopup}
         onClose={() => setShowPopup(false)}
         onPreview={handlePreview}
         onNext={handleNext}
       />
+
+      {showVoiceFill && (
+        <VoiceFillAssistant
+          page="profile"
+          onFill={handleVoiceFill}
+          getKnown={() => ({ title: formData.title, subTitle: formData.subTitle, description: formData.description })}
+          onClose={() => setShowVoiceFill(false)}
+        />
+      )}
     </>
   );
 };

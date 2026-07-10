@@ -212,13 +212,14 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon, Mic } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 // STEP 1: Router aur ActionPopup import karein
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 
 const API = `${import.meta.env.VITE_API_URL}/api/products`;
 const token = () => localStorage.getItem('token');
@@ -230,6 +231,7 @@ const Products = () => {
   // STEP 2: Navigate aur Popup States
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
+  const [showVoiceFill, setShowVoiceFill] = useState(false);
   const [slug, setSlug] = useState('');
 
   const [items, setItems] = useState([]);
@@ -261,9 +263,13 @@ const Products = () => {
     }
   };
 
-  useEffect(() => { 
-    fetchProducts(); 
+  useEffect(() => {
+    fetchProducts();
     fetchUserDetails();
+
+    // Jarvis voice assistant can create/update/delete products from anywhere in the dashboard — refetch when it does
+    window.addEventListener('vcard:data-changed', fetchProducts);
+    return () => window.removeEventListener('vcard:data-changed', fetchProducts);
   }, []);
 
   const openCreate = () => { setForm(emptyForm); setPreview(''); setEditing(null); setModalOpen(true); };
@@ -324,7 +330,17 @@ const Products = () => {
   const handleNext = () => {
     setShowPopup(false);
     // Yahan maine next tab ka route (e.g., Portfolio ya Gallery) dala hai, isko apne hisaab se adjust kar lena
-    navigate('/dashboard/vcard/portfolio'); 
+    navigate('/dashboard/vcard/portfolio');
+  };
+
+  const handleVoiceFill = (fields) => {
+    setForm(prev => ({
+      ...prev,
+      title: fields.title ?? prev.title,
+      description: fields.description ?? prev.description,
+      price: fields.price ?? prev.price,
+      link: fields.link ?? prev.link,
+    }));
   };
 
   const filtered = items.filter(i => i.title?.toLowerCase().includes(search.toLowerCase()));
@@ -413,9 +429,19 @@ const Products = () => {
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900">{editing ? 'Edit Product' : 'Add Product'}</h3>
-                <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center space-x-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowVoiceFill(true)}
+                    title="Fill with Voice"
+                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <div className="p-6 space-y-4">
                 <div>
@@ -467,12 +493,21 @@ const Products = () => {
       </div>
 
       {/* STEP 6: Action Popup Component */}
-      <ActionPopup 
-        isOpen={showPopup} 
+      <ActionPopup
+        isOpen={showPopup}
         onClose={() => setShowPopup(false)}
         onPreview={handlePreview}
         onNext={handleNext}
       />
+
+      {showVoiceFill && (
+        <VoiceFillAssistant
+          page="products"
+          onFill={handleVoiceFill}
+          getKnown={() => ({ title: form.title, description: form.description, price: form.price, link: form.link })}
+          onClose={() => setShowVoiceFill(false)}
+        />
+      )}
     </>
   );
 };

@@ -218,6 +218,346 @@ router.post('/chat/:username', async (req, res) => {
   }
 });
 
+// ─── Voice-fill assistant: helps users fill vCard forms by speaking ──────────
+const VOICE_FILL_PAGES = {
+  profile: {
+    schemaHint: `{
+  "title": "full name",
+  "subTitle": "designation / job title",
+  "description": "1-3 sentence bio"
+}`,
+    required: ['title', 'subTitle', 'description'],
+    isList: false,
+  },
+  contact: {
+    schemaHint: `{
+  "links": [ { "fieldType": "Mobile / Phone | WhatsApp | Email | Website | LinkedIn | Instagram | Facebook | Twitter | Custom URL", "title": "short label", "url": "the number/email/url" } ]
+}`,
+    required: [],
+    isList: true,
+  },
+  products: {
+    schemaHint: `{
+  "title": "product/service name",
+  "description": "short description",
+  "price": "price in rupees, digits only",
+  "link": "buy or details url"
+}`,
+    required: ['title'],
+    isList: false,
+  },
+  portfolio: {
+    schemaHint: `{
+  "title": "project name",
+  "description": "short description",
+  "url": "project url"
+}`,
+    required: ['title'],
+    isList: false,
+  },
+};
+
+const buildVoiceFillPrompt = (config, known) => `You are a friendly voice-fill assistant helping an Indian user fill out a form by speaking, in natural Hinglish (mix of Hindi and English, written in Roman script — NOT Devanagari).
+
+Target JSON shape for this form:
+${config.schemaHint}
+
+Already known values so far (may be empty):
+${JSON.stringify(known || {}, null, 2)}
+
+Rules:
+- Read the user's new spoken input and extract/update field values. Merge with already-known values — never drop a previously known value unless the user explicitly corrects it.
+${config.isList ? '- "links" is a cumulative list — APPEND new links found in this turn to the known links (do not duplicate an identical fieldType+url pair).' : ''}
+- Required fields: ${config.required.length ? config.required.join(', ') : 'none — any info is optional, user decides when done'}.
+- If required fields are still missing, ask ONE short, natural follow-up question (Hinglish, Roman script) for ONLY the missing piece(s) — don't repeat what's already known.
+${config.isList ? '- Keep asking if the user wants to add more links, unless they say something like "bas", "done", "khatam", "stop", "nahi" — then set complete true.' : '- Once all required fields are filled, set complete true and give a short friendly confirmation.'}
+- Never invent information the user didn't say.
+
+Respond with ONLY a raw JSON object, no markdown, no code fences, in this exact shape:
+{"fields": <updated known object matching the target shape above>, "complete": true|false, "reply": "<short spoken message in Hinglish (Roman script) — either the follow-up question or a completion confirmation>"}`;
+
+// ─── POST /api/ai/voice-fill ───────────────────────────────────────────────────
+router.post('/voice-fill', auth, async (req, res) => {
+  try {
+    const { page, transcript, known } = req.body;
+    const config = VOICE_FILL_PAGES[page];
+    if (!config) return res.status(400).json({ msg: 'Invalid page' });
+    if (!transcript || !transcript.trim()) return res.status(400).json({ msg: 'No speech detected' });
+
+    const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+    if (!apiKey) return res.status(503).json({ msg: 'AI service not configured yet.' });
+
+    const useGroq = !!process.env.GROQ_API_KEY;
+    const OpenAI = require('openai');
+    const openai = new OpenAI({
+      apiKey,
+      ...(useGroq ? { baseURL: 'https://api.groq.com/openai/v1' } : {})
+    });
+    const model = useGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
+
+    const systemPrompt = buildVoiceFillPrompt(config, known);
+    const callModel = (withJsonMode) => openai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: transcript }
+      ],
+      max_tokens: 400,
+      temperature: 0.3,
+      ...(withJsonMode ? { response_format: { type: 'json_object' } } : {})
+    });
+
+    let completion;
+    try {
+      completion = await callModel(true);
+    } catch {
+      completion = await callModel(false);
+    }
+
+    const raw = completion.choices[0].message.content.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+
+    res.json({
+      fields: parsed.fields || known || {},
+      complete: !!parsed.complete,
+      reply: parsed.reply || '',
+    });
+  } catch (err) {
+    console.error('Voice-fill error:', err.message);
+    res.status(500).json({ msg: 'Voice assistant failed. Please try again or fill manually.' });
+  }
+});
+
+// ─── Jarvis: global voice assistant that can act across the whole dashboard ──
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const PAGE_ROUTES = {
+  all: '/dashboard/vcard/all', theme: '/dashboard/vcard/theme', profile: '/dashboard/vcard/profile',
+  contact: '/dashboard/vcard/contact', products: '/dashboard/vcard/products', portfolio: '/dashboard/vcard/portfolio',
+  gallery: '/dashboard/vcard/gallery', testimonials: '/dashboard/vcard/testimonials', qr: '/dashboard/vcard/qr',
+  custom: '/dashboard/vcard/custom', reorder: '/dashboard/vcard/reorder', advanced: '/dashboard/vcard/advanced',
+  'ai-persona': '/dashboard/vcard/ai-persona', plans: '/dashboard/plans', transactions: '/dashboard/transactions',
+  support: '/dashboard/support', 'my-profile': '/dashboard/profile', dashboard: '/dashboard',
+};
+
+const JARVIS_TOOLS = [
+  { name: 'get_profile', description: 'Get the current vCard profile: full name, designation, bio, and slug/URL.',
+    input_schema: { type: 'object', properties: {} } },
+  { name: 'update_profile', description: 'Update vCard profile fields. Only pass the fields that should change.',
+    input_schema: { type: 'object', properties: {
+      name: { type: 'string', description: 'Full name' },
+      designation: { type: 'string', description: 'Job title / designation' },
+      bio: { type: 'string', description: 'Short bio / description' },
+    } } },
+  { name: 'list_contact_links', description: 'List all contact/social links currently on the card (phone, email, whatsapp, social, etc).',
+    input_schema: { type: 'object', properties: {} } },
+  { name: 'add_contact_link', description: 'Add a new contact or social link to the card.',
+    input_schema: { type: 'object', properties: {
+      fieldType: { type: 'string', enum: ['Mobile / Phone', 'WhatsApp', 'Email', 'Website', 'LinkedIn', 'Instagram', 'Facebook', 'Twitter', 'Custom URL'] },
+      title: { type: 'string' },
+      url: { type: 'string', description: 'The phone number, email address, or URL' },
+    }, required: ['fieldType', 'url'] } },
+  { name: 'remove_contact_link', description: 'Remove a contact/social link. Must match an existing fieldType+url from list_contact_links.',
+    input_schema: { type: 'object', properties: { fieldType: { type: 'string' }, url: { type: 'string' } }, required: ['fieldType', 'url'] } },
+  { name: 'list_products', description: 'List all products/services on the card.',
+    input_schema: { type: 'object', properties: {} } },
+  { name: 'create_product', description: 'Create a new product/service listing.',
+    input_schema: { type: 'object', properties: {
+      title: { type: 'string' }, description: { type: 'string' }, price: { type: 'string' }, link: { type: 'string' },
+    }, required: ['title'] } },
+  { name: 'update_product', description: 'Update an existing product by matching its current title.',
+    input_schema: { type: 'object', properties: {
+      currentTitle: { type: 'string', description: 'The existing product title, to find it' },
+      title: { type: 'string' }, description: { type: 'string' }, price: { type: 'string' }, link: { type: 'string' },
+    }, required: ['currentTitle'] } },
+  { name: 'delete_product', description: 'Delete a product by its title.',
+    input_schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } },
+  { name: 'list_portfolio', description: 'List all portfolio/project items on the card.',
+    input_schema: { type: 'object', properties: {} } },
+  { name: 'create_portfolio_item', description: 'Create a new portfolio/project item.',
+    input_schema: { type: 'object', properties: {
+      title: { type: 'string' }, description: { type: 'string' }, url: { type: 'string' },
+    }, required: ['title'] } },
+  { name: 'update_portfolio_item', description: 'Update an existing portfolio item by matching its current title.',
+    input_schema: { type: 'object', properties: {
+      currentTitle: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' }, url: { type: 'string' },
+    }, required: ['currentTitle'] } },
+  { name: 'delete_portfolio_item', description: 'Delete a portfolio item by its title.',
+    input_schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } },
+  { name: 'navigate', description: 'Move the user to a different page/section of the dashboard.',
+    input_schema: { type: 'object', properties: {
+      page: { type: 'string', enum: Object.keys(PAGE_ROUTES) },
+    }, required: ['page'] } },
+];
+
+const JARVIS_MUTATING_TOOLS = new Set([
+  'update_profile', 'add_contact_link', 'remove_contact_link',
+  'create_product', 'update_product', 'delete_product',
+  'create_portfolio_item', 'update_portfolio_item', 'delete_portfolio_item',
+]);
+
+const executeJarvisTool = async (name, input, vcardId) => {
+  switch (name) {
+    case 'get_profile': {
+      const card = await vCard.findById(vcardId);
+      return { name: card.personalInfo?.name || '', designation: card.personalInfo?.designation || '', bio: card.personalInfo?.bio || '', slug: card.username };
+    }
+    case 'update_profile': {
+      const update = {};
+      if (input.name !== undefined) update['personalInfo.name'] = input.name;
+      if (input.designation !== undefined) update['personalInfo.designation'] = input.designation;
+      if (input.bio !== undefined) update['personalInfo.bio'] = input.bio;
+      const card = await vCard.findByIdAndUpdate(vcardId, { $set: update }, { new: true });
+      return { success: true, name: card.personalInfo?.name, designation: card.personalInfo?.designation, bio: card.personalInfo?.bio };
+    }
+    case 'list_contact_links': {
+      const card = await vCard.findById(vcardId);
+      return card.dynamicLinks || [];
+    }
+    case 'add_contact_link': {
+      const card = await vCard.findByIdAndUpdate(
+        vcardId,
+        { $push: { dynamicLinks: { fieldType: input.fieldType, title: input.title || input.fieldType, url: input.url } } },
+        { new: true }
+      );
+      return { success: true, links: card.dynamicLinks };
+    }
+    case 'remove_contact_link': {
+      const card = await vCard.findByIdAndUpdate(
+        vcardId,
+        { $pull: { dynamicLinks: { fieldType: input.fieldType, url: input.url } } },
+        { new: true }
+      );
+      return { success: true, links: card.dynamicLinks };
+    }
+    case 'list_products':
+      return await Product.find({ vcardId }).sort('order');
+    case 'create_product': {
+      const count = await Product.countDocuments({ vcardId });
+      const product = await Product.create({ vcardId, title: input.title, description: input.description || '', price: input.price || '', link: input.link || '', order: count });
+      return { success: true, product };
+    }
+    case 'update_product': {
+      const product = await Product.findOneAndUpdate(
+        { vcardId, title: new RegExp(`^${escapeRegex(input.currentTitle)}$`, 'i') },
+        { $set: Object.fromEntries(['title', 'description', 'price', 'link'].filter(k => input[k] !== undefined).map(k => [k, input[k]])) },
+        { new: true }
+      );
+      if (!product) return { error: 'Product not found. Use list_products to see exact titles.' };
+      return { success: true, product };
+    }
+    case 'delete_product': {
+      const result = await Product.deleteOne({ vcardId, title: new RegExp(`^${escapeRegex(input.title)}$`, 'i') });
+      return result.deletedCount > 0 ? { success: true } : { error: 'Product not found' };
+    }
+    case 'list_portfolio':
+      return await Portfolio.find({ vcardId }).sort('order');
+    case 'create_portfolio_item': {
+      const count = await Portfolio.countDocuments({ vcardId });
+      const item = await Portfolio.create({ vcardId, title: input.title, description: input.description || '', url: input.url || '', order: count });
+      return { success: true, item };
+    }
+    case 'update_portfolio_item': {
+      const item = await Portfolio.findOneAndUpdate(
+        { vcardId, title: new RegExp(`^${escapeRegex(input.currentTitle)}$`, 'i') },
+        { $set: Object.fromEntries(['title', 'description', 'url'].filter(k => input[k] !== undefined).map(k => [k, input[k]])) },
+        { new: true }
+      );
+      if (!item) return { error: 'Portfolio item not found. Use list_portfolio to see exact titles.' };
+      return { success: true, item };
+    }
+    case 'delete_portfolio_item': {
+      const result = await Portfolio.deleteOne({ vcardId, title: new RegExp(`^${escapeRegex(input.title)}$`, 'i') });
+      return result.deletedCount > 0 ? { success: true } : { error: 'Portfolio item not found' };
+    }
+    case 'navigate':
+      return { success: true, page: input.page };
+    default:
+      return { error: 'Unknown tool' };
+  }
+};
+
+const JARVIS_SYSTEM_PROMPT = `You are Jarvis, a voice-controlled assistant embedded in a user's digital vCard dashboard (mycardlink.site). The user talks to you in natural Hinglish (Hindi + English mix, Roman script). You have tools to directly view, create, update, delete card content, and to navigate the dashboard — use them instead of just describing what to do.
+
+Rules:
+- Prefer action over conversation: if the user's command is clear, call the right tool(s) right away.
+- If a create/update command is missing required info, ask ONE short clarifying question (Hinglish, Roman script) instead of guessing or inventing data.
+- When updating or deleting something by title (products/portfolio), if you're not sure of the exact existing title, call the matching list_* tool first to find it.
+- After completing action(s), reply with a short, natural Hinglish confirmation (Roman script) — no markdown, no long explanations.
+- If the user asks to go somewhere ("contact details pe le chalo", "products dikhao"), call the navigate tool.
+- Never invent data the user didn't provide.`;
+
+// ─── POST /api/ai/jarvis ───────────────────────────────────────────────────────
+router.post('/jarvis', auth, async (req, res) => {
+  try {
+    const { message, history } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ msg: 'No speech detected' });
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({ msg: 'Jarvis is not configured yet (missing ANTHROPIC_API_KEY).' });
+    }
+
+    const vcardId = await getCardId(req.user.userId);
+    if (!vcardId) return res.status(404).json({ msg: 'Create a vCard profile first.' });
+
+    const Anthropic = require('@anthropic-ai/sdk');
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    let messages = [
+      ...(Array.isArray(history) ? history.slice(-16) : []),
+      { role: 'user', content: message },
+    ];
+
+    let navigateTo = null;
+    let mutated = false;
+    let finalReply = '';
+
+    // Agentic tool-use loop (bounded to avoid runaway calls)
+    for (let step = 0; step < 6; step++) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-5',
+        max_tokens: 1024,
+        system: JARVIS_SYSTEM_PROMPT,
+        tools: JARVIS_TOOLS,
+        messages,
+      });
+
+      messages.push({ role: 'assistant', content: response.content });
+
+      if (response.stop_reason !== 'tool_use') {
+        finalReply = response.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+        break;
+      }
+
+      const toolResults = [];
+      for (const block of response.content) {
+        if (block.type !== 'tool_use') continue;
+        if (JARVIS_MUTATING_TOOLS.has(block.name)) mutated = true;
+        let result;
+        try {
+          result = await executeJarvisTool(block.name, block.input || {}, vcardId);
+        } catch (err) {
+          result = { error: err.message };
+        }
+        if (block.name === 'navigate' && result?.page) navigateTo = PAGE_ROUTES[result.page] || null;
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify(result) });
+      }
+      messages.push({ role: 'user', content: toolResults });
+    }
+
+    res.json({
+      reply: finalReply || 'Ho gaya!',
+      navigateTo,
+      refresh: mutated,
+      history: messages.slice(-16),
+    });
+  } catch (err) {
+    console.error('Jarvis error:', err.message);
+    res.status(500).json({ msg: 'Jarvis failed to respond. Please try again.' });
+  }
+});
+
 // ─── GET /api/ai/public/:username ─────────────────────────────────────────────
 router.get('/public/:username', async (req, res) => {
   try {
