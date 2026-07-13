@@ -850,8 +850,12 @@ import {
   FaPhoneAlt, FaWhatsapp, FaLinkedin, FaInstagram, FaFacebook, FaTwitter, FaYoutube, FaGlobe
 } from 'react-icons/fa';
 import { MdEmail, MdLocationOn, MdOutlineLink } from 'react-icons/md';
-import { Eye, Share2, X, Download, QrCode, ChevronRight, Bot, Send } from 'lucide-react';
+import { Eye, Share2, X, Download, QrCode, ChevronRight, Bot, Send, Mic, MicOff } from 'lucide-react';
 import { allThemes, buildCustomTheme } from './vCard/Theme';
+
+const SpeechRecognitionAPI = typeof window !== 'undefined'
+  ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+  : null;
 
 // 🔥 NAYA: SafeHtml Component (Shadow DOM) for CSS Isolation & Overflow Fix 🔥
 const SafeHtml = ({ html, textColor }) => {
@@ -1202,7 +1206,9 @@ const PublicVcard = () => {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatListening, setChatListening] = useState(false);
   const chatEndRef = useRef(null);
+  const chatRecognitionRef = useRef(null);
 
   const cardUrl = `${window.location.origin}/c/${slug}`;
 
@@ -1265,8 +1271,8 @@ const PublicVcard = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSendMessage = async () => {
-    const text = chatInput.trim();
+  const handleSendMessage = async (override) => {
+    const text = (override ?? chatInput).trim();
     if (!text || chatLoading) return;
     const userMsg = { role: 'user', content: text };
     const updated = [...messages, userMsg];
@@ -1283,6 +1289,36 @@ const PublicVcard = () => {
     } finally {
       setChatLoading(false);
     }
+  };
+
+  const handleChatMicClick = () => {
+    if (chatListening) {
+      chatRecognitionRef.current?.stop();
+      return;
+    }
+    if (!SpeechRecognitionAPI) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Voice input isn\'t supported in this browser. Please type your message, or try Chrome.' }]);
+      return;
+    }
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = 'en-IN'; // recognizes both English and Hindi/Hinglish speech
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (e) => {
+      const text = e.results[0][0].transcript;
+      handleSendMessage(text);
+    };
+    recognition.onerror = (e) => {
+      setChatListening(false);
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Mic error, please try again or type your message.' }]);
+    };
+    recognition.onend = () => setChatListening(false);
+
+    chatRecognitionRef.current = recognition;
+    setChatListening(true);
+    try { recognition.start(); } catch { /* already started */ }
   };
 
   if (loading) return (
@@ -1645,14 +1681,24 @@ const PublicVcard = () => {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
+                  placeholder={chatListening ? 'Listening...' : 'Type a message...'}
                   className="flex-1 bg-gray-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-black"
-                  disabled={chatLoading}
+                  disabled={chatLoading || chatListening}
                 />
                 <button
-                  onClick={handleSendMessage}
+                  onClick={handleChatMicClick}
+                  disabled={chatLoading}
+                  title={chatListening ? 'Stop listening' : 'Speak your message'}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition disabled:opacity-40 shrink-0 ${
+                    chatListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {chatListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={() => handleSendMessage()}
                   disabled={!chatInput.trim() || chatLoading}
-                  className="w-8 h-8 bg-black text-white rounded-xl flex items-center justify-center hover:bg-gray-800 transition disabled:opacity-40"
+                  className="w-8 h-8 bg-black text-white rounded-xl flex items-center justify-center hover:bg-gray-800 transition disabled:opacity-40 shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
