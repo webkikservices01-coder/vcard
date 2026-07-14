@@ -9,7 +9,9 @@ const transactionSchema = new mongoose.Schema({
     cfOrderId:        { type: String, default: '' },
     paymentSessionId: { type: String, default: '' },
     status:      { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
-    invoiceNumber: { type: String, default: '' }
+    invoiceNumber: { type: String, default: '' },
+    refrensInvoiceId: { type: String, default: '' },
+    refrensPdfUrl:    { type: String, default: '' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);
