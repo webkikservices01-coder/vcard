@@ -5,6 +5,10 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import GlassCard from '../../components/ui/GlassCard';
+import GradientButton from '../../components/ui/GradientButton';
+import MeshBackground from '../../components/ui/MeshBackground';
+import { fadeUp } from '../../utils/motion';
 
 const allSections = [
   { id: 'contact',      label: 'Contact Details',     emoji: '📞' },
@@ -147,7 +151,7 @@ const ReorderSections = () => {
     designationColor: '#64748b', border: '#e2e8f0', contactBg: '#1e293b', contactText: '#fff'
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>;
+  if (loading) return <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>;
 
   return (
     <>
@@ -155,18 +159,24 @@ const ReorderSections = () => {
 
         {/* LEFT COLUMN: Drag and Drop Editor */}
         <div className="flex-1 w-full max-w-lg space-y-5">
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-            <h2 className="text-xl font-bold text-gray-900">Reorder Sections</h2>
-            <p className="text-sm text-gray-500">Drag or use arrows to arrange sections on your vCard</p>
-          </motion.div>
+          <div className="relative rounded-2xl overflow-hidden">
+            <MeshBackground className="opacity-30" />
+            <motion.div {...fadeUp(0)} className="relative p-1">
+              <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Reorder Sections</h2>
+              <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Drag or use arrows to arrange sections on your vCard</p>
+            </motion.div>
+          </div>
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-              <p className="text-xs text-gray-500 font-medium">Drag rows or use ▲ ▼ buttons to reorder</p>
-              <span className="text-xs text-gray-400">{sections.length} sections</span>
+          <GlassCard {...fadeUp(0.08)} className="overflow-hidden">
+            <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--surface-text-2)' }}>Drag rows or use ▲ ▼ buttons to reorder</p>
+              <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{sections.length} sections</span>
             </div>
 
-            <div className="divide-y divide-gray-100">
+            {/* NOTE: drag-and-drop mechanics below (data-drag-row, draggable, onDragStart/Enter/Over/End,
+                the dragItem/dragOverItem refs, and the layout/transition props that drive the framer-motion
+                reorder animation) are untouched — only className/style (purely visual) were changed. */}
+            <div>
               {sections.map((section, idx) => (
                 <motion.div
                   key={section.id}
@@ -178,50 +188,50 @@ const ReorderSections = () => {
                   onDragEnter={(e) => handleDragEnter(e, idx)}
                   onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
-                  className="flex items-center space-x-3 px-5 py-4 hover:bg-gray-50 transition-colors cursor-grab active:cursor-grabbing select-none"
+                  className="flex items-center gap-3 px-5 py-4 hover:bg-[var(--surface-2)] fast-transition cursor-grab active:cursor-grabbing select-none"
+                  style={{ borderBottom: idx === sections.length - 1 ? 'none' : '1px solid var(--surface-border)' }}
                 >
-                  <GripVertical className="w-5 h-5 text-gray-400 shrink-0" />
+                  <GripVertical className="w-5 h-5 shrink-0" style={{ color: 'var(--surface-text-2)' }} />
 
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <span className="text-[10px] font-bold text-gray-500">{idx + 1}</span>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--surface-2)' }}>
+                    <span className="text-[10px] font-bold" style={{ color: 'var(--surface-text-2)' }}>{idx + 1}</span>
                   </div>
 
-                  <div className="flex items-center space-x-2.5 flex-1">
+                  <div className="flex items-center gap-2.5 flex-1">
                     <span className="text-lg leading-none">{section.emoji}</span>
-                    <span className="text-sm font-medium text-gray-900">{section.label}</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--surface-text)' }}>{section.label}</span>
                   </div>
 
-                  <div className="flex items-center space-x-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => moveUp(idx)}
                       disabled={idx === 0}
-                      className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-pink-600 hover:bg-gray-100 rounded disabled:opacity-20 disabled:cursor-not-allowed transition"
+                      className="w-6 h-6 flex items-center justify-center rounded hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-20 disabled:cursor-not-allowed fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
                     >▲</button>
                     <button
                       onClick={() => moveDown(idx)}
                       disabled={idx === sections.length - 1}
-                      className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-pink-600 hover:bg-gray-100 rounded disabled:opacity-20 disabled:cursor-not-allowed transition"
+                      className="w-6 h-6 flex items-center justify-center rounded hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-20 disabled:cursor-not-allowed fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
                     >▼</button>
                   </div>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </GlassCard>
 
           <div className="flex justify-end">
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center space-x-2 bg-pink-600 text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-pink-700 transition disabled:opacity-60"
-            >
-              {saving ? (
-                <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>{saving ? 'Saving...' : 'Save Order'}</span>
-            </motion.button>
+            <div className="w-full sm:w-48">
+              <GradientButton onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>{saving ? 'Saving...' : 'Save Order'}</span>
+              </GradientButton>
+            </div>
           </div>
         </div>
 

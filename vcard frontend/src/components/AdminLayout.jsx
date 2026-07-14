@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe } from 'lucide-react';
+import ThemeToggle from './ui/ThemeToggle';
 
 const navItems = [
   { path: '/admin',              label: 'Overview',      icon: LayoutDashboard },
@@ -10,6 +12,27 @@ const navItems = [
   { path: '/admin/cards',        label: 'Top Cards',     icon: Globe },
 ];
 
+const NavPill = ({ active, children, ...props }) => (
+  <div className="relative">
+    {active && (
+      <motion.div
+        layoutId="admin-active-pill"
+        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg"
+        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+      />
+    )}
+    <div
+      className={`relative z-10 flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium fast-transition ${
+        active ? 'text-white' : 'hover:bg-brand-500/10'
+      }`}
+      style={!active ? { color: 'var(--surface-text-2)' } : undefined}
+      {...props}
+    >
+      {children}
+    </div>
+  </div>
+);
+
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -17,36 +40,63 @@ const AdminLayout = () => {
 
   const logout = () => { localStorage.removeItem('token'); navigate('/'); };
   const isActive = (p) => p === '/admin' ? location.pathname === p : location.pathname.startsWith(p);
+  const pageTitle = navItems.find(n => isActive(n.path))?.label || 'Admin';
 
   return (
-    <div className="flex h-screen bg-gray-950 font-['Inter'] text-white">
+    <div className="flex h-screen font-['Inter']" style={{ background: 'var(--surface-bg)' }}>
       {/* Mobile overlay */}
-      {open && <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setOpen(false)} />}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-56 bg-black border-r border-gray-800 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-800 shrink-0">
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-40 w-56 glass rounded-none lg:rounded-r-2xl
+          flex flex-col h-full overflow-y-auto transition-transform duration-300
+          ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+        `}
+      >
+        <div className="h-16 flex items-center justify-between px-4 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)' }}>
           <div>
-            <p className="text-sm font-black tracking-tight">MYcardLINK</p>
-            <p className="text-[9px] text-gray-500 font-bold tracking-widest uppercase">Admin Panel</p>
+            <p className="text-sm font-black tracking-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</p>
+            <p className="text-[9px] font-bold tracking-widest uppercase" style={{ color: 'var(--surface-text-2)' }}>Admin Panel</p>
           </div>
-          <button onClick={() => setOpen(false)} className="lg:hidden text-gray-400"><X className="w-4 h-4" /></button>
+          <button onClick={() => setOpen(false)} className="lg:hidden p-1 hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
+
         <nav className="flex-1 p-3 space-y-0.5">
           {navItems.map(({ path, label, icon: Icon }) => (
-            <Link key={path} to={path} onClick={() => setOpen(false)}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(path) ? 'bg-white text-pink-600' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}>
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{label}</span>
+            <Link key={path} to={path} onClick={() => setOpen(false)}>
+              <NavPill active={isActive(path)}>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{label}</span>
+              </NavPill>
             </Link>
           ))}
         </nav>
-        <div className="p-3 border-t border-gray-800">
-          <Link to="/dashboard" className="flex items-center space-x-3 px-3 py-2 text-xs text-gray-500 hover:text-white transition rounded-lg hover:bg-gray-900">
+
+        <div className="p-3 space-y-1" style={{ borderTop: '1px solid var(--surface-border)' }}>
+          <Link
+            to="/dashboard"
+            className="flex items-center space-x-3 px-3 py-2 text-xs rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
+            style={{ color: 'var(--surface-text-2)' }}
+          >
             ← User Dashboard
           </Link>
-          <button onClick={logout} className="flex items-center space-x-3 px-3 py-2.5 w-full rounded-lg text-gray-400 hover:bg-gray-900 hover:text-white text-sm font-medium transition">
-            <LogOut className="w-4 h-4" />
+          <button
+            onClick={logout}
+            className="flex items-center space-x-3 px-3 py-2.5 w-full rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition text-sm font-medium"
+            style={{ color: 'var(--surface-text-2)' }}
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
             <span>Logout</span>
           </button>
         </div>
@@ -54,20 +104,51 @@ const AdminLayout = () => {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-14 bg-black border-b border-gray-800 flex items-center justify-between px-4 shrink-0">
-          <button onClick={() => setOpen(true)} className="lg:hidden text-gray-400 hover:text-white p-1">
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="text-sm font-semibold text-gray-300">
-            {navItems.find(n => isActive(n.path))?.label || 'Admin'}
-          </span>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs text-gray-500">Admin</span>
+        <header className="h-16 glass rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 z-20 border-x-0 border-t-0">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setOpen(true)}
+              className="lg:hidden p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg fast-transition"
+              style={{ color: 'var(--surface-text-2)' }}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={pageTitle}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.18 }}
+                className="text-base font-semibold"
+                style={{ color: 'var(--surface-text)' }}
+              >
+                {pageTitle}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex items-center space-x-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Admin</span>
+            </div>
+            <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6 bg-gray-950">
-          <Outlet />
+
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

@@ -5,6 +5,10 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import GlassCard from '../../components/ui/GlassCard';
+import GradientButton from '../../components/ui/GradientButton';
+import MeshBackground from '../../components/ui/MeshBackground';
+import { fadeUp } from '../../utils/motion';
 
 const API = `${import.meta.env.VITE_API_URL}/api/custom-sections`;
 const token = () => localStorage.getItem('token');
@@ -121,100 +125,125 @@ const CustomSections = () => {
 
         {/* LEFT COLUMN: Editor & List */}
         <div className="flex-1 w-full max-w-lg space-y-5">
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Custom Sections</h2>
-              <p className="text-sm text-gray-500">Add custom HTML content blocks to your vCard</p>
-            </div>
-            {!formOpen && (
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Search..." />
-                </div>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openCreate} className="flex items-center space-x-2 bg-pink-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-pink-700 transition">
-                  <Plus className="w-4 h-4" /><span>Create</span>
-                </motion.button>
+          <div className="relative rounded-2xl overflow-hidden">
+            <MeshBackground className="opacity-30" />
+            <motion.div {...fadeUp(0)} className="relative flex flex-wrap items-center justify-between gap-3 p-1">
+              <div>
+                <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Custom Sections</h2>
+                <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Add custom HTML content blocks to your vCard</p>
               </div>
-            )}
-          </motion.div>
+              {!formOpen && (
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
+                    <input
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      className="pl-9 pr-4 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      placeholder="Search..."
+                    />
+                  </div>
+                  <div className="w-32 shrink-0">
+                    <GradientButton onClick={openCreate} className="py-2! text-sm">
+                      <Plus className="w-4 h-4" /><span>Create</span>
+                    </GradientButton>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
 
           <AnimatePresence mode="wait">
             {formOpen ? (
-              <motion.div
+              <GlassCard
                 key="form"
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+                className="overflow-hidden"
               >
-                <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gray-50">
-                  <h3 className="text-lg font-bold text-gray-900">{editing ? 'Edit Section' : 'Create Section'}</h3>
-                  <button onClick={() => setFormOpen(false)} className="p-2 hover:bg-gray-200 bg-white border border-gray-200 rounded-lg text-gray-500 transition-colors">
+                <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Section' : 'Create Section'}</h3>
+                  <button
+                    onClick={() => setFormOpen(false)}
+                    className="p-2 rounded-lg fast-transition hover:bg-brand-500/10 hover:text-brand-500"
+                    style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text-2)' }}
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="p-6 space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Section Title *</label>
-                    <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none transition-all" placeholder="e.g., About My Work" />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Section Title *</label>
+                    <input
+                      value={form.title} onChange={e => setForm({...form, title: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      placeholder="e.g., About My Work" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex justify-between">
+                    <label className="block text-sm font-medium mb-1.5 flex justify-between" style={{ color: 'var(--surface-text)' }}>
                       <span>Content (HTML/CSS allowed) *</span>
-                      <span className="text-xs text-blue-600 font-medium">Live Previewing 👉</span>
+                      <span className="text-xs text-brand-500 font-medium">Live Previewing 👉</span>
                     </label>
                     <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={12}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none resize-none font-mono bg-gray-50"
+                      className="w-full px-4 py-3 rounded-lg text-sm outline-none resize-none font-mono focus:ring-2 focus:ring-brand-400 fast-transition"
+                      style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                       placeholder={`<style>\n  .my-text { color: red; }\n</style>\n<h1 class="my-text">Hello</h1>`} />
-                    <p className="text-xs text-gray-400 mt-2">Note: CSS written here is completely isolated. It will not break the rest of the site!</p>
+                    <p className="text-xs mt-2" style={{ color: 'var(--surface-text-2)' }}>Note: CSS written here is completely isolated. It will not break the rest of the site!</p>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-3 p-6 pt-0">
-                  <button onClick={() => setFormOpen(false)} className="px-5 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} className="px-6 py-2.5 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 disabled:opacity-60 transition-colors">{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</motion.button>
+                <div className="flex justify-end gap-3 p-6 pt-0">
+                  <button
+                    onClick={() => setFormOpen(false)}
+                    className="px-5 py-2.5 text-sm font-medium rounded-lg fast-transition hover:border-brand-500 hover:text-brand-500"
+                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                  >Cancel</button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} className="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-60 fast-transition">{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</motion.button>
                 </div>
-              </motion.div>
+              </GlassCard>
             ) : (
-              <motion.div
+              <GlassCard
                 key="table"
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                className="overflow-hidden"
               >
-                {loading ? <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+                {loading ? <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>
                 : filtered.length === 0 ? (
                   <div className="p-12 text-center">
-                    <Layout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">No custom sections yet.</p>
-                    <button onClick={openCreate} className="mt-4 bg-pink-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-pink-700">Create Section</button>
+                    <Layout className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.4 }} />
+                    <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>No custom sections yet.</p>
+                    <button onClick={openCreate} className="mt-4 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm px-4 py-2 rounded-lg hover:opacity-90 fast-transition">Create Section</button>
                   </div>
                 ) : (
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--surface-border)' }}>
                       <tr>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Title</th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Content Preview</th>
-                        <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>#</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>Title</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase hidden md:table-cell" style={{ color: 'var(--surface-text-2)' }}>Content Preview</th>
+                        <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody>
                       {filtered.map((item, idx) => (
                         <motion.tr
                           key={item._id}
                           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25, delay: idx * 0.04 }}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="hover:bg-brand-500/5 fast-transition"
+                          style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--surface-border)' }}
                         >
-                          <td className="px-5 py-4 text-sm text-gray-400 font-mono">{idx + 1}</td>
-                          <td className="px-5 py-4 text-sm font-medium text-gray-900">{item.title}</td>
+                          <td className="px-5 py-4 text-sm font-mono" style={{ color: 'var(--surface-text-2)' }}>{idx + 1}</td>
+                          <td className="px-5 py-4 text-sm font-medium" style={{ color: 'var(--surface-text)' }}>{item.title}</td>
                           <td className="px-5 py-4 hidden md:table-cell">
-                            <p className="text-xs text-gray-500 truncate max-w-[150px]">{item.content?.replace(/<[^>]*>?/gm, '').substring(0, 50)}...</p>
+                            <p className="text-xs truncate max-w-[150px]" style={{ color: 'var(--surface-text-2)' }}>{item.content?.replace(/<[^>]*>?/gm, '').substring(0, 50)}...</p>
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex items-center justify-end space-x-1">
-                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openEdit(item)} className="p-2 text-gray-500 hover:text-pink-600 hover:bg-gray-100 rounded-lg"><Pencil className="w-4 h-4" /></motion.button>
-                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(item._id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></motion.button>
+                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openEdit(item)} className="p-2 rounded-lg fast-transition hover:text-brand-500 hover:bg-brand-500/10" style={{ color: 'var(--surface-text-2)' }}><Pencil className="w-4 h-4" /></motion.button>
+                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(item._id)} className="p-2 rounded-lg fast-transition hover:text-red-500 hover:bg-red-500/10" style={{ color: 'var(--surface-text-2)' }}><Trash2 className="w-4 h-4" /></motion.button>
                             </div>
                           </td>
                         </motion.tr>
@@ -222,7 +251,7 @@ const CustomSections = () => {
                     </tbody>
                   </table>
                 )}
-              </motion.div>
+              </GlassCard>
             )}
           </AnimatePresence>
         </div>

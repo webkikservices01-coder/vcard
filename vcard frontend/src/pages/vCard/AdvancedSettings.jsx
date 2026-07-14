@@ -5,6 +5,10 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import GlassCard from '../../components/ui/GlassCard';
+import GradientButton from '../../components/ui/GradientButton';
+import MeshBackground from '../../components/ui/MeshBackground';
+import { fadeUp } from '../../utils/motion';
 
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
@@ -84,70 +88,86 @@ const AdvancedSettings = () => {
     navigate('/dashboard/vcard/all');
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading settings...</div>;
+  if (loading) return (
+    <div className="max-w-2xl space-y-5">
+      <div className="h-14 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+      <div className="h-40 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+      <div className="h-32 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+      <div className="h-56 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+    </div>
+  );
 
   return (
     <>
       <div className="max-w-2xl space-y-5 relative">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-          <h2 className="text-xl font-bold text-gray-900">Advanced Settings</h2>
-          <p className="text-sm text-gray-500">Fine-tune your vCard's behavior and integrations</p>
+        <motion.div {...fadeUp(0)} className="relative overflow-hidden rounded-2xl">
+          <MeshBackground className="opacity-40" />
+          <div className="relative py-1">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Advanced Settings</h2>
+            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Fine-tune your vCard's behavior and integrations</p>
+          </div>
         </motion.div>
 
         {/* Integrations */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-sm font-bold text-gray-900 mb-4">Integrations</h3>
+        <GlassCard {...fadeUp(0.06)} className="p-6">
+          <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--surface-text)' }}>Integrations</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Enquiry Email</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Enquiry Email</label>
               <input
                 type="email"
                 value={settings.enquiryEmail}
                 onChange={e => setSettings({ ...settings, enquiryEmail: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none"
+                className="w-full px-4 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                 placeholder="enquiries@yourdomain.com"
               />
-              <p className="text-xs text-gray-400 mt-1">Enquiry form submissions will be sent to this address</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)', opacity: 0.8 }}>Enquiry form submissions will be sent to this address</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Google Analytics ID</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Google Analytics ID</label>
               <input
                 type="text"
                 value={settings.analyticsId}
                 onChange={e => setSettings({ ...settings, analyticsId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none"
+                className="w-full px-4 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                 placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX"
               />
             </div>
           </div>
-        </motion.div>
+        </GlassCard>
 
         {/* Card Orientation */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-sm font-bold text-gray-900 mb-1">Card Orientation</h3>
-          <p className="text-xs text-gray-500 mb-4">Choose how your vCard is displayed to visitors</p>
+        <GlassCard {...fadeUp(0.12)} className="p-6">
+          <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Card Orientation</h3>
+          <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)' }}>Choose how your vCard is displayed to visitors</p>
           <div className="grid grid-cols-2 gap-3">
             {[
               { value: 'vertical', label: 'Vertical', desc: 'Standard top-to-bottom layout', icon: '▯' },
               { value: 'horizontal', label: 'Horizontal', desc: 'Side-by-side business card layout', icon: '▭' },
-            ].map(opt => (
-              <motion.button
-                key={opt.value}
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => setSettings(s => ({ ...s, orientation: opt.value }))}
-                className={`p-4 rounded-xl border-2 text-left transition-colors ${settings.orientation === opt.value ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-200 hover:border-gray-400'}`}
-              >
-                <span className="text-2xl">{opt.icon}</span>
-                <p className="text-sm font-bold mt-2">{opt.label}</p>
-                <p className={`text-xs mt-0.5 ${settings.orientation === opt.value ? 'text-gray-300' : 'text-gray-500'}`}>{opt.desc}</p>
-              </motion.button>
-            ))}
+            ].map(opt => {
+              const active = settings.orientation === opt.value;
+              return (
+                <motion.button
+                  key={opt.value}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  onClick={() => setSettings(s => ({ ...s, orientation: opt.value }))}
+                  className={`p-4 rounded-xl text-left fast-transition ${active ? 'bg-gradient-to-br from-brand-600 to-brand-700 text-white border-transparent' : 'hover:border-brand-400'}`}
+                  style={!active ? { border: '2px solid var(--surface-border)', color: 'var(--surface-text)' } : { border: '2px solid transparent' }}
+                >
+                  <span className="text-2xl">{opt.icon}</span>
+                  <p className="text-sm font-bold mt-2">{opt.label}</p>
+                  <p className="text-xs mt-0.5" style={!active ? { color: 'var(--surface-text-2)' } : { color: 'rgba(255,255,255,0.75)' }}>{opt.desc}</p>
+                </motion.button>
+              );
+            })}
           </div>
-        </motion.div>
+        </GlassCard>
 
         {/* Visibility Options */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }} className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-sm font-bold text-gray-900 mb-4">Visibility & Features</h3>
+        <GlassCard {...fadeUp(0.18)} className="p-6">
+          <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--surface-text)' }}>Visibility & Features</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {checkboxOptions.map(({ key, label }) => (
               <label key={key} className="flex items-start space-x-3 cursor-pointer group">
@@ -160,9 +180,8 @@ const AdvancedSettings = () => {
                   />
                   <motion.div
                     whileTap={{ scale: 0.85 }}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                      settings[key] ? 'bg-pink-600 border-pink-600' : 'border-gray-300 group-hover:border-gray-400'
-                    }`}
+                    className={`w-5 h-5 rounded flex items-center justify-center fast-transition ${settings[key] ? 'bg-gradient-to-br from-brand-600 to-brand-700' : ''}`}
+                    style={!settings[key] ? { border: '2px solid var(--surface-border)' } : { border: '2px solid transparent' }}
                   >
                     {settings[key] && (
                       <motion.svg
@@ -174,26 +193,23 @@ const AdvancedSettings = () => {
                     )}
                   </motion.div>
                 </div>
-                <span className="text-sm text-gray-700 leading-tight">{label}</span>
+                <span className="text-sm leading-tight fast-transition group-hover:text-brand-500" style={{ color: 'var(--surface-text)' }}>{label}</span>
               </label>
             ))}
           </div>
-        </motion.div>
+        </GlassCard>
 
         <div className="flex justify-end">
-          <motion.button
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center space-x-2 bg-pink-600 text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-pink-700 transition disabled:opacity-60"
-          >
-            {saving ? (
-              <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            <span>{saving ? 'Saving...' : 'Save Settings'}</span>
-          </motion.button>
+          <div className="w-full sm:w-auto min-w-[180px]">
+            <GradientButton onClick={handleSave} disabled={saving} loading={saving}>
+              {saving ? (
+                <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{saving ? 'Saving...' : 'Save Settings'}</span>
+            </GradientButton>
+          </div>
         </div>
       </div>
 

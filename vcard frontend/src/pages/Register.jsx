@@ -4,6 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Phone, Lock, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import AuthBrandPanel from '../components/AuthBrandPanel';
+import GlassCard from '../components/ui/GlassCard';
+import GradientButton from '../components/ui/GradientButton';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import MeshBackground from '../components/ui/MeshBackground';
+import { fadeUp } from '../utils/motion';
 
 const fields = [
   { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe', icon: User },
@@ -39,77 +44,75 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex font-['Inter'] bg-white">
+    <div className="min-h-screen flex font-['Inter'] relative" style={{ background: 'var(--surface-bg)' }}>
+      <div className="lg:hidden absolute inset-0"><MeshBackground /></div>
       <AuthBrandPanel />
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-sm py-8"
-        >
+      <ThemeToggle className="fixed top-5 right-5 z-20" />
+
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative z-10">
+        <motion.div {...fadeUp(0)} className="w-full max-w-sm py-8">
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-2xl font-black text-black tracking-tight">MYcardLINK</h1>
-            <p className="text-xs text-gray-500 mt-1">Digital Business Card Platform</p>
+            <h1 className="font-display text-2xl font-black tracking-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</h1>
+            <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>Digital Business Card Platform</p>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Create account</h2>
-          <p className="text-sm text-gray-500 mb-8">Start your digital card journey</p>
+          <GlassCard className="p-7 sm:p-8">
+            <h2 className="font-display text-2xl font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Create account</h2>
+            <p className="text-sm mb-8" style={{ color: 'var(--surface-text-2)' }}>Start your digital card journey</p>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-5 text-sm">
-                  {error}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {fields.map(({ label, key, type, placeholder, icon: Icon }, i) => (
-              <motion.div
-                key={key}
-                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-                <div className="relative">
-                  <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type={type}
-                    value={form[key]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition text-sm"
-                    placeholder={placeholder}
-                    required={key !== 'phone'}
-                  />
-                </div>
-              </motion.div>
-            ))}
-
-            <motion.button
-              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={loading}
-              className="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm disabled:opacity-60 mt-2 inline-flex items-center justify-center gap-1.5"
-            >
-              {loading ? (
-                <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-              ) : (
-                <ArrowRight className="w-4 h-4" />
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-500 px-4 py-3 rounded-lg mb-5 text-sm">
+                    {error}
+                  </div>
+                </motion.div>
               )}
-              <span>{loading ? 'Creating account...' : 'Create Account'}</span>
-            </motion.button>
-          </form>
+            </AnimatePresence>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {fields.map(({ label, key, type, placeholder, icon: Icon }, i) => (
+                <motion.div
+                  key={key}
+                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.05 }}
+                >
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>{label}</label>
+                  <div className="relative">
+                    <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
+                    <input
+                      type={type}
+                      value={form[key]}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg outline-none transition text-sm focus:ring-2 focus:ring-brand-400"
+                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      placeholder={placeholder}
+                      required={key !== 'phone'}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+
+              <div className="pt-2">
+                <GradientButton type="submit" disabled={loading} loading={loading}>
+                  {loading ? (
+                    <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                  <span>{loading ? 'Creating account...' : 'Create Account'}</span>
+                </GradientButton>
+              </div>
+            </form>
+          </GlassCard>
+
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--surface-text-2)' }}>
             Already have an account?{' '}
-            <Link to="/" className="font-semibold text-pink-600 hover:underline">
+            <Link to="/" className="font-semibold text-brand-500 hover:underline">
               Sign in
             </Link>
           </p>

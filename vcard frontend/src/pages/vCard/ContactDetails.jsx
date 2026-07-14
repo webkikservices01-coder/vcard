@@ -10,6 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
+import GlassCard from '../../components/ui/GlassCard';
+import GradientButton from '../../components/ui/GradientButton';
+import MeshBackground from '../../components/ui/MeshBackground';
+import { fadeUp } from '../../utils/motion';
 
 const ContactDetails = () => {
   const plan = usePlan();
@@ -32,18 +36,18 @@ const ContactDetails = () => {
   ];
 
   const getFieldIcon = (type) => {
-    const iconClass = 'w-4 h-4 text-gray-500';
+    const iconStyle = { color: 'var(--surface-text-2)' };
     switch (type) {
-      case 'Mobile / Phone': return <FaPhoneAlt className={iconClass} />;
-      case 'WhatsApp': return <FaWhatsapp className={iconClass} />;
-      case 'Email': return <MdEmail className="w-5 h-5 text-gray-500" />;
-      case 'Website': return <FaGlobe className={iconClass} />;
-      case 'LinkedIn': return <FaLinkedin className={iconClass} />;
-      case 'Instagram': return <FaInstagram className={iconClass} />;
-      case 'Facebook': return <FaFacebook className={iconClass} />;
-      case 'Twitter': return <FaTwitter className={iconClass} />;
-      case 'Custom URL': return <MdOutlineLink className="w-5 h-5 text-gray-500" />;
-      default: return <MdOutlineLink className="w-5 h-5 text-gray-500" />;
+      case 'Mobile / Phone': return <FaPhoneAlt className="w-4 h-4" style={iconStyle} />;
+      case 'WhatsApp': return <FaWhatsapp className="w-4 h-4" style={iconStyle} />;
+      case 'Email': return <MdEmail className="w-5 h-5" style={iconStyle} />;
+      case 'Website': return <FaGlobe className="w-4 h-4" style={iconStyle} />;
+      case 'LinkedIn': return <FaLinkedin className="w-4 h-4" style={iconStyle} />;
+      case 'Instagram': return <FaInstagram className="w-4 h-4" style={iconStyle} />;
+      case 'Facebook': return <FaFacebook className="w-4 h-4" style={iconStyle} />;
+      case 'Twitter': return <FaTwitter className="w-4 h-4" style={iconStyle} />;
+      case 'Custom URL': return <MdOutlineLink className="w-5 h-5" style={iconStyle} />;
+      default: return <MdOutlineLink className="w-5 h-5" style={iconStyle} />;
     }
   };
 
@@ -163,36 +167,42 @@ const ContactDetails = () => {
 
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-5xl bg-white p-8 rounded-xl shadow-sm border border-gray-200 font-['Inter'] relative">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-black tracking-tight">Contact & Social Links</h2>
-            <p className="text-sm text-gray-500 mt-1">Add your phone numbers, emails, social media, and custom URLs here.</p>
+      <div className="max-w-5xl space-y-5">
+
+        {/* ── Header ─────────────────────────────────── */}
+        <GlassCard {...fadeUp(0)} className="relative overflow-hidden p-5 sm:p-6">
+          <MeshBackground className="opacity-40" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight" style={{ color: 'var(--surface-text)' }}>Contact & Social Links</h2>
+              <p className="text-sm mt-1" style={{ color: 'var(--surface-text-2)' }}>Add your phone numbers, emails, social media, and custom URLs here.</p>
+            </div>
+            {hasVoiceFill(plan) && (
+              <motion.button
+                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={() => setShowVoiceFill(true)}
+                className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:opacity-90 fast-transition"
+              >
+                <FiMic className="w-4 h-4" />
+                <span>Fill with Voice</span>
+              </motion.button>
+            )}
           </div>
-          {hasVoiceFill(plan) && (
-            <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              type="button"
-              onClick={() => setShowVoiceFill(true)}
-              className="shrink-0 flex items-center space-x-2 bg-pink-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-pink-700 transition"
-            >
-              <FiMic className="w-4 h-4" />
-              <span>Fill with Voice</span>
-            </motion.button>
-          )}
-        </div>
+        </GlassCard>
 
         {/* Add New Link Section */}
-        <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 mb-8">
+        <GlassCard {...fadeUp(0.08)} className="p-5">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Field Type</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--surface-text-2)' }}>Field Type</label>
               <div className="relative">
-                <div className="absolute left-3 top-2.5">
+                <div className="absolute left-3 top-2.5 pointer-events-none">
                   {getFieldIcon(currentLink.fieldType)}
                 </div>
                 <select
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 outline-none text-sm bg-white appearance-none"
+                  className="w-full pl-9 pr-3 py-2 rounded-md outline-none fast-transition text-sm appearance-none focus:ring-2 focus:ring-brand-400"
+                  style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                   value={currentLink.fieldType}
                   onChange={(e) => setCurrentLink({...currentLink, fieldType: e.target.value})}
                 >
@@ -201,21 +211,23 @@ const ContactDetails = () => {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Title</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--surface-text-2)' }}>Title</label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 outline-none text-sm"
+                className="w-full px-3 py-2 rounded-md outline-none fast-transition text-sm focus:ring-2 focus:ring-brand-400"
+                style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                 placeholder="e.g. Personal Number"
                 value={currentLink.title}
                 onChange={(e) => setCurrentLink({...currentLink, title: e.target.value})}
               />
             </div>
-            <div className="md:col-span-2 flex space-x-3">
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:space-x-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">URL / Number</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--surface-text-2)' }}>URL / Number</label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 outline-none text-sm"
+                  className="w-full px-3 py-2 rounded-md outline-none fast-transition text-sm focus:ring-2 focus:ring-brand-400"
+                  style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                   placeholder="https://... or +91..."
                   value={currentLink.url}
                   onChange={(e) => setCurrentLink({...currentLink, url: e.target.value})}
@@ -224,85 +236,93 @@ const ContactDetails = () => {
               <motion.button
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                 onClick={handleAddOrUpdate}
-                className="mt-6 flex items-center justify-center space-x-1 bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 rounded-md transition-colors text-sm h-[38px] shrink-0"
+                className="sm:mt-6 flex items-center justify-center space-x-1 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-medium px-4 rounded-md fast-transition hover:opacity-90 text-sm h-[38px] shrink-0"
               >
                 {editIndex !== null ? <FiEdit2 className="w-4 h-4" /> : <FiPlus className="w-4 h-4" />}
                 <span>{editIndex !== null ? 'Update' : 'Add'}</span>
               </motion.button>
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Links Table */}
         {links.length > 0 ? (
-          <div className="overflow-x-auto border border-gray-200 rounded-lg mb-8">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200 text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Field Type</th>
-                  <th className="px-4 py-3 font-medium">Title</th>
-                  <th className="px-4 py-3 font-medium">URL / Number</th>
-                  <th className="px-4 py-3 font-medium text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence>
-                  {links.map((link, index) => (
-                    <motion.tr
-                      key={`${link.fieldType}-${link.url}-${index}`}
-                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.2, delay: index * 0.03 }}
-                      className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-4 py-3 text-black font-medium">
-                        <div className="flex items-center space-x-2">
-                          {getFieldIcon(link.fieldType)}
-                          <span>{link.fieldType}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{link.title}</td>
-                      <td className="px-4 py-3 truncate max-w-xs">
-                        <a
-                          href={getClickableUrl(link.fieldType, link.url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center space-x-1"
-                        >
-                          <MdOutlineLink className="w-3.5 h-3.5 inline" />
-                          <span className="truncate">{link.url}</span>
-                        </a>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleEdit(index)} className="p-1.5 text-gray-500 hover:text-pink-600 hover:bg-gray-200 rounded transition-colors">
-                            <FiEdit2 className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(index)} className="p-1.5 text-red-500 hover:text-white hover:bg-red-500 rounded transition-colors">
-                            <FiTrash2 className="w-4 h-4" />
-                          </motion.button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+          <GlassCard {...fadeUp(0.14)} className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--surface-border)' }}>
+                  <tr>
+                    <th className="px-4 py-3 font-medium" style={{ color: 'var(--surface-text-2)' }}>Field Type</th>
+                    <th className="px-4 py-3 font-medium" style={{ color: 'var(--surface-text-2)' }}>Title</th>
+                    <th className="px-4 py-3 font-medium" style={{ color: 'var(--surface-text-2)' }}>URL / Number</th>
+                    <th className="px-4 py-3 font-medium text-right" style={{ color: 'var(--surface-text-2)' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence>
+                    {links.map((link, index) => (
+                      <motion.tr
+                        key={`${link.fieldType}-${link.url}-${index}`}
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2, delay: index * 0.03 }}
+                        className="fast-transition hover:bg-brand-500/5"
+                        style={{ borderBottom: '1px solid var(--surface-border)' }}
+                      >
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--surface-text)' }}>
+                          <div className="flex items-center space-x-2">
+                            {getFieldIcon(link.fieldType)}
+                            <span>{link.fieldType}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--surface-text-2)' }}>{link.title}</td>
+                        <td className="px-4 py-3 truncate max-w-xs">
+                          <a
+                            href={getClickableUrl(link.fieldType, link.url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-500 hover:text-brand-600 hover:underline fast-transition flex items-center space-x-1"
+                          >
+                            <MdOutlineLink className="w-3.5 h-3.5 inline" />
+                            <span className="truncate">{link.url}</span>
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                              onClick={() => handleEdit(index)}
+                              className="p-1.5 rounded fast-transition hover:text-brand-500 hover:bg-brand-500/10"
+                              style={{ color: 'var(--surface-text-2)' }}
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(index)} className="p-1.5 text-red-500 hover:text-white hover:bg-red-500 rounded fast-transition">
+                              <FiTrash2 className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </GlassCard>
         ) : (
-          <div className="text-center py-10 border border-dashed border-gray-300 rounded-lg mb-8 bg-gray-50">
-            <MdOutlineLink className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">No links added yet. Add your first link above.</p>
-          </div>
+          <GlassCard {...fadeUp(0.14)} className="text-center py-10">
+            <MdOutlineLink className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
+            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>No links added yet. Add your first link above.</p>
+          </GlassCard>
         )}
 
         {/* Save Button */}
-        <div className="pt-4 flex justify-end">
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSaveAll} className="flex items-center space-x-2 bg-pink-600 hover:bg-pink-700 text-white font-medium py-2.5 px-8 rounded-md transition-colors text-sm">
+        <motion.div {...fadeUp(0.2)} className="pt-2 flex justify-end">
+          <GradientButton onClick={handleSaveAll} className="sm:w-auto px-8">
             <FiSave className="w-4 h-4" />
             <span>Save All Links</span>
-          </motion.button>
-        </div>
-      </motion.div>
+          </GradientButton>
+        </motion.div>
+      </div>
 
       <ActionPopup
         isOpen={showPopup}

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck } from 'lucide-react';
 import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
+import ThemeToggle from './ui/ThemeToggle';
+import MeshBackground from './ui/MeshBackground';
 import axios from 'axios';
 import { hasChatFill } from '../utils/plan';
 
@@ -103,16 +105,21 @@ const DashboardLayout = () => {
     : 'U';
 
   return (
-    <div className="flex h-screen bg-gray-50 font-['Inter']">
+    <div className="flex h-screen font-['Inter']" style={{ background: 'var(--surface-bg)' }}>
+      {/* Persistent ambient wash behind the whole app shell, very low opacity — keeps the
+          product feeling alive while navigating instead of only in isolated page heroes */}
+      <MeshBackground fixed className="opacity-[0.18] -z-10" />
+
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} userPlan={user.plan} />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-20">
+        <header className="h-16 glass rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 z-20 border-x-0 border-t-0">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-lg"
+              className="lg:hidden p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg fast-transition"
+              style={{ color: 'var(--surface-text-2)' }}
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -124,28 +131,30 @@ const DashboardLayout = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18 }}
-                  className="text-base font-semibold text-gray-900"
+                  className="text-base font-semibold"
+                  style={{ color: 'var(--surface-text)' }}
                 >
                   {pageTitle}
                 </motion.h2>
               </AnimatePresence>
-              <p className="text-xs text-gray-400 hidden sm:block">
+              <p className="text-xs hidden sm:block" style={{ color: 'var(--surface-text-2)' }}>
                 Dashboard / {pageTitle}
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
+            <ThemeToggle />
             {user.isAdmin && (
               <a
                 href="/admin"
-                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-pink-600 text-white text-xs font-bold rounded-lg hover:bg-pink-700 transition"
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-xs font-bold rounded-lg hover:opacity-90 fast-transition"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Admin</span>
               </a>
             )}
-            <button className="p-2 text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-lg relative">
+            <button className="p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg relative fast-transition" style={{ color: 'var(--surface-text-2)' }}>
               <Bell className="w-5 h-5" />
             </button>
 
@@ -153,17 +162,17 @@ const DashboardLayout = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded-lg transition-all"
+                className="flex items-center space-x-2 p-1.5 hover:bg-brand-500/10 rounded-lg fast-transition"
               >
-                <div className="w-8 h-8 bg-pink-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {initials}
                 </div>
                 <div className="hidden sm:block text-left">
-                  <p className="text-xs font-semibold text-gray-900 leading-tight">{user.name}</p>
-                  <p className="text-[10px] text-gray-500">{user.plan}</p>
+                  <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--surface-text)' }}>{user.name}</p>
+                  <p className="text-[10px]" style={{ color: 'var(--surface-text-2)' }}>{user.plan}</p>
                 </div>
                 <motion.span animate={{ rotate: dropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="hidden sm:block">
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  <ChevronDown className="w-3.5 h-3.5" style={{ color: 'var(--surface-text-2)' }} />
                 </motion.span>
               </button>
 
@@ -174,12 +183,13 @@ const DashboardLayout = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.16 }}
-                    className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50"
+                    className="glass absolute right-0 top-full mt-1 w-48 rounded-xl py-1 z-50"
                   >
                     <Link
                       to="/dashboard/profile"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm hover:bg-brand-500/10 fast-transition"
+                      style={{ color: 'var(--surface-text)' }}
                     >
                       <User className="w-4 h-4" />
                       <span>My Profile</span>
@@ -187,27 +197,28 @@ const DashboardLayout = () => {
                     <Link
                       to="/dashboard/plans"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm hover:bg-brand-500/10 fast-transition"
+                      style={{ color: 'var(--surface-text)' }}
                     >
                       <Settings className="w-4 h-4" />
                       <span>Plans</span>
                     </Link>
                     {user.isAdmin && (
                       <>
-                        <div className="border-t border-gray-100 my-1" />
+                        <div style={{ borderTop: '1px solid var(--surface-border)' }} className="my-1" />
                         <a
                           href="/admin"
-                          className="flex items-center space-x-2 px-4 py-2.5 text-sm text-purple-700 hover:bg-purple-50"
+                          className="flex items-center space-x-2 px-4 py-2.5 text-sm text-purple-500 hover:bg-purple-500/10 fast-transition"
                         >
                           <ShieldCheck className="w-4 h-4" />
                           <span>Admin Panel</span>
                         </a>
                       </>
                     )}
-                    <div className="border-t border-gray-100 my-1" />
+                    <div style={{ borderTop: '1px solid var(--surface-border)' }} className="my-1" />
                     <button
                       onClick={handleLogout}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 w-full text-left fast-transition"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Logout</span>
@@ -221,20 +232,21 @@ const DashboardLayout = () => {
 
         {/* vCard sub-navigation */}
         {isVcardSection && (
-          <div className="bg-white border-b border-gray-200 z-10 relative">
+          <div className="glass rounded-none z-10 relative border-x-0 border-t-0">
 
             {/* Mobile: dropdown menu */}
             <div className="lg:hidden px-4 py-3 relative" ref={tabMenuRef}>
               <button
                 onClick={() => setMobileTabMenuOpen(!mobileTabMenuOpen)}
-                className="flex items-center justify-between w-full bg-gray-50 border border-gray-200 px-4 py-3 rounded-xl text-sm font-semibold text-gray-900 shadow-sm"
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold fast-transition"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
               >
                 <div className="flex items-center space-x-2.5">
-                  <activeTab.icon className="w-4 h-4 text-pink-600" />
+                  <activeTab.icon className="w-4 h-4 text-brand-500" />
                   <span>{activeTab.name}</span>
                 </div>
                 <motion.span animate={{ rotate: mobileTabMenuOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
                 </motion.span>
               </button>
 
@@ -245,7 +257,7 @@ const DashboardLayout = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
-                    className="absolute left-4 right-4 top-[60px] bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 max-h-[60vh] overflow-y-auto"
+                    className="glass absolute left-4 right-4 top-[60px] rounded-xl py-2 z-50 max-h-[60vh] overflow-y-auto"
                   >
                     {vcardTabs.map((tab) => {
                       const isActive = location.pathname === tab.path;
@@ -254,13 +266,14 @@ const DashboardLayout = () => {
                           key={tab.path}
                           to={tab.path}
                           onClick={() => setMobileTabMenuOpen(false)}
-                          className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors ${
-                            isActive ? 'bg-pink-50 text-pink-600 font-bold' : 'text-gray-600 hover:bg-pink-50 hover:text-pink-600'
+                          className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium fast-transition ${
+                            isActive ? 'bg-brand-500/10 text-brand-500 font-bold' : 'hover:bg-brand-500/10 hover:text-brand-500'
                           }`}
+                          style={!isActive ? { color: 'var(--surface-text-2)' } : undefined}
                         >
-                          <tab.icon className={`w-4 h-4 ${isActive ? 'text-pink-600' : 'opacity-60'}`} />
+                          <tab.icon className={`w-4 h-4 ${isActive ? 'text-brand-500' : 'opacity-60'}`} />
                           <span>{tab.name}</span>
-                          {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-pink-600" />}
+                          {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-500" />}
                         </Link>
                       );
                     })}
@@ -278,13 +291,16 @@ const DashboardLayout = () => {
                     {isActive && (
                       <motion.div
                         layoutId="vcard-tab-pill"
-                        className="absolute inset-0 bg-pink-600 rounded-xl shadow-md"
+                        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl shadow-md"
                         transition={{ type: 'spring', stiffness: 480, damping: 36 }}
                       />
                     )}
-                    <div className={`relative z-10 flex items-center space-x-2 px-3.5 py-2 text-sm font-semibold rounded-xl border transition-colors ${
-                      isActive ? 'text-white border-pink-600' : 'text-gray-600 border-gray-200 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600'
-                    }`}>
+                    <div
+                      className={`relative z-10 flex items-center space-x-2 px-3.5 py-2 text-sm font-semibold rounded-xl fast-transition ${
+                        isActive ? 'text-white' : 'hover:bg-brand-500/10 hover:text-brand-500'
+                      }`}
+                      style={!isActive ? { color: 'var(--surface-text-2)', border: '1px solid var(--surface-border)' } : undefined}
+                    >
                       <tab.icon className={`w-4 h-4 ${isActive ? 'text-white' : 'opacity-60'}`} />
                       <span>{tab.name}</span>
                     </div>

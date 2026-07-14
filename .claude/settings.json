@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(Get-ChildItem -Path \"backend\" -Recurse -Force -Depth 3 | Where-Object { $_.FullName -notmatch 'node_modules' } | Select-Object FullName)"
-    ]
-  }
-}

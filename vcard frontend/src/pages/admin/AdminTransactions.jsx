@@ -1,9 +1,14 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import GlassCard from '../../components/ui/GlassCard';
 
 const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
-const statusStyle = { completed: 'bg-green-900 text-green-300', pending: 'bg-yellow-900 text-yellow-300', failed: 'bg-red-900 text-red-300' };
+const statusStyle = {
+  completed: 'bg-emerald-500/15 text-emerald-400',
+  pending:   'bg-yellow-500/15 text-yellow-400',
+  failed:    'bg-red-500/15 text-red-400',
+};
 
 const AdminTransactions = () => {
   const [txns, setTxns] = useState([]);
@@ -25,9 +30,14 @@ const AdminTransactions = () => {
   return (
     <div className="space-y-4 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-black text-white">Transactions <span className="text-gray-500 font-normal text-base">({total})</span></h1>
-        <select value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}
-          className="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none">
+        <h1 className="text-xl font-black" style={{ color: 'var(--surface-text)' }}>
+          Transactions <span className="font-normal text-base" style={{ color: 'var(--surface-text-2)' }}>({total})</span>
+        </h1>
+        <select
+          value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}
+          className="rounded-xl px-3 py-2 text-sm outline-none fast-transition"
+          style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+        >
           <option value="">All Status</option>
           <option value="completed">Completed</option>
           <option value="pending">Pending</option>
@@ -35,46 +45,62 @@ const AdminTransactions = () => {
         </select>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <GlassCard className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800">
-                {['User', 'Plan', 'Amount', 'Status', 'Date'].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">{h}</th>
+              <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
+                {['User', 'Plan', 'Amount', 'Status', 'Date'].map(hd => (
+                  <th key={hd} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--surface-text-2)' }}>{hd}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="text-center py-10 text-gray-600">Loading...</td></tr>
-              ) : txns.map(t => (
-                <tr key={t._id} className="hover:bg-gray-800/50 transition-colors">
+                <tr><td colSpan={5} className="text-center py-10" style={{ color: 'var(--surface-text-2)' }}>Loading...</td></tr>
+              ) : txns.map((t, idx) => (
+                <tr
+                  key={t._id}
+                  className="hover:bg-brand-500/5 fast-transition"
+                  style={idx > 0 ? { borderTop: '1px solid var(--surface-border)' } : undefined}
+                >
                   <td className="px-5 py-3.5">
-                    <p className="font-semibold text-white">{t.userId?.name || '—'}</p>
-                    <p className="text-xs text-gray-500">{t.userId?.email || ''}</p>
+                    <p className="font-semibold" style={{ color: 'var(--surface-text)' }}>{t.userId?.name || '—'}</p>
+                    <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{t.userId?.email || ''}</p>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-gray-300">{t.plan}</td>
-                  <td className="px-5 py-3.5 text-sm font-bold text-white">₹{(t.amount || 0).toLocaleString('en-IN')}</td>
+                  <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--surface-text-2)' }}>{t.plan}</td>
+                  <td className="px-5 py-3.5 text-sm font-bold" style={{ color: 'var(--surface-text)' }}>₹{(t.amount || 0).toLocaleString('en-IN')}</td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${statusStyle[t.status] || 'bg-gray-700 text-gray-300'}`}>{t.status}</span>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${statusStyle[t.status] || 'bg-gray-500/15 text-gray-400'}`}>{t.status}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(t.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--surface-text-2)' }}>{new Date(t.createdAt).toLocaleDateString('en-IN')}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {pages > 1 && (
-          <div className="px-5 py-3 border-t border-gray-800 flex justify-between items-center">
-            <span className="text-xs text-gray-500">Page {page} of {pages}</span>
+          <div className="px-5 py-3 flex justify-between items-center" style={{ borderTop: '1px solid var(--surface-border)' }}>
+            <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Page {page} of {pages}</span>
             <div className="flex space-x-2">
-              <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1} className="text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-300 disabled:opacity-30">Prev</button>
-              <button onClick={() => setPage(p => Math.min(pages, p+1))} disabled={page===pages} className="text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-300 disabled:opacity-30">Next</button>
+              <button
+                onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1}
+                className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 fast-transition hover:border-brand-500 hover:text-brand-500"
+                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(pages, p+1))} disabled={page===pages}
+                className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 fast-transition hover:border-brand-500 hover:text-brand-500"
+                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+              >
+                Next
+              </button>
             </div>
           </div>
         )}
-      </div>
+      </GlassCard>
     </div>
   );
 };

@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X as XIcon, Zap, Bot, Phone, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, X as XIcon, ShieldCheck, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
+import GlassCard from '../components/ui/GlassCard';
+import GradientButton from '../components/ui/GradientButton';
+import MeshBackground from '../components/ui/MeshBackground';
+import { fadeUp } from '../utils/motion';
+import { plans, featureSections } from '../data/plans.jsx';
 
 let cashfreePromise = null;
 const getCashfree = () => {
@@ -14,112 +20,91 @@ const getCashfree = () => {
   return cashfreePromise;
 };
 
-const plans = [
-  {
-    id: 'digital-id',
-    name: 'DIGITAL CARD',
-    tagline: 'Perfect for professionals',
-    price: { monthly: 99, yearly: 999 },
-    icon: <Zap className="w-5 h-5" />,
-    popular: false,
-    badge: null,
-    accent: '#111827',
-    features: {
-      vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
-      leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: false,
-      aiChatWidget: false, aiPersonaConfig: false, animatedAvatar: false, linkedinSync: false, aiLeadScoring: false,
-      aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
-      whatsappFlowBuilder: false, outboundCalling: false, whiteLabelOption: false,
-      support: 'Email',
-    }
-  },
-  {
-    id: 'smart-ai-card',
-    name: 'SMART AI CARD',
-    tagline: 'AI-powered digital presence',
-    price: { monthly: 199, yearly: 1999 },
-    icon: <Bot className="w-5 h-5" />,
-    popular: true,
-    badge: '★ Most Popular',
-    accent: '#6366f1',
-    features: {
-      vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
-      leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
-      aiChatWidget: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
-      aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
-      whatsappFlowBuilder: false, outboundCalling: false, whiteLabelOption: false,
-      support: 'Priority',
-    }
-  },
-  {
-    id: 'ai-agent-pro',
-    name: 'AI AGENT PRO',
-    tagline: 'Full AI sales & support automation',
-    price: { monthly: 399, yearly: 3999 },
-    icon: <Phone className="w-5 h-5" />,
-    popular: false,
-    badge: '🤖 AI Powered',
-    accent: '#8b5cf6',
-    features: {
-      vCards: 3, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
-      leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
-      aiChatWidget: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
-      aiVoiceAgent: true, whatsappBot: true, voiceNoteTranscription: true, imageRecognition: true,
-      whatsappFlowBuilder: true, outboundCalling: true, whiteLabelOption: true,
-      support: '24/7 Dedicated',
-    }
-  }
-];
+// Side-by-side feature grid — shared by the always-visible page section and the
+// plan-details popup, so differences between plans read the same way in both places.
+const FeatureComparisonTable = ({ highlightId }) => (
+  <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="min-w-[560px]">
+      <div className="grid grid-cols-4" style={{ borderBottom: '1px solid var(--surface-border)' }}>
+        <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--surface-text-2)' }}>Feature</div>
+        {plans.map(p => (
+          <div key={p.id} className={`px-3 py-3 text-center text-xs font-black tracking-wide ${
+            p.id === highlightId ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white' : ''
+          }`} style={p.id !== highlightId ? { color: 'var(--surface-text)' } : undefined}>
+            {p.name}
+          </div>
+        ))}
+      </div>
 
-const featureSections = [
-  {
-    label: 'Digital Card',
-    features: [
-      { key: 'vCards', label: 'vCards', type: 'count' },
-      { key: 'themes', label: 'Card Themes', type: 'count' },
-      { key: 'qrCode', label: 'QR Code', type: 'bool' },
-      { key: 'vcfDownload', label: 'Add to Phonebook (.vcf)', type: 'bool' },
-      { key: 'linkTapTracking', label: 'Link Tap Analytics', type: 'bool' },
-      { key: 'leadCaptureForm', label: 'Lead Capture Form', type: 'bool' },
-      { key: 'whatsappButton', label: 'WhatsApp Quick Connect', type: 'bool' },
-      { key: 'seoIndexing', label: 'SEO Indexing', type: 'bool' },
-      { key: 'darkLightMode', label: 'Dark / Light Mode', type: 'bool' },
-      { key: 'hideBranding', label: 'Hide Branding', type: 'bool' },
-    ]
-  },
-  {
-    label: 'AI Features',
-    highlight: true,
-    features: [
-      { key: 'aiChatWidget', label: 'AI Chat Widget', type: 'bool' },
-      { key: 'aiPersonaConfig', label: 'AI Persona Config (tone, greeting, fallback)', type: 'bool' },
-      { key: 'animatedAvatar', label: 'Animated AI Avatar', type: 'bool' },
-      { key: 'linkedinSync', label: 'LinkedIn & Instagram Auto-Sync', type: 'bool' },
-      { key: 'aiLeadScoring', label: 'AI Lead Scoring (Hot/Warm/Cold)', type: 'bool' },
-    ]
-  },
-  {
-    label: 'Voice & WhatsApp AI Agent',
-    highlight: true,
-    features: [
-      { key: 'aiVoiceAgent', label: 'Inbound AI Voice Agent', type: 'bool' },
-      { key: 'whatsappBot', label: 'WhatsApp Business API Bot', type: 'bool' },
-      { key: 'voiceNoteTranscription', label: 'Voice Note Transcription', type: 'bool' },
-      { key: 'imageRecognition', label: 'Image Recognition', type: 'bool' },
-      { key: 'whatsappFlowBuilder', label: 'Visual WhatsApp Flow Builder', type: 'bool' },
-      { key: 'outboundCalling', label: 'Outbound AI Calling Campaigns', type: 'bool' },
-      { key: 'whiteLabelOption', label: 'White-label Agency Option', type: 'bool' },
-    ]
-  },
-  {
-    label: 'Support',
-    features: [{ key: 'support', label: 'Support Level', type: 'text' }]
-  }
-];
+      {featureSections.map((section) => (
+        <div key={section.label}>
+          <div className={`grid grid-cols-4 ${section.highlight ? 'bg-gray-950' : ''}`}
+            style={{ borderBottom: '1px solid var(--surface-border)', ...(section.highlight ? {} : { background: 'var(--surface-2)' }) }}>
+            <div className={`px-4 py-2.5 col-span-4 text-xs font-bold uppercase tracking-widest ${
+              section.highlight ? 'text-white' : ''
+            }`} style={!section.highlight ? { color: 'var(--surface-text-2)' } : undefined}>
+              {section.highlight ? '🤖 ' : ''}{section.label}
+            </div>
+          </div>
+
+          {section.features.map(({ key, label, type }) => (
+            <div key={key} className="grid grid-cols-4 hover:bg-[var(--surface-2)] fast-transition" style={{ borderBottom: '1px solid var(--surface-border)' }}>
+              <div className="px-4 py-3 text-xs" style={{ color: 'var(--surface-text-2)' }}>{label}</div>
+              {plans.map(plan => {
+                const val = plan.features[key];
+                return (
+                  <div key={plan.id} className="px-3 py-3 flex items-center justify-center"
+                    style={plan.id === highlightId ? { background: 'color-mix(in srgb, var(--mesh-a) 8%, transparent)' } : undefined}>
+                    {type === 'count' ? (
+                      <span className="text-xs font-bold" style={{ color: 'var(--surface-text)' }}>{val}</span>
+                    ) : type === 'text' ? (
+                      <span className="text-xs font-semibold" style={{ color: 'var(--surface-text)' }}>{val}</span>
+                    ) : val ? (
+                      <Check className="w-4 h-4 text-brand-500" />
+                    ) : (
+                      <XIcon className="w-3.5 h-3.5" style={{ color: 'var(--surface-text-2)', opacity: 0.35 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const Plans = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [billing, setBilling] = useState('yearly');
   const [loading, setLoading] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const closeTimerRef = useRef(null);
+
+  // Straight from onboarding ("Continue to Pricing")? Open the plan popup immediately
+  // instead of making them hover a card — this is the payment step they were sent here for.
+  useEffect(() => {
+    if (location.state?.justOnboarded) {
+      setSelectedPlan(plans.find(p => p.popular) || plans[0]);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Hover-intent: open instantly, but delay closing so the cursor has time to
+  // travel from the card to the popup without it disappearing mid-move.
+  const openPanel = (plan) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setSelectedPlan(plan);
+  };
+  const scheduleClosePanel = () => {
+    closeTimerRef.current = setTimeout(() => setSelectedPlan(null), 350);
+  };
+  const cancelClosePanel = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  };
 
   const handleSubscribe = async (plan) => {
     setLoading(plan.id);
@@ -163,59 +148,64 @@ const Plans = () => {
 
   return (
     <div className="space-y-8 max-w-6xl">
-      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h2 className="text-xl font-bold text-gray-900">Plans & Pricing</h2>
-        <p className="text-sm text-gray-500">From a simple digital card to a full AI-powered sales agent</p>
-      </motion.div>
+      {/* ── Hero header ─────────────────────────────────── */}
+      <div className="relative rounded-2xl overflow-hidden px-1 py-2">
+        <MeshBackground className="opacity-40" />
+        <motion.div {...fadeUp(0)} className="relative">
+          <h2 className="font-display text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Plans & Pricing</h2>
+          <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>From a simple digital card to a full AI-powered sales agent</p>
+        </motion.div>
 
-      {/* Billing Toggle */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.35, delay: 0.05 }}
-        className="flex items-center justify-center"
-      >
-        <div className="relative inline-flex bg-gray-100 rounded-full p-1">
-          <motion.div
-            className="absolute inset-y-1 w-1/2 bg-pink-600 rounded-full"
-            animate={{ x: billing === 'monthly' ? 0 : '100%' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-          />
-          <button
-            onClick={() => setBilling('monthly')}
-            className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              billing === 'monthly' ? 'text-white' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBilling('yearly')}
-            className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold transition-colors ${
-              billing === 'yearly' ? 'text-white' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Yearly
-            <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded-full">
-              SAVE 58%
-            </span>
-          </button>
-        </div>
-      </motion.div>
+        {/* Billing Toggle */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          className="relative flex items-center justify-center mt-6"
+        >
+          <div className="relative inline-flex rounded-full p-1" style={{ background: 'var(--surface-2)' }}>
+            <motion.div
+              className="absolute inset-y-1 w-1/2 bg-gradient-to-r from-brand-600 to-brand-700 rounded-full"
+              animate={{ x: billing === 'monthly' ? 0 : '100%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+            />
+            <button
+              onClick={() => setBilling('monthly')}
+              className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold fast-transition ${
+                billing === 'monthly' ? 'text-white' : 'hover:text-brand-500'
+              }`}
+              style={billing !== 'monthly' ? { color: 'var(--surface-text-2)' } : undefined}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBilling('yearly')}
+              className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold fast-transition ${
+                billing === 'yearly' ? 'text-white' : 'hover:text-brand-500'
+              }`}
+              style={billing !== 'yearly' ? { color: 'var(--surface-text-2)' } : undefined}
+            >
+              Yearly
+              <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded-full">
+                SAVE 58%
+              </span>
+            </button>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Plan Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {plans.map((plan, i) => {
           const price = billing === 'yearly' ? plan.price.yearly : plan.price.monthly;
           return (
-            <motion.div
+            <GlassCard
               key={plan.id}
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.1 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{ y: -6 }}
-              className={`relative bg-white rounded-2xl border-2 overflow-hidden transition-shadow hover:shadow-2xl ${
-                plan.popular ? 'border-pink-600 shadow-lg' : 'border-gray-200'
-              }`}
+              {...fadeUp(0.1 + i * 0.08)}
+              hover
+              onMouseEnter={() => openPanel(plan)}
+              onMouseLeave={scheduleClosePanel}
+              onClick={() => openPanel(plan)}
+              className={`relative overflow-hidden cursor-pointer ${plan.popular ? 'ring-2 ring-brand-500' : ''} ${selectedPlan?.id === plan.id ? 'ring-2 ring-brand-500' : ''}`}
             >
               {plan.popular && (
                 <motion.div
@@ -228,7 +218,7 @@ const Plans = () => {
 
               {plan.badge && (
                 <div className={`text-xs font-bold text-center py-2 tracking-widest uppercase ${
-                  plan.popular ? 'bg-pink-600 text-white' : 'bg-gray-900 text-white'
+                  plan.popular ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white' : 'bg-gray-900 text-white'
                 }`}>
                   {plan.badge}
                 </div>
@@ -238,13 +228,14 @@ const Plans = () => {
                 <motion.div
                   whileHover={{ rotate: 8, scale: 1.08 }}
                   className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-3 ${
-                    plan.popular ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700'
+                    plan.popular ? 'bg-gradient-to-br from-brand-600 to-brand-700 text-white' : ''
                   }`}
+                  style={!plan.popular ? { background: 'var(--surface-2)', color: 'var(--surface-text-2)' } : undefined}
                 >
                   {plan.icon}
                 </motion.div>
-                <h3 className="text-sm font-black text-gray-900 tracking-wide mb-0.5">{plan.name}</h3>
-                <p className="text-xs text-gray-500 mb-4">{plan.tagline}</p>
+                <h3 className="text-sm font-black tracking-wide mb-0.5" style={{ color: 'var(--surface-text)' }}>{plan.name}</h3>
+                <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)' }}>{plan.tagline}</p>
 
                 <div className="flex items-baseline space-x-1 mb-0.5">
                   <AnimatePresence mode="wait">
@@ -254,13 +245,14 @@ const Plans = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 8 }}
                       transition={{ duration: 0.2 }}
-                      className="text-4xl font-black text-gray-900"
+                      className="text-4xl font-black"
+                      style={{ color: 'var(--surface-text)' }}
                     >
                       ₹{price.toLocaleString('en-IN')}
                     </motion.span>
                   </AnimatePresence>
                 </div>
-                <p className="text-xs text-gray-400 mb-5">
+                <p className="text-xs mb-5" style={{ color: 'var(--surface-text-2)' }}>
                   per {billing === 'yearly' ? 'year' : 'month'} · billed {billing}
                   {billing === 'yearly' && (
                     <span className="ml-1 text-green-600 font-semibold">
@@ -269,99 +261,57 @@ const Plans = () => {
                   )}
                 </p>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={loading === plan.id}
-                  className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors ${
-                    plan.popular
-                      ? 'bg-pink-600 text-white hover:bg-pink-700'
-                      : 'border-2 border-pink-600 text-pink-600 hover:bg-pink-600 hover:text-white'
-                  } disabled:opacity-60`}
-                >
-                  {loading === plan.id ? (
-                    <span className="inline-flex items-center gap-2">
+                {plan.popular ? (
+                  <GradientButton onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }} disabled={loading === plan.id}>
+                    {loading === plan.id && (
                       <motion.span
-                        className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full"
+                        className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
                         animate={{ rotate: 360 }}
                         transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
                       />
-                      Processing...
-                    </span>
-                  ) : 'GET STARTED →'}
-                </motion.button>
+                    )}
+                    <span>{loading === plan.id ? 'Processing...' : 'GET STARTED →'}</span>
+                  </GradientButton>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
+                    disabled={loading === plan.id}
+                    className="w-full py-2.5 rounded-xl font-bold text-sm fast-transition hover:border-brand-500 hover:text-brand-500 disabled:opacity-60"
+                    style={{ border: '2px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                  >
+                    {loading === plan.id ? (
+                      <span className="inline-flex items-center gap-2">
+                        <motion.span
+                          className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
+                        />
+                        Processing...
+                      </span>
+                    ) : 'GET STARTED →'}
+                  </motion.button>
+                )}
               </div>
-            </motion.div>
+            </GlassCard>
           );
         })}
       </div>
 
       {/* Full Feature Comparison Table */}
-      <motion.div
+      <GlassCard
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.4 }}
-        className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+        className="overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <h3 className="text-sm font-bold text-gray-900">Full Feature Comparison</h3>
+        <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
+          <h3 className="text-sm font-bold" style={{ color: 'var(--surface-text)' }}>Full Feature Comparison</h3>
         </div>
-
-        <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="min-w-[560px]">
-            <div className="grid grid-cols-4 border-b border-gray-100">
-              <div className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Feature</div>
-              {plans.map(p => (
-                <div key={p.id} className={`px-3 py-3 text-center text-xs font-black tracking-wide ${
-                  p.popular ? 'bg-pink-600 text-white' : 'text-gray-700'
-                }`}>
-                  {p.name}
-                </div>
-              ))}
-            </div>
-
-            {featureSections.map((section) => (
-              <div key={section.label}>
-                <div className={`grid grid-cols-4 border-b border-gray-100 ${
-                  section.highlight ? 'bg-gray-950' : 'bg-gray-50'
-                }`}>
-                  <div className={`px-4 py-2.5 col-span-4 text-xs font-bold uppercase tracking-widest ${
-                    section.highlight ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    {section.highlight ? '🤖 ' : ''}{section.label}
-                  </div>
-                </div>
-
-                {section.features.map(({ key, label, type }) => (
-                  <div key={key} className="grid grid-cols-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <div className="px-4 py-3 text-xs text-gray-600">{label}</div>
-                    {plans.map(plan => {
-                      const val = plan.features[key];
-                      return (
-                        <div key={plan.id} className={`px-3 py-3 flex items-center justify-center ${
-                          plan.popular ? 'bg-gray-50' : ''
-                        }`}>
-                          {type === 'count' ? (
-                            <span className="text-xs font-bold text-gray-900">{val}</span>
-                          ) : type === 'text' ? (
-                            <span className="text-xs font-semibold text-gray-700">{val}</span>
-                          ) : val ? (
-                            <Check className="w-4 h-4 text-pink-600" />
-                          ) : (
-                            <XIcon className="w-3.5 h-3.5 text-gray-200" />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
+        <FeatureComparisonTable highlightId={plans.find(p => p.popular)?.id} />
+      </GlassCard>
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -370,7 +320,7 @@ const Plans = () => {
         transition={{ duration: 0.4 }}
         className="bg-gray-900 text-white rounded-2xl p-5 flex items-start space-x-4"
       >
-        <Sparkles className="w-6 h-6 text-pink-400 flex-shrink-0" />
+        <Sparkles className="w-6 h-6 text-brand-400 flex-shrink-0" />
         <div>
           <p className="text-sm font-bold mb-0.5">AI Features — Live on Smart AI Card & AI Agent Pro</p>
           <p className="text-xs text-gray-400">
@@ -379,13 +329,87 @@ const Plans = () => {
         </div>
       </motion.div>
 
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-center gap-2 text-center">
-        <ShieldCheck className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        <p className="text-xs text-gray-500">
+      <div className="rounded-xl p-4 flex items-center justify-center gap-2 text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)' }}>
+        <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--surface-text-2)' }} />
+        <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>
           Secure payments powered by <strong>Cashfree</strong>. Cancel anytime.
-          For enterprise or agency pricing, <a href="mailto:support@mycardlink.site" className="font-semibold text-pink-600 hover:underline">contact us</a>.
+          For enterprise or agency pricing, <a href="mailto:support@mycardlink.site" className="font-semibold text-brand-500 hover:underline">contact us</a>.
         </p>
       </div>
+
+      {/* Plan details popup — reveals on hover over any plan card, full-screen centered so the
+          side-by-side comparison (same table as below) makes the differences between plans obvious */}
+      <AnimatePresence>
+        {selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onMouseEnter={cancelClosePanel}
+            onMouseLeave={scheduleClosePanel}
+            onClick={() => setSelectedPlan(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.97 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-2xl w-full max-w-3xl max-h-[88vh] overflow-y-auto"
+              style={{
+                background: 'var(--surface-1)',
+                border: '1px solid var(--surface-border)',
+                boxShadow: '0 30px 80px -20px rgba(0,0,0,0.45)',
+              }}
+            >
+              <div className="p-6 flex items-start justify-between gap-3 sticky top-0 z-10" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-1)' }}>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>Compare plans</h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
+                    <strong style={{ color: 'var(--surface-text)' }}>{selectedPlan.name}</strong> is highlighted below — see exactly what's different.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedPlan(null)}
+                  className="p-1.5 rounded-lg hover:bg-brand-500/10 fast-transition shrink-0"
+                  style={{ color: 'var(--surface-text-2)' }}
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+              </div>
+
+              <FeatureComparisonTable highlightId={selectedPlan.id} />
+
+              <div className="p-6 flex flex-wrap items-center justify-between gap-4" style={{ borderTop: '1px solid var(--surface-border)' }}>
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Ready to go with</p>
+                  <p className="text-2xl font-black" style={{ color: 'var(--surface-text)' }}>
+                    {selectedPlan.name}
+                    <span className="text-sm font-normal ml-2" style={{ color: 'var(--surface-text-2)' }}>
+                      ₹{(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly).toLocaleString('en-IN')} / {billing === 'yearly' ? 'year' : 'month'}
+                    </span>
+                  </p>
+                </div>
+                <div className="w-full sm:w-56">
+                  <GradientButton
+                    onClick={() => { const p = selectedPlan; setSelectedPlan(null); handleSubscribe(p); }}
+                    disabled={loading === selectedPlan.id}
+                  >
+                    {loading === selectedPlan.id && (
+                      <motion.span
+                        className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
+                      />
+                    )}
+                    <span>{loading === selectedPlan.id ? 'Processing...' : 'GET STARTED →'}</span>
+                  </GradientButton>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

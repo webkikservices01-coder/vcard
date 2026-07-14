@@ -7,6 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
+import GlassCard from '../../components/ui/GlassCard';
+import GradientButton from '../../components/ui/GradientButton';
+import MeshBackground from '../../components/ui/MeshBackground';
+import { fadeUp, staggerContainer, staggerItem } from '../../utils/motion';
 
 const API = `${import.meta.env.VITE_API_URL}/api/portfolio`;
 const token = () => localStorage.getItem('token');
@@ -117,74 +121,104 @@ const Portfolio = () => {
   return (
     <>
       <div className="space-y-5 relative">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Portfolio</h2>
-            <p className="text-sm text-gray-500">Showcase your work and projects</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Search..." />
-            </div>
-            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openCreate} className="flex items-center space-x-2 bg-pink-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-pink-700 transition">
-              <Plus className="w-4 h-4" /><span>Create</span>
-            </motion.button>
+
+        {/* Hero */}
+        <motion.div {...fadeUp(0)} className="relative bg-gradient-to-br from-brand-600 to-rose-600 rounded-2xl px-6 py-5 overflow-hidden">
+          <MeshBackground className="opacity-60" />
+          <div className="relative">
+            <p className="text-xs text-white/60 mb-1 uppercase tracking-wider">vCard</p>
+            <h2 className="text-2xl font-black text-white leading-tight">Portfolio</h2>
+            <p className="text-sm text-white/70 mt-1">Showcase your work and projects</p>
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {loading ? <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
-          : filtered.length === 0 ? (
-            <div className="p-12 text-center">
-              <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No portfolio items yet.</p>
-              <button onClick={openCreate} className="mt-4 bg-pink-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-pink-700">Add Item</button>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase">Item</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Description</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">URL</th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                <AnimatePresence>
-                  {filtered.map((item, idx) => (
-                    <motion.tr
-                      key={item._id}
-                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25, delay: idx * 0.04 }}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-5 py-4">
-                        <div className="flex items-center space-x-3">
-                          {item.coverImage
-                            ? <img src={item.coverImage} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
-                            : <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><ImageIcon className="w-4 h-4 text-gray-400" /></div>}
-                          <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 hidden md:table-cell"><p className="text-sm text-gray-500 truncate max-w-xs">{item.description || '—'}</p></td>
-                      <td className="px-5 py-4 hidden sm:table-cell">
-                        {item.url ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-1 text-xs text-gray-600 hover:text-pink-600"><span className="truncate max-w-[120px]">{item.url}</span><ExternalLink className="w-3 h-3 shrink-0" /></a> : <span className="text-gray-400 text-sm">—</span>}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center justify-end space-x-1">
-                          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openEdit(item)} className="p-2 text-gray-500 hover:text-pink-600 hover:bg-gray-100 rounded-lg"><Pencil className="w-4 h-4" /></motion.button>
-                          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(item._id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></motion.button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          )}
+        {/* Search + Add */}
+        <motion.div {...fadeUp(0.06)} className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[180px] max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
+              style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+              placeholder="Search..."
+            />
+          </div>
+          <GradientButton onClick={openCreate} className="!w-auto px-5 shrink-0">
+            <Plus className="w-4 h-4" /><span>Add Item</span>
+          </GradientButton>
         </motion.div>
+
+        {/* Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-64 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <GlassCard {...fadeUp(0.1)} className="p-12 text-center">
+            <ImageIcon className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
+            <p className="text-sm mb-4" style={{ color: 'var(--surface-text-2)' }}>No portfolio items yet.</p>
+            <GradientButton onClick={openCreate} className="!w-auto px-6 mx-auto">
+              <Plus className="w-4 h-4" /><span>Add Item</span>
+            </GradientButton>
+          </GlassCard>
+        ) : (
+          <motion.div {...staggerContainer(0.06, 0.1)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <AnimatePresence>
+              {filtered.map((item) => (
+                <GlassCard
+                  key={item._id}
+                  hover
+                  variants={staggerItem}
+                  exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.2 } }}
+                  className="p-4 flex flex-col"
+                >
+                  <div className="aspect-video rounded-xl overflow-hidden mb-3" style={{ background: 'var(--surface-2)' }}>
+                    {item.coverImage ? (
+                      <img src={item.coverImage} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6" style={{ color: 'var(--surface-text-2)' }} />
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold truncate" style={{ color: 'var(--surface-text)' }}>{item.title}</h3>
+                  <p className="text-xs mt-1 line-clamp-2 flex-1" style={{ color: 'var(--surface-text-2)' }}>{item.description || '—'}</p>
+                  {item.url && (
+                    <a
+                      href={item.url} target="_blank" rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-xs mt-1.5 hover:text-brand-500 fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
+                    >
+                      <span className="truncate max-w-[160px]">{item.url}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  )}
+                  <div className="mt-3 pt-3 flex items-center justify-end gap-1" style={{ borderTop: '1px solid var(--surface-border)' }}>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      onClick={() => openEdit(item)}
+                      className="p-2 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      onClick={() => handleDelete(item._id)}
+                      className="p-2 rounded-lg hover:bg-red-500/10 hover:text-red-500 fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </GlassCard>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
         {/* Modal for Creating/Editing */}
         <AnimatePresence>
@@ -192,50 +226,73 @@ const Portfolio = () => {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setModalOpen(false)}
-              className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             >
               <motion.div
                 onClick={e => e.stopPropagation()}
                 initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 20 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 340 }}
-                className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+                className="glass rounded-2xl w-full max-w-md"
               >
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-bold">{editing ? 'Edit Item' : 'Add Portfolio Item'}</h3>
+                <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid var(--surface-border)' }}>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Item' : 'Add Portfolio Item'}</h3>
                   <div className="flex items-center space-x-1">
                     {hasVoiceFill(plan) && (
                       <button
                         type="button"
                         onClick={() => setShowVoiceFill(true)}
                         title="Fill with Voice"
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-pink-600"
+                        className="p-2 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
+                        style={{ color: 'var(--surface-text-2)' }}
                       >
                         <Mic className="w-4 h-4" />
                       </button>
                     )}
-                    <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"><X className="w-5 h-5" /></button>
+                    <button
+                      onClick={() => setModalOpen(false)}
+                      className="p-2 rounded-lg hover:bg-brand-500/10 fast-transition"
+                      style={{ color: 'var(--surface-text-2)' }}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
                   {[{ label: 'Title *', key: 'title', placeholder: 'Project name' }, { label: 'URL', key: 'url', placeholder: 'https://...' }].map(({ label, key, placeholder }) => (
                     <div key={key}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
-                      <input value={form[key]} onChange={e => setForm({...form, [key]: e.target.value})} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder={placeholder} />
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>{label}</label>
+                      <input value={form[key]} onChange={e => setForm({...form, [key]: e.target.value})}
+                        className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
+                        style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                        placeholder={placeholder} />
                     </div>
                   ))}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-                    <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none resize-none" placeholder="Describe this project..." />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Description</label>
+                    <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
+                      rows={3} className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none resize-none fast-transition focus:ring-2 focus:ring-brand-400"
+                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      placeholder="Describe this project..." />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Cover Image</label>
-                    {preview && <img src={preview} alt="preview" className="w-full h-32 object-cover rounded-lg mb-2 border border-gray-200" />}
-                    <input type="file" accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) { setForm({...form, coverImage: f}); setPreview(URL.createObjectURL(f)); } }} className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-gray-100 file:text-gray-700 file:text-sm file:font-medium" />
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Cover Image</label>
+                    {preview && <img src={preview} alt="preview" className="w-full h-32 object-cover rounded-lg mb-2" style={{ border: '1px solid var(--surface-border)' }} />}
+                    <input type="file" accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) { setForm({...form, coverImage: f}); setPreview(URL.createObjectURL(f)); } }}
+                      className="w-full text-sm fast-transition file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-brand-500/10 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-500/20"
+                      style={{ color: 'var(--surface-text-2)' }} />
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 p-6 pt-0">
-                  <button onClick={() => setModalOpen(false)} className="px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">Cancel</button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} className="px-6 py-2.5 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 disabled:opacity-60">{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</motion.button>
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2.5 rounded-lg text-sm font-medium hover:border-brand-500 hover:text-brand-500 fast-transition"
+                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                  >
+                    Cancel
+                  </button>
+                  <GradientButton onClick={handleSave} disabled={saving} loading={saving} className="!w-auto px-6">
+                    <span>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</span>
+                  </GradientButton>
                 </div>
               </motion.div>
             </motion.div>
