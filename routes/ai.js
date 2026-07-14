@@ -9,8 +9,16 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
+const { CHAT_FILL_PLANS, VOICE_FILL_PLANS } = require('../constants/plans');
 
-const AI_PLANS = ['SMART AI CARD', 'AI AGENT PRO'];
+const AI_PLANS = CHAT_FILL_PLANS;
+const CLAUDE_MODEL = 'claude-sonnet-5';
+
+const getAnthropic = () => {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const Anthropic = require('@anthropic-ai/sdk');
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+};
 
 const getCardId = async (userId) => {
   const card = await vCard.findOne({ userId });
@@ -176,8 +184,8 @@ router.post('/chat/:username', async (req, res) => {
       return res.status(403).json({ msg: 'AI chat is disabled for this card.' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       return res.status(503).json({ msg: 'AI service not configured yet.' });
     }
 
@@ -197,25 +205,14 @@ router.post('/chat/:username', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(persona, card, products, portfolio, testimonials, gallery, customSections);
 
-    const useGroq = !!process.env.GROQ_API_KEY;
-    const OpenAI = require('openai');
-    const openai = new OpenAI({
-      apiKey,
-      ...(useGroq ? { baseURL: 'https://api.groq.com/openai/v1' } : {})
-    });
-    const model = useGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
-
-    const completion = await openai.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.slice(-10)
-      ],
+    const completion = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 300,
-      temperature: 0.5,
+      system: systemPrompt,
+      messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
     });
 
-    const reply = completion.choices[0].message.content;
+    const reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
     res.json({ reply });
   } catch (err) {
     console.error('AI chat error:', err.message);
@@ -284,42 +281,28 @@ Respond with ONLY a raw JSON object, no markdown, no code fences, in this exact 
 // ─── POST /api/ai/voice-fill ───────────────────────────────────────────────────
 router.post('/voice-fill', auth, async (req, res) => {
   try {
+    const user = await User.findById(req.user.userId);
+    if (!VOICE_FILL_PLANS.includes(user.plan)) {
+      return res.status(403).json({ msg: 'Upgrade to AI Agent Pro to use the voice assistant.' });
+    }
+
     const { page, transcript, known } = req.body;
     const config = VOICE_FILL_PAGES[page];
     if (!config) return res.status(400).json({ msg: 'Invalid page' });
     if (!transcript || !transcript.trim()) return res.status(400).json({ msg: 'No speech detected' });
 
-    const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(503).json({ msg: 'AI service not configured yet.' });
-
-    const useGroq = !!process.env.GROQ_API_KEY;
-    const OpenAI = require('openai');
-    const openai = new OpenAI({
-      apiKey,
-      ...(useGroq ? { baseURL: 'https://api.groq.com/openai/v1' } : {})
-    });
-    const model = useGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'AI service not configured yet.' });
 
     const systemPrompt = buildVoiceFillPrompt(config, known);
-    const callModel = (withJsonMode) => openai.chat.completions.create({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: transcript }
-      ],
+    const completion = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
       max_tokens: 400,
-      temperature: 0.3,
-      ...(withJsonMode ? { response_format: { type: 'json_object' } } : {})
+      system: systemPrompt,
+      messages: [{ role: 'user', content: transcript }],
     });
 
-    let completion;
-    try {
-      completion = await callModel(true);
-    } catch {
-      completion = await callModel(false);
-    }
-
-    const raw = completion.choices[0].message.content.trim();
+    const raw = completion.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
 
@@ -499,15 +482,18 @@ router.post('/jarvis', auth, async (req, res) => {
     const { message, history } = req.body;
     if (!message || !message.trim()) return res.status(400).json({ msg: 'No speech detected' });
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    const user = await User.findById(req.user.userId);
+    if (!CHAT_FILL_PLANS.includes(user.plan)) {
+      return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Assistant.' });
+    }
+
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       return res.status(503).json({ msg: 'Jarvis is not configured yet (missing ANTHROPIC_API_KEY).' });
     }
 
     const vcardId = await getCardId(req.user.userId);
     if (!vcardId) return res.status(404).json({ msg: 'Create a vCard profile first.' });
-
-    const Anthropic = require('@anthropic-ai/sdk');
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     let messages = [
       ...(Array.isArray(history) ? history.slice(-16) : []),
@@ -521,7 +507,7 @@ router.post('/jarvis', auth, async (req, res) => {
     // Agentic tool-use loop (bounded to avoid runaway calls)
     for (let step = 0; step < 6; step++) {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-5',
+        model: CLAUDE_MODEL,
         max_tokens: 1024,
         system: JARVIS_SYSTEM_PROMPT,
         tools: JARVIS_TOOLS,

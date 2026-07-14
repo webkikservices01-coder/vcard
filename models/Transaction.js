@@ -5,9 +5,11 @@ const transactionSchema = new mongoose.Schema({
     plan:        { type: String, required: true },
     amount:      { type: Number, required: true },
     billingType: { type: String, default: 'Yearly' },
-    razorpayOrderId:   { type: String, default: '' },
-    razorpayPaymentId: { type: String, default: '' },
-    status:      { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' }
+    expireDays:  { type: Number, default: 365 },
+    cfOrderId:        { type: String, default: '' },
+    paymentSessionId: { type: String, default: '' },
+    status:      { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
+    invoiceNumber: { type: String, default: '' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

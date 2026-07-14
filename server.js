@@ -7,7 +7,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
+}));
 
 // Routes
 app.use('/api/auth',            require('./routes/auth'));
@@ -30,4 +32,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 app.get('/', (req, res) => res.send('MYcardLINK API running!'));
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (require.main === module) {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;
