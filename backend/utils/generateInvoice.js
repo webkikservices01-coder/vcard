@@ -30,7 +30,9 @@ function generateInvoice(txn, user, res) {
     doc.fontSize(9).fillColor('#6b7280').font('Helvetica')
         .text(`Invoice #: ${txn.invoiceNumber}`, 350, 80, { align: 'right', width: 195 })
         .text(`Date: ${formatDate(txn.createdAt)}`, 350, 93, { align: 'right', width: 195 })
-        .text(`Status: PAID`, 350, 106, { align: 'right', width: 195 });
+        .text(`Status: PAID`, 350, 106, { align: 'right', width: 195 })
+        .fontSize(7).fillColor('#9ca3af')
+        .text(`Ref: ${txn._id}`, 350, 119, { align: 'right', width: 195 });
 
     doc.moveTo(50, 140).lineTo(545, 140).strokeColor('#e5e7eb').stroke();
 

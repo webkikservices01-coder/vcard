@@ -5,8 +5,33 @@ const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const { generateInvoice } = require('../utils/generateInvoice');
+const refrens = require('../utils/refrens');
 
 const makeInvoiceNumber = (txn) => `INV-${new Date(txn.createdAt).getFullYear()}-${String(txn._id).slice(-6).toUpperCase()}`;
+
+// Marks a transaction paid, activates the plan, and (best-effort) creates a Refrens invoice.
+// Refrens failures never block payment confirmation — local PDF invoice remains the fallback.
+async function markCompleted(txn) {
+    txn.status = 'completed';
+    txn.invoiceNumber = makeInvoiceNumber(txn);
+    await txn.save();
+
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
+    await User.findByIdAndUpdate(txn.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
+
+    if (refrens.isConfigured()) {
+        try {
+            const user = await User.findById(txn.userId);
+            const invoice = await refrens.createInvoice(txn, user);
+            txn.refrensInvoiceId = invoice.id;
+            txn.refrensPdfUrl = invoice.pdfUrl;
+            await txn.save();
+        } catch (err) {
+            console.error('Refrens invoice creation failed:', err.message);
+        }
+    }
+}
 
 const CF_ENV = process.env.CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
 const CF_BASE_URL = CF_ENV === 'production' ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
@@ -33,8 +58,9 @@ router.get('/:id/invoice', auth, async (req, res) => {
         if (!txn) return res.status(404).json({ msg: 'Transaction not found' });
         if (txn.status !== 'completed') return res.status(400).json({ msg: 'Invoice available only for completed payments' });
 
-        const user = await User.findById(req.user.userId);
+        if (txn.refrensPdfUrl) return res.redirect(txn.refrensPdfUrl);
 
+        const user = await User.findById(req.user.userId);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${txn.invoiceNumber || txn._id}.pdf"`);
         generateInvoice(txn, user, res);
@@ -98,14 +124,7 @@ router.post('/verify', auth, async (req, res) => {
         if (!cfRes.ok) return res.status(400).json({ msg: data.message || 'Could not verify payment' });
 
         if (data.order_status === 'PAID') {
-            if (txn.status !== 'completed') {
-                txn.status = 'completed';
-                txn.invoiceNumber = makeInvoiceNumber(txn);
-                await txn.save();
-                const expiry = new Date();
-                expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
-                await User.findByIdAndUpdate(req.user.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
-            }
+            if (txn.status !== 'completed') await markCompleted(txn);
             return res.json({ msg: 'Payment verified and plan activated!', status: 'PAID' });
         }
 
@@ -137,14 +156,7 @@ router.post('/webhook', async (req, res) => {
 
         if (orderId && (orderStatus === 'PAID' || event?.data?.payment?.payment_status === 'SUCCESS')) {
             const txn = await Transaction.findOne({ cfOrderId: orderId });
-            if (txn && txn.status !== 'completed') {
-                txn.status = 'completed';
-                txn.invoiceNumber = makeInvoiceNumber(txn);
-                await txn.save();
-                const expiry = new Date();
-                expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
-                await User.findByIdAndUpdate(txn.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
-            }
+            if (txn && txn.status !== 'completed') await markCompleted(txn);
         }
         res.status(200).send('ok');
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
