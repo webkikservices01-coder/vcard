@@ -8,7 +8,7 @@ const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 
 const statusStyles = {
-  'open':        'bg-black text-white',
+  'open':        'bg-pink-600 text-white',
   'in-progress': 'bg-gray-700 text-white',
   'resolved':    'bg-gray-200 text-gray-700',
   'closed':      'bg-gray-100 text-gray-500',
@@ -68,9 +68,9 @@ const Support = () => {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Search tickets..." />
+            <input value={search} onChange={e => setSearch(e.target.value)} className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Search tickets..." />
           </div>
-          <button onClick={() => setModalOpen(true)} className="flex items-center space-x-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+          <button onClick={() => setModalOpen(true)} className="flex items-center space-x-2 bg-pink-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-pink-700 transition">
             <Plus className="w-4 h-4" /><span>New Ticket</span>
           </button>
         </div>
@@ -82,7 +82,7 @@ const Support = () => {
           <div className="p-12 text-center">
             <LifeBuoy className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">No support tickets yet.</p>
-            <button onClick={() => setModalOpen(true)} className="mt-4 bg-black text-white text-sm px-4 py-2 rounded-lg hover:bg-gray-800">Create Ticket</button>
+            <button onClick={() => setModalOpen(true)} className="mt-4 bg-pink-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-pink-700">Create Ticket</button>
           </div>
         ) : (
           <table className="w-full">
@@ -133,22 +133,22 @@ const Support = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject *</label>
-                <input value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Brief description of your issue" />
+                <input value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Brief description of your issue" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none bg-white">
+                <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none bg-white">
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Message *</label>
-                <textarea value={form.message} onChange={e => setForm({...form, message: e.target.value})} rows={5} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none resize-none" placeholder="Describe your issue in detail..." />
+                <textarea value={form.message} onChange={e => setForm({...form, message: e.target.value})} rows={5} className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none resize-none" placeholder="Describe your issue in detail..." />
               </div>
             </div>
             <div className="flex justify-end space-x-3 p-6 pt-0">
               <button onClick={() => setModalOpen(false)} className="px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">Cancel</button>
-              <button onClick={handleCreate} disabled={saving} className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-60">{saving ? 'Submitting...' : 'Submit Ticket'}</button>
+              <button onClick={handleCreate} disabled={saving} className="px-6 py-2.5 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 disabled:opacity-60">{saving ? 'Submitting...' : 'Submit Ticket'}</button>
             </div>
           </div>
         </div>

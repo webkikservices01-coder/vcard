@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cashfreepayments/cashfree-js": "^1.0.7",
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.15.2",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.11.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.5",

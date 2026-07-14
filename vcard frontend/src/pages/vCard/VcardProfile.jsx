@@ -127,7 +127,7 @@
 //   )}
 // </div>
 //               <div>
-//                 <label className="cursor-pointer bg-white border border-gray-300 hover:border-black text-black text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
+//                 <label className="cursor-pointer bg-white border border-gray-300 hover:border-pink-600 text-pink-600 text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
 //                   <Upload className="w-4 h-4" />
 //                   <span>Upload Profile</span>
 //                   <input type="file" name="profileImage" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, 'profileImage')} />
@@ -149,7 +149,7 @@
 //                 )}
 //               </div>
 //               <div>
-//                 <label className="cursor-pointer bg-white border border-gray-300 hover:border-black text-black text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
+//                 <label className="cursor-pointer bg-white border border-gray-300 hover:border-pink-600 text-pink-600 text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
 //                   <Upload className="w-4 h-4" />
 //                   <span>Upload Banner</span>
 //                   <input type="file" name="bannerImage" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, 'bannerImage')} />
@@ -169,7 +169,7 @@
 //             </span>
 //             <input 
 //               type="text" name="slug" value={formData.slug} onChange={handleChange}
-//               className="flex-1 min-w-0 block w-full px-4 py-2.5 rounded-none rounded-r-md border border-gray-300 focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+//               className="flex-1 min-w-0 block w-full px-4 py-2.5 rounded-none rounded-r-md border border-gray-300 focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
 //               required
 //             />
 //           </div>
@@ -181,7 +181,7 @@
 //             <label className="block text-sm font-medium text-black mb-1.5">Title <span className="text-red-500">*</span></label>
 //             <input 
 //               type="text" name="title" value={formData.title} onChange={handleChange}
-//               className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+//               className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
 //               placeholder="e.g. Shubham Khurana" required
 //             />
 //           </div>
@@ -189,7 +189,7 @@
 //             <label className="block text-sm font-medium text-black mb-1.5">Sub Title <span className="text-red-500">*</span></label>
 //             <input 
 //               type="text" name="subTitle" value={formData.subTitle} onChange={handleChange}
-//               className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+//               className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
 //               placeholder="e.g. Founder - Webkik" required
 //             />
 //           </div>
@@ -200,7 +200,7 @@
 //           <label className="block text-sm font-medium text-black mb-1.5">Short Description <span className="text-red-500">*</span></label>
 //           <textarea 
 //             name="description" value={formData.description} onChange={handleChange} rows="4"
-//             className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm resize-none"
+//             className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm resize-none"
 //             placeholder="Write a short and crisp bio..." required
 //           ></textarea>
 //         </div>
@@ -209,7 +209,7 @@
 //         <div className="pt-6 border-t border-gray-100 flex flex-wrap justify-end gap-3">
 //           <button 
 //             type="button" 
-//             className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-black font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
+//             className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-pink-600 font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
 //           >
 //             <Copy className="w-4 h-4" />
 //             <span>Copy URL</span>
@@ -217,7 +217,7 @@
           
 //           <button 
 //             type="button" 
-//             className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-black font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
+//             className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-pink-600 font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
 //           >
 //             <Eye className="w-4 h-4" />
 //             <span>Preview</span>
@@ -225,7 +225,7 @@
 
 //           <button 
 //             type="submit" 
-//             className="flex items-center space-x-2 bg-black hover:bg-gray-800 text-white font-medium py-2 px-6 rounded-md transition duration-200 text-sm"
+//             className="flex items-center space-x-2 bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-6 rounded-md transition duration-200 text-sm"
 //           >
 //             <Save className="w-4 h-4" />
 //             <span>Save Changes</span>
@@ -242,15 +242,18 @@
 
 
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Upload, Copy, Eye, Save, Image as ImageIcon, UserCircle, Mic } from 'lucide-react';
 import axios from 'axios';
-import ActionPopup from '../../components/ActionPopup'; // Path check kar lena agar alag folder me ho
+import ActionPopup from '../../components/ActionPopup';
 import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { useNavigate } from 'react-router-dom';
+import { usePlan, hasVoiceFill } from '../../utils/plan';
 
 const VcardProfile = () => {
   const navigate = useNavigate();
+  const plan = usePlan();
 
   const [formData, setFormData] = useState({
     profileImage: null,
@@ -376,24 +379,27 @@ const VcardProfile = () => {
 
   return (
     <>
-      <div className="max-w-4xl bg-white p-4 sm:p-8 rounded-xl shadow-sm border border-gray-200">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-4xl bg-white p-4 sm:p-8 rounded-xl shadow-sm border border-gray-200">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-black tracking-tight">Profile Details</h2>
             <p className="text-sm text-gray-500 mt-1">Manage your card's identity, images, and short bio.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowVoiceFill(true)}
-            className="shrink-0 flex items-center space-x-2 bg-black text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-gray-800 transition"
-          >
-            <Mic className="w-4 h-4" />
-            <span>Fill with Voice</span>
-          </button>
+          {hasVoiceFill(plan) && (
+            <motion.button
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              type="button"
+              onClick={() => setShowVoiceFill(true)}
+              className="shrink-0 flex items-center space-x-2 bg-pink-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-pink-700 transition"
+            >
+              <Mic className="w-4 h-4" />
+              <span>Fill with Voice</span>
+            </motion.button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          
+
           {/* Images Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-gray-100">
             
@@ -401,7 +407,7 @@ const VcardProfile = () => {
             <div>
               <label className="block text-sm font-medium text-black mb-3">Profile Image</label>
               <div className="flex items-center space-x-6">
-                <div className="w-24 h-24 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                <motion.div layout className="w-24 h-24 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
                   {formData.profileImage ? (
                     <img
                       src={getImageUrl(formData.profileImage)}
@@ -412,13 +418,13 @@ const VcardProfile = () => {
                   ) : (
                     <UserCircle className="w-10 h-10 text-gray-300" />
                   )}
-                </div>
+                </motion.div>
                 <div>
-                  <label className="cursor-pointer bg-white border border-gray-300 hover:border-black text-black text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
+                  <motion.label whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="cursor-pointer bg-white border border-gray-300 hover:border-pink-600 text-pink-600 text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
                     <Upload className="w-4 h-4" />
                     <span>Upload Profile</span>
                     <input type="file" name="profileImage" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, 'profileImage')} />
-                  </label>
+                  </motion.label>
                   <p className="text-xs text-gray-500 mt-2">Recommended: 500x500px</p>
                 </div>
               </div>
@@ -436,11 +442,11 @@ const VcardProfile = () => {
                   )}
                 </div>
                 <div>
-                  <label className="cursor-pointer bg-white border border-gray-300 hover:border-black text-black text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
+                  <motion.label whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="cursor-pointer bg-white border border-gray-300 hover:border-pink-600 text-pink-600 text-sm font-medium py-2 px-4 rounded-md transition-all inline-flex items-center space-x-2">
                     <Upload className="w-4 h-4" />
                     <span>Upload Banner</span>
                     <input type="file" name="bannerImage" className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, 'bannerImage')} />
-                  </label>
+                  </motion.label>
                   <p className="text-xs text-gray-500 mt-2">Recommended: 1000x400px</p>
                 </div>
               </div>
@@ -456,7 +462,7 @@ const VcardProfile = () => {
               </span>
               <input
                 type="text" name="slug" value={formData.slug} onChange={handleChange}
-                className="flex-1 min-w-0 block px-3 py-2.5 rounded-none rounded-r-md border border-gray-300 focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+                className="flex-1 min-w-0 block px-3 py-2.5 rounded-none rounded-r-md border border-gray-300 focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
                 required
               />
             </div>
@@ -468,7 +474,7 @@ const VcardProfile = () => {
               <label className="block text-sm font-medium text-black mb-1.5">Title <span className="text-red-500">*</span></label>
               <input 
                 type="text" name="title" value={formData.title} onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
                 placeholder="e.g. Shubham Khurana" required
               />
             </div>
@@ -476,7 +482,7 @@ const VcardProfile = () => {
               <label className="block text-sm font-medium text-black mb-1.5">Sub Title <span className="text-red-500">*</span></label>
               <input 
                 type="text" name="subTitle" value={formData.subTitle} onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
                 placeholder="e.g. Founder - Webkik" required
               />
             </div>
@@ -487,42 +493,45 @@ const VcardProfile = () => {
             <label className="block text-sm font-medium text-black mb-1.5">Short Description <span className="text-red-500">*</span></label>
             <textarea 
               name="description" value={formData.description} onChange={handleChange} rows="4"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black outline-none transition-all text-sm resize-none"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm resize-none"
               placeholder="Write a short and crisp bio..." required
             ></textarea>
           </div>
 
           {/* Action Buttons (Footer) */}
           <div className="pt-6 border-t border-gray-100 flex flex-wrap justify-end gap-3">
-            <button 
-              type="button" 
-              className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-black font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              type="button"
+              className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-pink-600 font-medium py-2 px-4 rounded-md transition-colors duration-200 text-sm"
             >
               <Copy className="w-4 h-4" />
               <span>Copy URL</span>
-            </button>
-            
-            <button 
-              type="button" 
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              type="button"
               onClick={() => {
                 if (formData.slug) window.open(`/c/${formData.slug}`, '_blank');
               }}
-              className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-black font-medium py-2 px-4 rounded-md transition duration-200 text-sm"
+              className="flex items-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-pink-600 font-medium py-2 px-4 rounded-md transition-colors duration-200 text-sm"
             >
               <Eye className="w-4 h-4" />
               <span>Preview</span>
-            </button>
+            </motion.button>
 
-            <button 
-              type="submit" 
-              className="flex items-center space-x-2 bg-black hover:bg-gray-800 text-white font-medium py-2 px-6 rounded-md transition duration-200 text-sm"
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              type="submit"
+              className="flex items-center space-x-2 bg-pink-600 hover:bg-pink-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 text-sm"
             >
               <Save className="w-4 h-4" />
               <span>Save Changes</span>
-            </button>
+            </motion.button>
           </div>
         </form>
-      </div>
+      </motion.div>
 
       <ActionPopup
         isOpen={showPopup}

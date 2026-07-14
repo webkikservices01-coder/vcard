@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Eye, ArrowRight, ExternalLink, Pencil, QrCode,
-  Zap, Package, Star, CreditCard, Share2, LayoutDashboard
+  Zap, Package, Star, CreditCard, LayoutDashboard
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -12,6 +13,12 @@ const PLAN_COLORS = {
   'SMART AI CARD': { badge: 'bg-purple-50 text-purple-700',bar: 'bg-purple-500', icon: 'bg-purple-50 text-purple-600' },
   'AI AGENT PRO':  { badge: 'bg-emerald-50 text-emerald-700', bar: 'bg-emerald-500', icon: 'bg-emerald-50 text-emerald-600' },
 };
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] },
+});
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -25,7 +32,7 @@ const Dashboard = () => {
           headers: { 'x-auth-token': token }
         });
         setStats(res.data);
-      } catch {} finally { setLoading(false); }
+      } catch { /* ignore */ } finally { setLoading(false); }
     };
     load();
   }, []);
@@ -53,36 +60,42 @@ const Dashboard = () => {
     <div className="space-y-4 max-w-4xl">
 
       {/* ── Welcome hero ─────────────────────────────────── */}
-      <div className="relative bg-black rounded-2xl px-6 py-5 overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-44 h-44 bg-white/[0.04] rounded-full pointer-events-none" />
+      <motion.div {...fadeUp(0)} className="relative bg-gradient-to-br from-pink-600 to-rose-600 rounded-2xl px-6 py-5 overflow-hidden">
+        <motion.div
+          className="absolute -top-10 -right-10 w-44 h-44 bg-white/[0.04] rounded-full pointer-events-none"
+          animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        />
         <div className="absolute bottom-0 right-32 w-24 h-24 bg-white/[0.03] rounded-full pointer-events-none" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider">Dashboard</p>
+            <p className="text-xs text-white/60 mb-1 uppercase tracking-wider">Dashboard</p>
             <h1 className="text-2xl font-black text-white leading-tight">Hey, {firstName} 👋</h1>
             <div className="flex items-center gap-2 mt-2.5">
               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${pc.badge}`}>{plan}</span>
               {daysLeft != null
-                ? <span className="text-xs text-gray-500">{daysLeft} days left</span>
-                : <span className="text-xs text-gray-600">No active plan</span>
+                ? <span className="text-xs text-white/70">{daysLeft} days left</span>
+                : <span className="text-xs text-white/60">No active plan</span>
               }
             </div>
           </div>
           {cardSlug && (
-            <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-white text-black text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-gray-100 transition shrink-0">
+            <motion.a
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white text-pink-600 text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-pink-50 transition shrink-0"
+            >
               <Eye className="w-4 h-4" />
               <span>View Live Card</span>
-            </a>
+            </motion.a>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* ── My vCard card ─────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5">
+      <motion.div {...fadeUp(0.06)} className="bg-white rounded-2xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-gray-900">My vCard</h2>
-          <Link to="/dashboard/vcard/all" className="text-xs text-gray-400 hover:text-black flex items-center gap-1 transition">
+          <Link to="/dashboard/vcard/all" className="text-xs text-gray-400 hover:text-pink-600 flex items-center gap-1 transition">
             All Cards <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
@@ -101,7 +114,7 @@ const Dashboard = () => {
                 <p className="text-base font-bold text-gray-900 truncate">{stats.cardName || 'Unnamed Card'}</p>
                 <p className="text-sm text-gray-500 truncate">{stats.cardDesignation || '—'}</p>
                 <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-black mt-0.5 transition">
+                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-pink-600 mt-0.5 transition">
                   /c/{cardSlug} <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               </div>
@@ -110,15 +123,15 @@ const Dashboard = () => {
             {/* Action buttons */}
             <div className="flex gap-2 shrink-0 w-full sm:w-auto">
               <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition">
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-pink-600 text-white text-xs font-bold rounded-xl hover:bg-pink-700 transition">
                 <Eye className="w-3.5 h-3.5" /> View
               </a>
               <Link to="/dashboard/vcard/profile"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:border-black hover:text-black transition">
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:border-pink-600 hover:text-pink-600 transition">
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </Link>
               <Link to="/dashboard/vcard/qr"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:border-black hover:text-black transition">
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-xl hover:border-pink-600 hover:text-pink-600 transition">
                 <QrCode className="w-3.5 h-3.5" /> QR
               </Link>
             </div>
@@ -129,12 +142,12 @@ const Dashboard = () => {
             <p className="text-sm font-semibold text-gray-500 mb-1">No vCard yet</p>
             <p className="text-xs text-gray-400 mb-4">Create your digital business card</p>
             <Link to="/dashboard/vcard/profile"
-              className="inline-flex items-center gap-2 bg-black text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-gray-800 transition">
+              className="inline-flex items-center gap-2 bg-pink-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-pink-700 transition">
               Create vCard <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* ── Stats row ────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -143,15 +156,19 @@ const Dashboard = () => {
           { icon: Package,    label: 'Products',     value: stats?.productCount ?? 0,          iconCls: 'bg-orange-50 text-orange-600', link: '/dashboard/vcard/products' },
           { icon: Star,       label: 'Testimonials', value: stats?.testimonialCount ?? 0,      iconCls: 'bg-yellow-50 text-yellow-600', link: '/dashboard/vcard/testimonials' },
           { icon: CreditCard, label: 'Cards Used',   value: `${cardCount} / ${cardLimit}`,    iconCls: 'bg-violet-50 text-violet-600', link: '/dashboard/vcard/all' },
-        ].map(({ icon: Icon, label, value, iconCls, link }) => {
+        ].map(({ icon: Icon, label, value, iconCls, link }, idx) => {
           const card = (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-sm transition-shadow cursor-pointer">
+            <motion.div
+              {...fadeUp(0.1 + idx * 0.05)}
+              whileHover={{ y: -3 }}
+              className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+            >
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${iconCls}`}>
                 <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
               </div>
               <p className="text-xl font-black text-gray-900 leading-tight">{value}</p>
               <p className="text-xs text-gray-400 mt-0.5">{label}</p>
-            </div>
+            </motion.div>
           );
           return link
             ? <Link key={label} to={link}>{card}</Link>
@@ -163,10 +180,10 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Plan card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <motion.div {...fadeUp(0.3)} className="bg-white rounded-2xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900">Active Plan</h3>
-            <Link to="/dashboard/plans" className="text-xs font-semibold text-black hover:underline">Upgrade →</Link>
+            <Link to="/dashboard/plans" className="text-xs font-semibold text-pink-600 hover:underline">Upgrade →</Link>
           </div>
           <div className="flex items-center gap-3 mb-5">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${pc.icon}`}>
@@ -187,7 +204,12 @@ const Dashboard = () => {
                 <span>{daysLeft} / 365 days</span>
               </div>
               <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${pc.bar}`} style={{ width: `${daysBar}%` }} />
+                <motion.div
+                  className={`h-full rounded-full ${pc.bar}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${daysBar}%` }}
+                  transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                />
               </div>
             </div>
           )}
@@ -206,10 +228,10 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick actions */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <motion.div {...fadeUp(0.36)} className="bg-white rounded-2xl border border-gray-200 p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -219,13 +241,13 @@ const Dashboard = () => {
               { label: 'Upgrade Plan',  path: '/dashboard/plans',          icon: Zap },
             ].map(({ label, path, icon: Icon }) => (
               <Link key={path} to={path}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-black hover:text-white hover:border-black transition-all">
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all">
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 {label}
               </Link>
             ))}
           </div>
-        </div>
+        </motion.div>
 
       </div>
     </div>

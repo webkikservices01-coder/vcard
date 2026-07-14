@@ -220,7 +220,7 @@ const AdminUsers = () => {
                   </div>
                 </div>
                 <button onClick={saveUser} disabled={saving}
-                  className="w-full bg-white text-black font-bold py-2.5 rounded-xl text-sm hover:bg-gray-100 transition disabled:opacity-60">
+                  className="w-full bg-white text-pink-600 font-bold py-2.5 rounded-xl text-sm hover:bg-gray-100 transition disabled:opacity-60">
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>

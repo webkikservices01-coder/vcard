@@ -35,7 +35,7 @@ const AdminLayout = () => {
         <nav className="flex-1 p-3 space-y-0.5">
           {navItems.map(({ path, label, icon: Icon }) => (
             <Link key={path} to={path} onClick={() => setOpen(false)}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(path) ? 'bg-white text-black' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}>
+              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(path) ? 'bg-white text-pink-600' : 'text-gray-400 hover:bg-gray-900 hover:text-white'}`}>
               <Icon className="w-4 h-4 shrink-0" />
               <span>{label}</span>
             </Link>

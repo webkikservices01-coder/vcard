@@ -68,14 +68,14 @@ const UserProfile = () => {
 
       {/* Avatar + Plan */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center space-x-5">
-        <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center text-white text-xl font-black shrink-0">
+        <div className="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center text-white text-xl font-black shrink-0">
           {initials}
         </div>
         <div>
           <h3 className="text-base font-bold text-gray-900">{`${profile.firstName} ${profile.lastName}`.trim() || 'User'}</h3>
           <div className="flex items-center space-x-2 mt-1.5 flex-wrap gap-1.5">
-            <span className="inline-block border-2 border-black text-black text-xs font-bold px-3 py-1 rounded-full">{profile.plan}</span>
-            <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${profile.status === 'active' ? 'bg-black text-white' : 'bg-gray-200 text-gray-600'}`}>
+            <span className="inline-block border-2 border-pink-600 text-pink-600 text-xs font-bold px-3 py-1 rounded-full">{profile.plan}</span>
+            <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${profile.status === 'active' ? 'bg-pink-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
               {profile.status === 'active' ? '● Active' : '○ Inactive'}
             </span>
           </div>
@@ -90,12 +90,12 @@ const UserProfile = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name *</label>
               <input value={profile.firstName} onChange={e => setProfile({...profile, firstName: e.target.value})}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="John" />
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="John" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name *</label>
               <input value={profile.lastName} onChange={e => setProfile({...profile, lastName: e.target.value})}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Doe" />
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Doe" />
             </div>
           </div>
           <div>
@@ -107,12 +107,12 @@ const UserProfile = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
             <input value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="+91 98765 43210" />
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="+91 98765 43210" />
           </div>
         </div>
         <div className="flex justify-end mt-5">
           <button onClick={handleSave} disabled={saving}
-            className="flex items-center space-x-2 bg-black text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition disabled:opacity-60">
+            className="flex items-center space-x-2 bg-pink-600 text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-pink-700 transition disabled:opacity-60">
             <Save className="w-4 h-4" /><span>{saving ? 'Saving...' : 'Save Changes'}</span>
           </button>
         </div>
@@ -125,17 +125,17 @@ const UserProfile = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
             <input type="password" value={passwords.password} onChange={e => setPasswords({...passwords, password: e.target.value})}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="Min. 6 characters" />
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="Min. 6 characters" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
             <input type="password" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none" placeholder="••••••••" />
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 outline-none" placeholder="••••••••" />
           </div>
         </div>
         <div className="flex justify-end mt-5">
           <button onClick={handleChangePassword} disabled={savingPwd}
-            className="flex items-center space-x-2 bg-black text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition disabled:opacity-60">
+            className="flex items-center space-x-2 bg-pink-600 text-white font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-pink-700 transition disabled:opacity-60">
             <Save className="w-4 h-4" /><span>{savingPwd ? 'Updating...' : 'Update Password'}</span>
           </button>
         </div>

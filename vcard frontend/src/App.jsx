@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import NotFound from './pages/NotFound';
 
 // Dashboard
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import UserProfile from './pages/UserProfile';
 import Plans from './pages/Plans';
@@ -55,6 +56,9 @@ function App() {
 
         {/* Public vCard */}
         <Route path="/c/:slug" element={<PublicVcard />} />
+
+        {/* Quick onboarding (post-login gate until card basics are filled) */}
+        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
         {/* User dashboard */}
         <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

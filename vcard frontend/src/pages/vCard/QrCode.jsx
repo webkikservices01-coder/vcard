@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, ExternalLink, Copy } from 'lucide-react';
 import axios from 'axios';
@@ -55,25 +56,33 @@ const QrCode = () => {
 
   return (
     <div className="max-w-lg">
-      <div className="mb-6">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mb-6">
         <h2 className="text-xl font-bold text-gray-900">QR Code</h2>
         <p className="text-sm text-gray-500">Share your vCard with a scannable QR code</p>
-      </div>
+      </motion.div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }}
+        className="bg-white rounded-xl border border-gray-200 p-8"
+      >
         {loading ? (
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading...</div>
         ) : !slug ? (
           <div className="text-center py-8">
             <p className="text-gray-500 text-sm mb-2">No vCard found.</p>
-            <a href="/dashboard/vcard/profile" className="text-sm font-semibold text-black hover:underline">
+            <a href="/dashboard/vcard/profile" className="text-sm font-semibold text-pink-600 hover:underline">
               Create your profile first →
             </a>
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-6">
             {/* QR Code */}
-            <div ref={qrRef} className="p-5 border-2 border-gray-200 rounded-2xl bg-white shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.15, type: 'spring', damping: 18 }}
+              className="p-5 border-2 border-gray-200 rounded-2xl bg-white shadow-sm"
+              ref={qrRef}
+            >
               <QRCodeSVG
                 value={cardUrl}
                 size={220}
@@ -82,26 +91,28 @@ const QrCode = () => {
                 level="H"
                 includeMargin={false}
               />
-            </div>
+            </motion.div>
 
             {/* Card URL display */}
             <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between gap-2">
               <p className="text-xs text-gray-600 truncate font-mono">{cardUrl}</p>
-              <button onClick={handleCopy} className="shrink-0 p-1.5 hover:bg-gray-200 rounded transition" title="Copy URL">
+              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleCopy} className="shrink-0 p-1.5 hover:bg-gray-200 rounded transition" title="Copy URL">
                 <Copy className="w-4 h-4 text-gray-500" />
-              </button>
+              </motion.button>
             </div>
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 w-full">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 onClick={handleDownload}
-                className="flex-1 flex items-center justify-center space-x-2 bg-black text-white py-2.5 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                className="flex-1 flex items-center justify-center space-x-2 bg-pink-600 text-white py-2.5 rounded-lg hover:bg-pink-700 transition text-sm font-medium"
               >
                 <Download className="w-4 h-4" />
                 <span>Download QR Code</span>
-              </button>
-              <a
+              </motion.button>
+              <motion.a
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 href={cardUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -109,7 +120,7 @@ const QrCode = () => {
               >
                 <ExternalLink className="w-4 h-4" />
                 <span>View Card</span>
-              </a>
+              </motion.a>
             </div>
 
             <p className="text-xs text-gray-400 text-center">
@@ -117,7 +128,7 @@ const QrCode = () => {
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

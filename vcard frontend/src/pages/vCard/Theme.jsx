@@ -110,7 +110,7 @@
 //         <img src={ct[imageKey]} alt="bg" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
 //         <button
 //           onClick={() => setCt(p => ({ ...p, [imageKey]: '' }))}
-//           className="absolute top-1 right-1 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center"
+//           className="absolute top-1 right-1 w-5 h-5 bg-pink-600/80 text-white rounded-full flex items-center justify-center"
 //         >
 //           <X className="w-3 h-3" />
 //         </button>
@@ -397,12 +397,13 @@
 
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Upload, X, Palette } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // STEP 1: Router import
-import ActionPopup from '../../components/ActionPopup'; // STEP 1: Popup import
+import { useNavigate } from 'react-router-dom';
+import ActionPopup from '../../components/ActionPopup';
 
 export const allThemes = [
   {
@@ -508,7 +509,7 @@ const BgPicker = ({ title, colorKey, imageKey, ct, setCt, uploading, onUpload })
         <img src={ct[imageKey]} alt="bg" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
         <button
           onClick={() => setCt(p => ({ ...p, [imageKey]: '' }))}
-          className="absolute top-1 right-1 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center"
+          className="absolute top-1 right-1 w-5 h-5 bg-pink-600/80 text-white rounded-full flex items-center justify-center"
         >
           <X className="w-3 h-3" />
         </button>
@@ -605,7 +606,7 @@ const Theme = () => {
         // STEP 3: Save slug for preview link
         if (res.data?.username) setSlug(res.data.username);
         
-      } catch {} finally { setLoading(false); }
+      } catch { /* ignore */ } finally { setLoading(false); }
     };
     load();
   }, []);
@@ -672,20 +673,30 @@ const Theme = () => {
 
   if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>;
 
-  const ThemeCard = ({ theme }) => (
-    <button
+  const ThemeCard = ({ theme, idx }) => (
+    <motion.button
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: idx * 0.05 }}
+      whileHover={{ y: -3 }} whileTap={{ scale: 0.97 }}
       onClick={() => setSelected(theme.id)}
-      className={`rounded-xl p-3 border-2 transition-all ${selected === theme.id ? 'border-black shadow-md' : 'border-gray-200 hover:border-gray-400'}`}
+      className={`rounded-xl p-3 border-2 transition-colors ${selected === theme.id ? 'border-pink-600 shadow-md' : 'border-gray-200 hover:border-gray-400'}`}
     >
       <ThemeMockup theme={theme} />
       <p className="text-xs font-semibold text-gray-700 mt-2 text-center">{theme.name}</p>
       <p className="text-[10px] text-gray-400 text-center">{theme.text}</p>
-      {selected === theme.id && (
-        <div className="mt-2 flex justify-center">
-          <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full">✓ SELECTED</span>
-        </div>
-      )}
-    </button>
+      <AnimatePresence>
+        {selected === theme.id && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7, height: 0 }}
+            animate={{ opacity: 1, scale: 1, height: 'auto' }}
+            exit={{ opacity: 0, scale: 0.7, height: 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className="mt-2 flex justify-center overflow-hidden"
+          >
+            <span className="bg-pink-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">✓ SELECTED</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
   );
 
   return (
@@ -693,25 +704,28 @@ const Theme = () => {
       <div className="space-y-6 max-w-4xl relative">
 
         {/* Basic Themes */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-base font-bold text-gray-900 mb-1">Basic Themes</h3>
           <p className="text-sm text-gray-500 mb-5">Clean, minimal themes for your digital card.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {allThemes.filter(t => t.type === 'basic').map(t => <ThemeCard key={t.id} theme={t} />)}
+            {allThemes.filter(t => t.type === 'basic').map((t, i) => <ThemeCard key={t.id} theme={t} idx={i} />)}
           </div>
-        </div>
+        </motion.div>
 
         {/* Predefined Themes */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }} className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-base font-bold text-gray-900 mb-1">Predefined Themes</h3>
           <p className="text-sm text-gray-500 mb-5">Fixed color &amp; layout — visually distinct designs.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {allThemes.filter(t => t.type === 'predefined').map(t => <ThemeCard key={t.id} theme={t} />)}
+            {allThemes.filter(t => t.type === 'predefined').map((t, i) => <ThemeCard key={t.id} theme={t} idx={i} />)}
           </div>
-        </div>
+        </motion.div>
 
         {/* Custom Theme */}
-        <div className={`bg-white rounded-xl border-2 transition-all p-6 ${selected === 'custom' ? 'border-black' : 'border-gray-200'}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.16 }}
+          className={`bg-white rounded-xl border-2 transition-colors p-6 ${selected === 'custom' ? 'border-pink-600' : 'border-gray-200'}`}
+        >
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-pink-500 rounded-xl flex items-center justify-center shrink-0">
@@ -722,16 +736,24 @@ const Theme = () => {
                 <p className="text-sm text-gray-500">Set your own colors, backgrounds &amp; layout</p>
               </div>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={() => setSelected('custom')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition shrink-0 ${selected === 'custom' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors shrink-0 ${selected === 'custom' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               {selected === 'custom' ? '✓ Active' : 'Use This'}
-            </button>
+            </motion.button>
           </div>
 
+          <AnimatePresence initial={false}>
           {selected === 'custom' && (
-            <div className="space-y-5">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-5 overflow-hidden"
+            >
 
               {/* Live preview + layout picker */}
               <div className="flex flex-col sm:flex-row gap-4">
@@ -745,14 +767,15 @@ const Theme = () => {
                   <p className="text-sm font-bold text-gray-800">Card Layout</p>
                   <div className="grid grid-cols-2 gap-2">
                     {layouts.map(l => (
-                      <button
+                      <motion.button
                         key={l.value}
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={() => setCt(p => ({ ...p, layout: l.value }))}
-                        className={`text-left px-3 py-2.5 rounded-lg border text-xs transition ${ct.layout === l.value ? 'border-black bg-black text-white' : 'border-gray-200 text-gray-700 hover:border-gray-400'}`}
+                        className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${ct.layout === l.value ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-200 text-gray-700 hover:border-gray-400'}`}
                       >
                         <span className="font-bold block">{l.label}</span>
                         <span className={ct.layout === l.value ? 'text-gray-300' : 'text-gray-400'}>{l.desc}</span>
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -797,21 +820,25 @@ const Theme = () => {
                 </div>
               </div>
 
-            </div>
+            </motion.div>
           )}
-        </div>
+          </AnimatePresence>
+        </motion.div>
 
         <div className="flex justify-end">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
             onClick={handleSave} disabled={saving}
-            className="bg-black hover:bg-gray-800 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition disabled:opacity-60"
+            className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60 inline-flex items-center gap-2"
           >
+            {saving && (
+              <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+            )}
             {saving ? 'Saving…' : 'Save Theme'}
-          </button>
+          </motion.button>
         </div>
       </div>
 
-      {/* STEP 5: Add Popup Component here */}
       <ActionPopup 
         isOpen={showPopup} 
         onClose={() => setShowPopup(false)}

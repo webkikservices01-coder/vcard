@@ -122,7 +122,7 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
       <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center space-y-3">
           <p className="text-sm text-gray-700">Voice input is not supported in this browser. Please use Chrome, or fill the form manually.</p>
-          <button onClick={onClose} className="bg-black text-white text-sm font-medium px-4 py-2 rounded-lg">Close</button>
+          <button onClick={onClose} className="bg-pink-600 text-white text-sm font-medium px-4 py-2 rounded-lg">Close</button>
         </div>
       </div>
     );
@@ -155,7 +155,7 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
         <div className="p-5 max-h-64 overflow-y-auto space-y-3">
           {log.map((entry, i) => (
             <div key={i} className={`text-sm ${entry.role === 'assistant' ? '' : 'text-right'}`}>
-              <span className={`inline-block px-3 py-2 rounded-xl ${entry.role === 'assistant' ? 'bg-gray-100 text-gray-900' : 'bg-black text-white'}`}>
+              <span className={`inline-block px-3 py-2 rounded-xl ${entry.role === 'assistant' ? 'bg-gray-100 text-gray-900' : 'bg-pink-600 text-white'}`}>
                 {entry.text}
               </span>
             </div>
@@ -165,12 +165,12 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
         <div className="p-5 pt-0 text-center">
           <p className="text-xs text-gray-400 mb-3">{statusText}</p>
           {status === 'done' ? (
-            <button onClick={handleStop} className="bg-black text-white text-sm font-medium px-6 py-2.5 rounded-lg">Done</button>
+            <button onClick={handleStop} className="bg-pink-600 text-white text-sm font-medium px-6 py-2.5 rounded-lg">Done</button>
           ) : (
             <button
               onClick={() => (status === 'listening' ? recognitionRef.current?.stop() : startListening())}
               disabled={status === 'thinking' || status === 'speaking'}
-              className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto transition disabled:opacity-50 ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-black text-white'}`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto transition disabled:opacity-50 ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-pink-600 text-white'}`}
             >
               {status === 'listening' ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
             </button>
