@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe } from 'lucide-react';
 import ThemeToggle from './ui/ThemeToggle';
+import Logo from './ui/Logo';
 
 const navItems = [
   { path: '/admin',              label: 'Overview',      icon: LayoutDashboard },
@@ -17,7 +18,7 @@ const NavPill = ({ active, children, ...props }) => (
     {active && (
       <motion.div
         layoutId="admin-active-pill"
-        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg"
+        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg shadow-glow-crimson"
         transition={{ type: 'spring', stiffness: 500, damping: 38 }}
       />
     )}
@@ -38,7 +39,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const logout = () => { localStorage.removeItem('token'); navigate('/'); };
+  const logout = () => { localStorage.removeItem('token'); navigate('/login'); };
   const isActive = (p) => p === '/admin' ? location.pathname === p : location.pathname.startsWith(p);
   const pageTitle = navItems.find(n => isActive(n.path))?.label || 'Admin';
 
@@ -64,8 +65,8 @@ const AdminLayout = () => {
       >
         <div className="h-16 flex items-center justify-between px-4 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)' }}>
           <div>
-            <p className="text-sm font-black tracking-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</p>
-            <p className="text-[9px] font-bold tracking-widest uppercase" style={{ color: 'var(--surface-text-2)' }}>Admin Panel</p>
+            <Logo size={26} to="/admin" showWordmark={true} />
+            <p className="text-[9px] font-bold tracking-widest uppercase mt-0.5 ml-0.5" style={{ color: 'var(--surface-text-2)' }}>Admin Panel</p>
           </div>
           <button onClick={() => setOpen(false)} className="lg:hidden p-1 hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
             <X className="w-4 h-4" />

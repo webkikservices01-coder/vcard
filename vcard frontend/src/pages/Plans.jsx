@@ -75,6 +75,11 @@ const FeatureComparisonTable = ({ highlightId }) => (
   </div>
 );
 
+// Derived from real plan pricing, not hardcoded — stays accurate if prices in data/plans.jsx change.
+const yearlySavingsPct = Math.round(
+  (plans.reduce((sum, p) => sum + (1 - p.price.yearly / (p.price.monthly * 12)), 0) / plans.length) * 100
+);
+
 const Plans = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -162,31 +167,40 @@ const Plans = () => {
           transition={{ duration: 0.35, delay: 0.05 }}
           className="relative flex items-center justify-center mt-6"
         >
-          <div className="relative inline-flex rounded-full p-1" style={{ background: 'var(--surface-2)' }}>
-            <motion.div
-              className="absolute inset-y-1 w-1/2 bg-gradient-to-r from-brand-600 to-brand-700 rounded-full"
-              animate={{ x: billing === 'monthly' ? 0 : '100%' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-            />
+          <div className="relative inline-flex rounded-full p-1 gap-1" style={{ background: 'var(--surface-2)' }}>
             <button
               onClick={() => setBilling('monthly')}
-              className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold fast-transition ${
-                billing === 'monthly' ? 'text-white' : 'hover:text-brand-500'
-              }`}
+              className="relative px-5 py-2 rounded-full text-sm font-semibold fast-transition"
               style={billing !== 'monthly' ? { color: 'var(--surface-text-2)' } : undefined}
             >
-              Monthly
+              {billing === 'monthly' && (
+                <motion.div
+                  layoutId="billing-toggle-pill"
+                  className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className={`relative z-10 ${billing === 'monthly' ? 'text-white' : 'hover:text-brand-500'}`}>
+                Monthly
+              </span>
             </button>
             <button
               onClick={() => setBilling('yearly')}
-              className={`relative z-10 px-5 py-2 rounded-full text-sm font-semibold fast-transition ${
-                billing === 'yearly' ? 'text-white' : 'hover:text-brand-500'
-              }`}
+              className="relative px-5 py-2 rounded-full text-sm font-semibold fast-transition"
               style={billing !== 'yearly' ? { color: 'var(--surface-text-2)' } : undefined}
             >
-              Yearly
-              <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded-full">
-                SAVE 58%
+              {billing === 'yearly' && (
+                <motion.div
+                  layoutId="billing-toggle-pill"
+                  className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className={`relative z-10 inline-flex items-center ${billing === 'yearly' ? 'text-white' : 'hover:text-brand-500'}`}>
+                Yearly
+                <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded-full">
+                  SAVE {yearlySavingsPct}%
+                </span>
               </span>
             </button>
           </div>
@@ -210,7 +224,7 @@ const Plans = () => {
               {plan.popular && (
                 <motion.div
                   className="absolute -inset-1 rounded-2xl opacity-40 blur-xl -z-10"
-                  style={{ background: 'linear-gradient(135deg,#ec4899,#f43f5e)' }}
+                  style={{ background: 'linear-gradient(135deg,#9f1c44,#e70c65)' }}
                   animate={{ opacity: [0.25, 0.45, 0.25] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 />

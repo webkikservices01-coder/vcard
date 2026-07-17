@@ -447,7 +447,7 @@ const PublicVcard = () => {
           className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3"
         >
           <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full">
-            MYcardLINK
+            Webcard.ai
           </div>
           <div className="flex items-center space-x-2">
             {settings.showViews !== false && (
@@ -492,7 +492,7 @@ const PublicVcard = () => {
               {s.accent && <div className="mt-4 w-8 h-0.5 rounded-full mx-auto" style={{ background: s.accent }} />}
               {settings.hideBranding !== true && (
                 <div className="mt-auto pt-6">
-                  <p className="text-[9px] text-center uppercase tracking-widest opacity-40 text-white">MYcardLINK</p>
+                  <p className="text-[9px] text-center uppercase tracking-widest opacity-40 text-white">Webcard.ai</p>
                 </div>
               )}
             </div>
@@ -709,7 +709,7 @@ const PublicVcard = () => {
           <div className="text-center py-6" style={{ borderTop: `1px solid ${s.border}` }}>
             <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: s.designationColor, opacity: 0.5 }}>
               Powered by{' '}
-              <a href="/" className="font-black hover:underline" style={{ color: s.designationColor }}>MYcardLINK</a>
+              <a href="/" className="font-black hover:underline" style={{ color: s.designationColor }}>Webcard.ai</a>
             </p>
           </div>
         )}

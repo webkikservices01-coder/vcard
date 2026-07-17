@@ -32,7 +32,7 @@ const GradientButton = ({ children, loading = false, className = '', ...props })
       style={{ x: springX, y: springY }}
       whileHover={{ scale: 1.015 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative w-full py-3 rounded-xl font-semibold text-sm text-white overflow-hidden
+      className={`relative w-full py-3 rounded-xl font-semibold text-sm text-white overflow-hidden shadow-glow-crimson
         disabled:opacity-60 disabled:cursor-not-allowed
         inline-flex items-center justify-center gap-2
         [&_svg]:transition-transform [&_svg]:duration-300 [&:hover_svg]:translate-x-1

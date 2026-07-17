@@ -6,6 +6,7 @@ import {
   ChevronDown, Bot, X
 } from 'lucide-react';
 import { hasChatFill } from '../utils/plan';
+import Logo from './ui/Logo';
 
 const aiSubItems = [
   { name: 'AI Persona Setup', icon: Bot, path: '/dashboard/vcard/ai-persona' },
@@ -22,7 +23,7 @@ const NavPill = ({ active, children, ...props }) => (
     {active && (
       <motion.div
         layoutId="sidebar-active-pill"
-        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg"
+        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-lg shadow-glow-crimson"
         transition={{ type: 'spring', stiffness: 500, damping: 38 }}
       />
     )}
@@ -45,7 +46,7 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/');
+    navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
@@ -74,10 +75,7 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-5 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)' }}>
-          <div>
-            <h1 className="font-display text-lg font-bold tracking-tight leading-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</h1>
-            <p className="text-[9px] font-medium tracking-widest uppercase" style={{ color: 'var(--surface-text-2)' }}>CARD · QR · DIGITAL</p>
-          </div>
+          <Logo size={30} to="/dashboard" />
           <button onClick={onClose} className="lg:hidden p-1 hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
             <X className="w-5 h-5" />
           </button>

@@ -753,7 +753,7 @@ const Theme = () => {
         <GlassCard
           {...fadeUp(0.2)}
           className="p-6 fast-transition"
-          style={{ border: selected === 'custom' ? '2px solid var(--color-brand-600, #db2777)' : '1px solid var(--surface-border)' }}
+          style={{ border: selected === 'custom' ? '2px solid var(--color-brand-600, #9f1c44)' : '1px solid var(--surface-border)' }}
         >
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center space-x-3">

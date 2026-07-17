@@ -125,9 +125,9 @@ const JarvisWidget = ({ plan }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.93 }}
             transition={{ type: 'spring', damping: 28, stiffness: 370 }}
-            className="fixed bottom-24 right-4 sm:right-6 z-[200] w-[calc(100vw-2rem)] max-w-sm bg-white rounded-3xl shadow-[0_20px_60px_rgba(244,63,94,0.18)] border border-pink-100 overflow-hidden"
+            className="fixed bottom-24 right-4 sm:right-6 z-[200] w-[calc(100vw-2rem)] max-w-sm bg-white rounded-3xl shadow-[0_20px_60px_rgba(231,12,101,0.18)] border border-crimson-100 overflow-hidden"
           >
-            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-pink-500 to-rose-500 text-white">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-crimson-800 to-magenta-500 text-white">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   <Sparkles className="w-4 h-4" />
@@ -160,16 +160,16 @@ const JarvisWidget = ({ plan }) => {
                   transition={{ duration: 0.22, ease: 'easeOut' }}
                   className={`text-sm ${entry.role === 'assistant' ? '' : 'text-right'}`}
                 >
-                  <span className={`inline-block px-3.5 py-2.5 rounded-2xl ${entry.role === 'assistant' ? 'bg-pink-50 text-gray-900 rounded-bl-sm' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-br-sm'}`}>
+                  <span className={`inline-block px-3.5 py-2.5 rounded-2xl ${entry.role === 'assistant' ? 'bg-crimson-50 text-gray-900 rounded-bl-sm' : 'bg-gradient-to-br from-crimson-800 to-magenta-500 text-white rounded-br-sm'}`}>
                     {entry.text}
                   </span>
                 </motion.div>
               ))}
               {(status === 'thinking' || status === 'speaking') && (
                 <div className="flex items-center gap-1 pl-1">
-                  <motion.span className="w-1.5 h-1.5 rounded-full bg-pink-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
-                  <motion.span className="w-1.5 h-1.5 rounded-full bg-pink-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.15 }} />
-                  <motion.span className="w-1.5 h-1.5 rounded-full bg-pink-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.3 }} />
+                  <motion.span className="w-1.5 h-1.5 rounded-full bg-magenta-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
+                  <motion.span className="w-1.5 h-1.5 rounded-full bg-magenta-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.15 }} />
+                  <motion.span className="w-1.5 h-1.5 rounded-full bg-magenta-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.3 }} />
                 </div>
               )}
             </div>
@@ -183,13 +183,13 @@ const JarvisWidget = ({ plan }) => {
                   onChange={(e) => setTextInput(e.target.value)}
                   disabled={status === 'thinking' || status === 'speaking'}
                   placeholder="Message likhiye..."
-                  className="flex-1 min-w-0 px-3 py-2 text-sm rounded-xl border border-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 disabled:opacity-50"
+                  className="flex-1 min-w-0 px-3 py-2 text-sm rounded-xl border border-crimson-100 focus:outline-none focus:ring-2 focus:ring-magenta-400 focus:border-magenta-400 disabled:opacity-50"
                 />
                 <motion.button
                   whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
                   type="submit"
                   disabled={status === 'thinking' || status === 'speaking' || !textInput.trim()}
-                  className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 text-white flex items-center justify-center disabled:opacity-30 shadow-sm"
+                  className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white flex items-center justify-center disabled:opacity-30 shadow-sm"
                 >
                   <Send className="w-4 h-4" />
                 </motion.button>
@@ -199,7 +199,7 @@ const JarvisWidget = ({ plan }) => {
                     type="button"
                     onClick={() => (status === 'listening' ? recognitionRef.current?.stop() : startListening())}
                     disabled={status === 'thinking' || status === 'speaking'}
-                    className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition disabled:opacity-50 shadow-sm ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-gradient-to-br from-pink-500 to-rose-500 text-white'}`}
+                    className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition disabled:opacity-50 shadow-sm ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-gradient-to-br from-crimson-800 to-magenta-500 text-white'}`}
                   >
                     {status === 'thinking' ? <Loader2 className="w-4 h-4 animate-spin" /> : status === 'listening' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </motion.button>
@@ -213,7 +213,7 @@ const JarvisWidget = ({ plan }) => {
       <div className="fixed bottom-6 right-4 sm:right-6 z-[200]">
         {!open && (
           <motion.div
-            className="absolute inset-0 w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 blur-md"
+            className="absolute inset-0 w-14 h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 blur-md"
             animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.15, 1] }}
             transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
           />
@@ -221,7 +221,7 @@ const JarvisWidget = ({ plan }) => {
         <motion.button
           whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
           onClick={handleToggleOpen}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_8px_28px_rgba(244,63,94,0.4)] flex items-center justify-center"
+          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white shadow-[0_8px_28px_rgba(231,12,101,0.4)] flex items-center justify-center"
           title={canUseVoice ? 'Jarvis Voice Assistant' : 'Jarvis Chat Assistant'}
         >
           <AnimatePresence mode="wait">

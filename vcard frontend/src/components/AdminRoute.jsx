@@ -18,7 +18,7 @@ const AdminRoute = ({ children }) => {
       <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
     </div>
   );
-  if (status === 'denied') return <Navigate to="/" replace />;
+  if (status === 'denied') return <Navigate to={localStorage.getItem('token') ? '/dashboard' : '/login'} replace />;
   return children;
 };
 

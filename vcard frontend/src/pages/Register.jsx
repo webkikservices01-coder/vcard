@@ -1,22 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Lock, ArrowRight } from 'lucide-react';
+import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import AuthBrandPanel from '../components/AuthBrandPanel';
-import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import MeshBackground from '../components/ui/MeshBackground';
-import { fadeUp } from '../utils/motion';
-
-const fields = [
-  { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe', icon: User },
-  { label: 'Email address', key: 'email', type: 'email', placeholder: 'you@example.com', icon: Mail },
-  { label: 'Phone number', key: 'phone', type: 'tel', placeholder: '+91 98765 43210', icon: Phone },
-  { label: 'Password', key: 'password', type: 'password', placeholder: 'Min. 6 characters', icon: Lock },
-  { label: 'Confirm Password', key: 'confirm', type: 'password', placeholder: '••••••••', icon: Lock },
-];
+import Logo from '../components/ui/Logo';
+import Field from '../components/ui/Field';
 
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
@@ -44,78 +36,74 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex font-['Inter'] relative" style={{ background: 'var(--surface-bg)' }}>
-      <div className="lg:hidden absolute inset-0"><MeshBackground /></div>
+    <div className="relative min-h-screen lg:flex font-['Inter']" style={{ background: 'var(--surface-bg)' }}>
       <AuthBrandPanel />
 
       <ThemeToggle className="fixed top-5 right-5 z-20" />
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative z-10">
-        <motion.div {...fadeUp(0)} className="w-full max-w-sm py-8">
-          <div className="lg:hidden text-center mb-8">
-            <h1 className="font-display text-2xl font-black tracking-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</h1>
-            <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>Digital Business Card Platform</p>
+      <div className="relative flex flex-1 min-h-screen items-center justify-center overflow-hidden px-6 py-12">
+        <MeshBackground rich />
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 w-full max-w-md"
+        >
+          <div className="lg:hidden mb-8">
+            <Logo size={32} />
           </div>
 
-          <GlassCard className="p-7 sm:p-8">
-            <h2 className="font-display text-2xl font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Create account</h2>
-            <p className="text-sm mb-8" style={{ color: 'var(--surface-text-2)' }}>Start your digital card journey</p>
+          <span className="badge-glass text-crimson-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-magenta-500" />
+            Begin your journey
+          </span>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight" style={{ color: 'var(--surface-text)' }}>Create your account</h1>
+          <p className="mt-2" style={{ color: 'var(--surface-text-2)' }}>First impressions start here.</p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <Field icon={<User className="h-4 w-4" />} label="Full name">
+              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-premium pl-11" placeholder="Ava Lindgren" />
+            </Field>
+            <Field icon={<Mail className="h-4 w-4" />} label="Email">
+              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-premium pl-11" placeholder="you@company.com" />
+            </Field>
+            <Field icon={<Phone className="h-4 w-4" />} label="Phone number">
+              <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-premium pl-11" placeholder="+91 98765 43210" />
+            </Field>
+            <Field icon={<Lock className="h-4 w-4" />} label="Password">
+              <input required type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-premium pl-11" placeholder="Min. 6 characters" />
+            </Field>
+            <Field icon={<Lock className="h-4 w-4" />} label="Confirm password">
+              <input required type="password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} className="input-premium pl-11" placeholder="••••••••" />
+            </Field>
 
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700 overflow-hidden"
                 >
-                  <div className="bg-red-500/10 border border-red-500/30 text-red-500 px-4 py-3 rounded-lg mb-5 text-sm">
-                    {error}
-                  </div>
+                  <AlertCircle className="h-4 w-4 shrink-0" /> {error}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {fields.map(({ label, key, type, placeholder, icon: Icon }, i) => (
-                <motion.div
-                  key={key}
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                >
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>{label}</label>
-                  <div className="relative">
-                    <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
-                    <input
-                      type={type}
-                      value={form[key]}
-                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-lg outline-none transition text-sm focus:ring-2 focus:ring-brand-400"
-                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                      placeholder={placeholder}
-                      required={key !== 'phone'}
-                    />
-                  </div>
-                </motion.div>
-              ))}
+            <GradientButton type="submit" disabled={loading} loading={loading} className="text-base">
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Create account</span><ArrowRight className="h-4 w-4" /></>}
+            </GradientButton>
+          </form>
 
-              <div className="pt-2">
-                <GradientButton type="submit" disabled={loading} loading={loading}>
-                  {loading ? (
-                    <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-                  ) : (
-                    <ArrowRight className="w-4 h-4" />
-                  )}
-                  <span>{loading ? 'Creating account...' : 'Create Account'}</span>
-                </GradientButton>
-              </div>
-            </form>
-          </GlassCard>
-
-          <p className="text-center text-sm mt-6" style={{ color: 'var(--surface-text-2)' }}>
-            Already have an account?{' '}
-            <Link to="/" className="font-semibold text-brand-500 hover:underline">
-              Sign in
-            </Link>
-          </p>
+          <div className="mt-6 text-sm">
+            <p style={{ color: 'var(--surface-text-2)' }}>
+              Have an account?{' '}
+              <Link to="/login" className="font-semibold hover:text-crimson-700 transition" style={{ color: 'var(--surface-text)' }}>
+                Sign in
+              </Link>
+            </p>
+          </div>
         </motion.div>
       </div>
     </div>

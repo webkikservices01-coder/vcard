@@ -9,6 +9,7 @@ import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import MeshBackground from '../components/ui/MeshBackground';
+import Logo from '../components/ui/Logo';
 import { allThemes } from './vCard/Theme';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
@@ -32,7 +33,7 @@ const ThemeSwatch = ({ theme, selected, onClick, index }) => (
     whileHover={{ y: -3, scale: 1.02 }}
     whileTap={{ scale: 0.96 }}
     className="relative rounded-xl overflow-hidden text-left transition-shadow"
-    style={{ border: selected ? '2px solid var(--color-brand-600, #db2777)' : '2px solid var(--surface-border)' }}
+    style={{ border: selected ? '2px solid var(--color-brand-600, #9f1c44)' : '2px solid var(--surface-border)' }}
   >
     <div className="h-14 w-full relative" style={{ background: theme.gradient || theme.styles.bg }}>
       <div
@@ -206,8 +207,8 @@ const Onboarding = () => {
 
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto relative z-10">
         <div className="w-full max-w-md py-8">
-          <div className="lg:hidden text-center mb-6">
-            <h1 className="font-display text-2xl font-black tracking-tight" style={{ color: 'var(--surface-text)' }}>MYcardLINK</h1>
+          <div className="lg:hidden flex flex-col items-center text-center mb-6">
+            <Logo size={30} />
           </div>
 
           <GlassCard className="p-6 sm:p-7">

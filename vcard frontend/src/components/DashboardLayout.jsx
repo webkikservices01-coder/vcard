@@ -97,7 +97,7 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/');
+    navigate('/login');
   };
 
   const initials = user.name
@@ -291,7 +291,7 @@ const DashboardLayout = () => {
                     {isActive && (
                       <motion.div
                         layoutId="vcard-tab-pill"
-                        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl shadow-md"
+                        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl shadow-glow-crimson"
                         transition={{ type: 'spring', stiffness: 480, damping: 36 }}
                       />
                     )}

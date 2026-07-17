@@ -20,14 +20,14 @@ const ActionPopup = ({ isOpen, onClose, onPreview, onNext, nextText = "Next Step
         <div className="flex flex-col gap-3">
           <button 
             onClick={onPreview} 
-            className="w-full py-2.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-pink-600 hover:text-pink-600 hover:bg-gray-50 transition-all"
+            className="w-full py-2.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-brand-600 hover:text-brand-600 hover:bg-gray-50 transition-all"
           >
             Preview Vcard
           </button>
           
           <button 
             onClick={onNext} 
-            className="w-full py-2.5 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 shadow-md hover:shadow-lg transition-all"
+            className="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 shadow-md hover:shadow-lg transition-all"
           >
             {/* Yahan humne nextText variable laga diya */}
             {nextText}

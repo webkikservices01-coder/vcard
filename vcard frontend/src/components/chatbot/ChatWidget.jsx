@@ -130,7 +130,7 @@ const ChatWidget = ({ slug, aiName, greeting }) => {
             <div className="bg-[#0f0f0f] pb-2.5 pt-1 flex items-center justify-center gap-1 flex-shrink-0">
               <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
               <p className="text-[10px] text-gray-600 tracking-wide">
-                Powered by <span className="text-gray-500 font-medium">MYcardLINK AI</span>
+                Powered by <span className="text-gray-500 font-medium">Webcard.ai</span>
               </p>
             </div>
           </motion.div>
