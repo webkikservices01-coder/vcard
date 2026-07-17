@@ -8,6 +8,7 @@ const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
+const Enquiry = require('../models/Enquiry');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
@@ -111,6 +112,46 @@ router.post('/public/:username/view', async (req, res) => {
         );
         if (!card) return res.status(404).json({ msg: 'Card not found' });
         res.json({ viewCount: card.viewCount });
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// POST /public/:username/enquiry - Visitor submits the enquiry form on the public card
+router.post('/public/:username/enquiry', async (req, res) => {
+    try {
+        const { name, email, mobile, message } = req.body;
+        if (!name?.trim() || !message?.trim()) return res.status(400).json({ msg: 'Name and message are required' });
+
+        const card = await vCard.findOne({ username: req.params.username });
+        if (!card) return res.status(404).json({ msg: 'Card not found' });
+
+        const enquiry = await Enquiry.create({
+            vcardId: card._id,
+            name: name.trim(),
+            email: email?.trim() || '',
+            mobile: mobile?.trim() || '',
+            message: message.trim(),
+        });
+        res.json({ msg: 'Enquiry submitted', enquiry });
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// GET /enquiries - Card owner views submitted enquiries (newest first)
+router.get('/enquiries', auth, async (req, res) => {
+    try {
+        const card = await vCard.findOne({ userId: req.user.userId });
+        if (!card) return res.json([]);
+        const enquiries = await Enquiry.find({ vcardId: card._id }).sort({ createdAt: -1 });
+        res.json(enquiries);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// DELETE /enquiries/:id - Card owner deletes an enquiry
+router.delete('/enquiries/:id', auth, async (req, res) => {
+    try {
+        const card = await vCard.findOne({ userId: req.user.userId });
+        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        await Enquiry.findOneAndDelete({ _id: req.params.id, vcardId: card._id });
+        res.json({ msg: 'Deleted' });
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
