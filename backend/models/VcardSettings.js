@@ -13,7 +13,8 @@ const vcardSettingsSchema = new mongoose.Schema({
     showLanguage:  { type: Boolean, default: true },
     seoIndexing:   { type: Boolean, default: true },
     carouselMode:  { type: Boolean, default: true },
-    sectionOrder:  { type: [String], default: ['contact','products','portfolio','gallery','testimonials','custom'] },
+    showEnquiryForm: { type: Boolean, default: true },
+    sectionOrder:  { type: [String], default: ['contact','products','portfolio','gallery','testimonials','custom','enquiry'] },
     orientation:   { type: String, enum: ['vertical', 'horizontal'], default: 'vertical' }
 }, { timestamps: true });
 
