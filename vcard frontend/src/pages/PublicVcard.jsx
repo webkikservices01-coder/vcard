@@ -171,7 +171,7 @@ const renderSection = (id, data, theme) => {
   switch (id) {
     case 'contact':
       return dynamicLinks.length > 0 ? (
-        <div key="contact" className="px-4 pb-5 space-y-2.5">
+        <div key="contact" className="px-4 pb-5 space-y-2">
           {dynamicLinks.map((link, idx) => (
             <motion.a
               key={idx}
@@ -180,19 +180,16 @@ const renderSection = (id, data, theme) => {
               rel="noopener noreferrer"
               initial={{ opacity: 0, x: -14 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.35, delay: idx * 0.06, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
               whileHover={{ x: 3 }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center space-x-3 px-4 py-3.5 rounded-2xl"
-              style={{ background: s.contactBg, color: s.contactText, border: `1px solid ${s.border}` }}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-2xl"
+              style={{ background: s.contactBg, color: s.contactText }}
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.12)' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}>
                 {iconMap[link.fieldType] || <MdOutlineLink className="w-4 h-4" />}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wide opacity-50">{link.fieldType}</p>
-                <p className="text-sm font-bold truncate leading-tight mt-0.5">{link.title || link.url}</p>
-              </div>
+              <p className="text-sm font-bold truncate flex-1 min-w-0">{link.title || link.fieldType}</p>
               <ChevronRight className="w-4 h-4 opacity-30 shrink-0" />
             </motion.a>
           ))}
