@@ -18,19 +18,21 @@ const defaultSettings = {
   hideBranding: false, showPhonebook: true, showShare: true,
   showQr: true, showQrOnShare: true, showViews: true,
   showLanguage: true, seoIndexing: true, carouselMode: true,
+  showEnquiryForm: true,
   orientation: 'vertical',
 };
 
 const checkboxOptions = [
-  { key: 'hideBranding',  label: 'Hide "Powered by" Branding' },
-  { key: 'showPhonebook', label: 'Show Add to Phone Book button' },
-  { key: 'showShare',     label: 'Show Share Button' },
-  { key: 'showQr',        label: 'Show QR Code on Card' },
-  { key: 'showQrOnShare', label: 'Show QR Code on Share Popup' },
-  { key: 'showViews',     label: 'Show card view count on card' },
-  { key: 'showLanguage',  label: 'Show change language option on card' },
-  { key: 'seoIndexing',   label: 'Search Engine Indexing' },
-  { key: 'carouselMode',  label: 'Make section content carousel (Products, Portfolio)' },
+  { key: 'hideBranding',    label: 'Hide "Powered by" Branding' },
+  { key: 'showPhonebook',   label: 'Show Add to Phone Book button' },
+  { key: 'showShare',       label: 'Show Share Button' },
+  { key: 'showQr',          label: 'Show QR Code on Card' },
+  { key: 'showQrOnShare',   label: 'Show QR Code on Share Popup' },
+  { key: 'showViews',       label: 'Show card view count on card' },
+  { key: 'showLanguage',    label: 'Show change language option on card' },
+  { key: 'seoIndexing',     label: 'Search Engine Indexing' },
+  { key: 'carouselMode',    label: 'Make section content carousel (Products, Portfolio)' },
+  { key: 'showEnquiryForm', label: 'Show Enquiry Form on Card' },
 ];
 
 const AdvancedSettings = () => {

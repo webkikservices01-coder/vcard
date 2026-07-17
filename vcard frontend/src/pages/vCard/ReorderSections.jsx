@@ -17,6 +17,7 @@ const allSections = [
   { id: 'gallery',      label: 'Gallery',             emoji: '🖼️' },
   { id: 'testimonials', label: 'Testimonials',        emoji: '⭐' },
   { id: 'custom',       label: 'Custom Sections',     emoji: '📝' },
+  { id: 'enquiry',      label: 'Enquiry Form',        emoji: '✉️' },
 ];
 
 const getSectionById = (id) => allSections.find(s => s.id === id);

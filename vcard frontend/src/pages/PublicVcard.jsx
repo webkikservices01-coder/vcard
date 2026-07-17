@@ -63,6 +63,15 @@ const AvatarGlow = ({ color, size = 110 }) => (
   />
 );
 
+// ── Banner image — shows the full uploaded image (no cropping), with a
+// blurred, zoomed copy of the same image filling the letterbox behind it ──
+const BannerImage = ({ src, alt }) => (
+  <div className="relative w-full h-full overflow-hidden">
+    <img src={src} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
+    <img src={src} alt={alt} className="relative w-full h-full object-contain" />
+  </div>
+);
+
 // ─── Icon map ────────────────────────────────────────────────────────────────
 const iconMap = {
   'Mobile / Phone': <FaPhoneAlt className="w-4 h-4" />,
@@ -101,8 +110,62 @@ const SectionTitle = ({ children, color }) => (
   </div>
 );
 
+// ── Enquiry Form — visitors on the public card can send a message straight to the owner ──
+const EnquiryForm = ({ slug, s }) => {
+  const [form, setForm] = useState({ name: '', email: '', mobile: '', message: '' });
+  const [status, setStatus] = useState('idle'); // idle | sending | sent | error
+
+  const set = (key) => (e) => setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.message.trim()) return;
+    setStatus('sending');
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard/public/${slug}/enquiry`, form);
+      setStatus('sent');
+      setForm({ name: '', email: '', mobile: '', message: '' });
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  const inputStyle = { background: s.sectionBg, border: `1px solid ${s.border}`, color: s.nameColor };
+  const inputClass = "w-full px-3.5 py-2.5 rounded-xl text-sm outline-none placeholder:opacity-50";
+
+  if (status === 'sent') {
+    return (
+      <div className="rounded-2xl p-6 text-center" style={{ background: s.sectionBg, border: `1px solid ${s.border}` }}>
+        <p className="text-sm font-bold" style={{ color: s.nameColor }}>Thank you! 🎉</p>
+        <p className="text-xs mt-1" style={{ color: s.designationColor }}>Your enquiry has been sent successfully.</p>
+        <button onClick={() => setStatus('idle')} className="text-xs font-semibold mt-3 underline" style={{ color: s.designationColor }}>Send another</button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2.5">
+      <input required placeholder="Name" value={form.name} onChange={set('name')} className={inputClass} style={inputStyle} />
+      <div className="grid grid-cols-2 gap-2.5">
+        <input type="email" placeholder="Email" value={form.email} onChange={set('email')} className={inputClass} style={inputStyle} />
+        <input placeholder="Mobile" value={form.mobile} onChange={set('mobile')} className={inputClass} style={inputStyle} />
+      </div>
+      <textarea required placeholder="Type your message" rows={3} value={form.message} onChange={set('message')} className={`${inputClass} resize-none`} style={inputStyle} />
+      {status === 'error' && <p className="text-xs text-red-500">Something went wrong. Please try again.</p>}
+      <motion.button
+        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+        type="submit" disabled={status === 'sending'}
+        className="w-full py-3 rounded-xl text-sm font-bold disabled:opacity-60"
+        style={{ background: s.contactBg, color: s.contactText }}
+      >
+        {status === 'sending' ? 'Sending…' : 'Send'}
+      </motion.button>
+    </form>
+  );
+};
+
 const renderSection = (id, data, theme) => {
-  const { products, portfolio, testimonials, gallery, customSections, dynamicLinks, settings } = data;
+  const { products, portfolio, testimonials, gallery, customSections, dynamicLinks, settings, slug } = data;
   const s = theme.styles;
 
   switch (id) {
@@ -322,6 +385,14 @@ const renderSection = (id, data, theme) => {
         </div>
       )) : null;
 
+    case 'enquiry':
+      return settings?.showEnquiryForm !== false && slug ? (
+        <div key="enquiry" className="px-4 py-5" style={{ borderTop: `1px solid ${s.border}` }}>
+          <SectionTitle color={s.designationColor}>Enquiry Form</SectionTitle>
+          <EnquiryForm slug={slug} s={s} />
+        </div>
+      ) : null;
+
     default: return null;
   }
 };
@@ -417,14 +488,15 @@ const PublicVcard = () => {
   const glowColor = s.accent || s.contactBg;
 
   // Section order from settings, fallback to default
+  const defaultSectionOrder = ['contact', 'products', 'portfolio', 'gallery', 'testimonials', 'custom', 'enquiry'];
   const sectionOrder = settings?.sectionOrder?.length > 0
-    ? settings.sectionOrder
-    : ['contact', 'products', 'portfolio', 'gallery', 'testimonials', 'custom'];
+    ? [...settings.sectionOrder, ...defaultSectionOrder.filter(id => !settings.sectionOrder.includes(id))]
+    : defaultSectionOrder;
 
   // Data bundle passed into each section renderer
   const sectionData = {
     products, portfolio, testimonials, gallery, customSections,
-    dynamicLinks, settings,
+    dynamicLinks, settings, slug,
     onPhonebook: handlePhonebook,
     onShare: () => setShareOpen(true),
   };
@@ -531,7 +603,7 @@ const PublicVcard = () => {
             {/* Banner */}
             <div className="absolute inset-0 overflow-hidden">
               {personalInfo?.bannerImage
-                ? <img src={personalInfo.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                ? <BannerImage src={personalInfo.bannerImage} alt="Banner" />
                 : <div className="w-full h-full" style={{ background: theme.bannerGradient || theme.gradient || s.contactBg }} />
               }
             </div>
@@ -573,7 +645,7 @@ const PublicVcard = () => {
             {/* Full banner */}
             <div className="absolute inset-0 overflow-hidden">
               {personalInfo?.bannerImage
-                ? <img src={personalInfo.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                ? <BannerImage src={personalInfo.bannerImage} alt="Banner" />
                 : <div className="w-full h-full" style={{ background: theme.bannerGradient || theme.gradient || s.contactBg }} />
               }
             </div>
@@ -618,7 +690,7 @@ const PublicVcard = () => {
           <div>
             <div className="relative overflow-hidden" style={{ height: '140px' }}>
               {personalInfo?.bannerImage
-                ? <img src={personalInfo.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                ? <BannerImage src={personalInfo.bannerImage} alt="Banner" />
                 : <div className="w-full h-full" style={{ background: theme.gradient || `linear-gradient(135deg, ${s.contactBg}, ${s.sectionBg})` }} />
               }
               {/* Wave SVG */}
@@ -655,9 +727,9 @@ const PublicVcard = () => {
         ) : (
           /* CLASSIC layout — standard centered */
           <div>
-            <div className="relative h-44 overflow-hidden">
+            <div className="relative h-52 overflow-hidden">
               {personalInfo?.bannerImage
-                ? <img src={personalInfo.bannerImage} alt="Banner" className="w-full h-full object-cover" />
+                ? <BannerImage src={personalInfo.bannerImage} alt="Banner" />
                 : <div className="w-full h-full" style={{ background: theme.gradient || `linear-gradient(135deg, ${s.contactBg}, ${s.sectionBg})` }} />
               }
             </div>

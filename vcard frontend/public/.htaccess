@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Allow direct access to real files and folders (assets, images, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Everything else (e.g. /c/harsh, /dashboard/...) falls back to index.html
+  # so React Router can handle the route on the client side
+  RewriteRule ^ index.html [L]
+</IfModule>
