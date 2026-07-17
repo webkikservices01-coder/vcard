@@ -183,14 +183,13 @@ const renderSection = (id, data, theme) => {
               transition={{ duration: 0.3, delay: idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
               whileHover={{ x: 3 }}
               whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-2xl"
-              style={{ background: s.contactBg, color: s.contactText }}
+              className="flex items-center gap-3 px-4 py-1.5"
+              style={{ color: s.nameColor }}
             >
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: s.contactBg, color: s.contactText }}>
                 {iconMap[link.fieldType] || <MdOutlineLink className="w-4 h-4" />}
               </div>
-              <p className="text-sm font-bold truncate flex-1 min-w-0">{link.title || link.fieldType}</p>
-              <ChevronRight className="w-4 h-4 opacity-30 shrink-0" />
+              <p className="text-sm font-bold truncate">{link.title || link.fieldType}</p>
             </motion.a>
           ))}
           <div className="grid grid-cols-2 gap-2.5 pt-1">
