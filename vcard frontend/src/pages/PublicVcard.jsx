@@ -9,6 +9,7 @@ import {
 import { MdEmail, MdLocationOn, MdOutlineLink } from 'react-icons/md';
 import { Eye, Share2, X, Download, QrCode, ChevronRight } from 'lucide-react';
 import { allThemes, buildCustomTheme } from './vCard/Theme';
+import ChatWidget from '../components/chatbot/ChatWidget';
 
 // SafeHtml Component (Shadow DOM) for CSS Isolation & Overflow Fix
 const SafeHtml = ({ html, textColor }) => {
@@ -405,6 +406,7 @@ const PublicVcard = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [aiPersona, setAiPersona] = useState(null);
 
   const cardUrl = `${window.location.origin}/c/${slug}`;
 
@@ -420,6 +422,10 @@ const PublicVcard = () => {
       }
     };
     load();
+
+    axios.get(`${import.meta.env.VITE_API_URL}/api/ai/public/${slug}`)
+      .then(res => setAiPersona(res.data))
+      .catch(() => setAiPersona(null));
   }, [slug]);
 
   // View count — fires once per slug per page load (module-level Set blocks StrictMode double-fire)
@@ -862,6 +868,10 @@ const PublicVcard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {aiPersona?.enabled && (
+        <ChatWidget slug={slug} aiName={aiPersona.aiName} greeting={aiPersona.greeting} />
+      )}
     </div>
   );
 };
