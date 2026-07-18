@@ -11,7 +11,7 @@ const ThemeToggle = ({ className = '' }) => {
       type="button"
       onClick={toggleTheme}
       aria-label="Toggle theme"
-      className={`relative w-14 h-8 rounded-full glass flex items-center px-1 cursor-pointer ${className}`}
+      className={`w-14 h-8 rounded-full glass flex items-center px-1 cursor-pointer ${className}`}
     >
       <motion.div
         animate={{ x: isDark ? 24 : 0 }}
