@@ -18,6 +18,7 @@ import MeshBackground from '../components/ui/MeshBackground';
 import Logo from '../components/ui/Logo';
 import FadeIn from '../components/ui/FadeIn';
 import SectionHeading from '../components/ui/SectionHeading';
+import PublicFooter from '../components/PublicFooter';
 import { plans as realPlans } from '../data/plans';
 
 const features = [
@@ -56,17 +57,17 @@ export function LandingPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5"
+          className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5"
         >
-          <Logo />
+          <Logo size={32} />
           <div className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm font-medium hover:text-crimson-700 transition" style={{ color: 'var(--surface-text-2)' }}>Features</a>
             <a href="#pricing" className="text-sm font-medium hover:text-crimson-700 transition" style={{ color: 'var(--surface-text-2)' }}>Pricing</a>
             <a href="#stories" className="text-sm font-medium hover:text-crimson-700 transition" style={{ color: 'var(--surface-text-2)' }}>Stories</a>
           </div>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="btn-ghost text-sm">Sign in</Link>
-            <Link to="/register" className="btn-primary text-sm">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link to="/login" className="btn-ghost hidden text-sm sm:inline-flex">Sign in</Link>
+            <Link to="/register" className="btn-primary px-4 py-2.5 text-sm sm:px-6 sm:py-3.5">
               Get started <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -394,18 +395,7 @@ export function LandingPage() {
         </FadeIn>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t backdrop-blur-md" style={{ borderColor: 'var(--surface-border)', background: 'color-mix(in srgb, var(--surface-1) 40%, transparent)' }}>
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 py-10 sm:flex-row">
-          <Logo />
-          <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>© {new Date().getFullYear()} Webcard.ai. Crafted for the discerning.</p>
-          <div className="flex gap-6 text-sm" style={{ color: 'var(--surface-text-2)' }}>
-            <a href="#" className="hover:text-crimson-700 transition">Privacy</a>
-            <a href="#" className="hover:text-crimson-700 transition">Terms</a>
-            <a href="#" className="hover:text-crimson-700 transition">Contact</a>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

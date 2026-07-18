@@ -45,6 +45,15 @@ import AdminCards from './pages/admin/AdminCards';
 // Public
 import PublicVcard from './pages/PublicVcard';
 
+// Legal / info pages
+import AboutUs from './pages/legal/AboutUs';
+import ContactUs from './pages/legal/ContactUs';
+import Faqs from './pages/legal/Faqs';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsConditions from './pages/legal/TermsConditions';
+import RefundPolicy from './pages/legal/RefundPolicy';
+import CancellationPolicy from './pages/legal/CancellationPolicy';
+
 function App() {
   return (
     <Router>
@@ -58,6 +67,15 @@ function App() {
 
         {/* Public vCard */}
         <Route path="/c/:slug" element={<PublicVcard />} />
+
+        {/* Legal / info pages */}
+        <Route path="/about-us"             element={<AboutUs />} />
+        <Route path="/contact-us"           element={<ContactUs />} />
+        <Route path="/faqs"                 element={<Faqs />} />
+        <Route path="/privacy-policy"       element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions"     element={<TermsConditions />} />
+        <Route path="/refund-policy"        element={<RefundPolicy />} />
+        <Route path="/cancellation-policy"  element={<CancellationPolicy />} />
 
         {/* Quick onboarding (post-login gate until card basics are filled) */}
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
