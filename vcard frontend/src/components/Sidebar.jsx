@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { hasChatFill } from '../utils/plan';
 import Logo from './ui/Logo';
+import IconButton from './ui/IconButton';
 
 const aiSubItems = [
   { name: 'AI Persona Setup', icon: Bot, path: '/dashboard/vcard/ai-persona' },
@@ -76,9 +77,9 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-5 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)' }}>
           <Logo size={30} to="/dashboard" />
-          <button onClick={onClose} className="lg:hidden p-1 hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+          <IconButton onClick={onClose} title="Close menu" size="sm" className="lg:hidden hover:text-brand-500">
             <X className="w-5 h-5" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Nav */}

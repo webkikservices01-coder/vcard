@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/motion';
 
@@ -148,9 +150,9 @@ const Testimonials = () => {
             <Star className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
             <p className="text-sm font-semibold mb-1" style={{ color: 'var(--surface-text-2)' }}>No testimonials yet.</p>
             <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)', opacity: 0.8 }}>Collect and showcase customer feedback</p>
-            <button onClick={openCreate} className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 fast-transition">
-              <Plus className="w-4 h-4" /> Add Testimonial
-            </button>
+            <Button variant="primary" onClick={openCreate} className="!w-auto" leftIcon={<Plus className="w-4 h-4" />}>
+              Add Testimonial
+            </Button>
           </motion.div>
         ) : (
           <motion.div {...staggerContainer(0.06, 0.1)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -168,14 +170,12 @@ const Testimonials = () => {
                   </div>
                   <p className="text-sm flex-1" style={{ color: 'var(--surface-text-2)' }}>{item.review}</p>
                   <div className="flex items-center justify-end gap-1 mt-4 pt-3" style={{ borderTop: '1px solid var(--surface-border)' }}>
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => openEdit(item)}
-                      className="p-2 rounded-lg hover:text-brand-500 hover:bg-brand-500/10 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                    <IconButton variant="ghost" title="Edit" onClick={() => openEdit(item)}>
                       <Pencil className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDelete(item._id)}
-                      className="p-2 rounded-lg hover:text-red-500 hover:bg-red-500/10 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                    </IconButton>
+                    <IconButton variant="danger" title="Delete" onClick={() => handleDelete(item._id)}>
                       <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                    </IconButton>
                   </div>
                 </GlassCard>
               ))}
@@ -199,7 +199,7 @@ const Testimonials = () => {
               >
                 <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid var(--surface-border)' }}>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Testimonial' : 'Add Testimonial'}</h3>
-                  <button onClick={() => setModalOpen(false)} className="p-2 rounded-lg fast-transition hover:bg-brand-500/10" style={{ color: 'var(--surface-text-2)' }}><X className="w-5 h-5" /></button>
+                  <IconButton variant="ghost" title="Close" onClick={() => setModalOpen(false)}><X className="w-5 h-5" /></IconButton>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
@@ -229,9 +229,14 @@ const Testimonials = () => {
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 p-6 pt-0">
-                  <button onClick={() => setModalOpen(false)}
-                    className="px-4 py-2.5 rounded-lg text-sm font-medium fast-transition hover:border-brand-500 hover:text-brand-500"
-                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}>Cancel</button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setModalOpen(false)}
+                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                    className="hover:border-brand-500 hover:text-brand-500"
+                  >
+                    Cancel
+                  </Button>
                   <div className="flex-1 max-w-[160px]">
                     <GradientButton onClick={handleSave} disabled={saving} loading={saving} className="!py-2.5">
                       <span>{saving ? 'Saving...' : editing ? 'Update' : 'Add'}</span>

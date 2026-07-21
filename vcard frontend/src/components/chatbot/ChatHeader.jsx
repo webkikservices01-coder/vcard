@@ -1,4 +1,5 @@
 import { Trash2, X } from 'lucide-react';
+import IconButton from '../ui/IconButton';
 
 const ChatHeader = ({ aiName, avatarLetter, onClear, onClose }) => (
   <div className="bg-[#0f0f0f] border-b border-[#232323] px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -18,12 +19,12 @@ const ChatHeader = ({ aiName, avatarLetter, onClear, onClose }) => (
       </div>
     </div>
     <div className="flex items-center gap-1">
-      <button onClick={onClear} title="Clear chat" className="text-gray-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+      <IconButton variant="bare" onClick={onClear} title="Clear chat" className="text-gray-600 hover:text-white hover:bg-white/5">
         <Trash2 className="w-3.5 h-3.5" />
-      </button>
-      <button onClick={onClose} title="Close" className="text-gray-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+      </IconButton>
+      <IconButton variant="bare" onClick={onClose} title="Close" className="text-gray-600 hover:text-white hover:bg-white/5">
         <X className="w-4 h-4" />
-      </button>
+      </IconButton>
     </div>
   </div>
 );

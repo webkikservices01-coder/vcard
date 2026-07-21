@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, X, Loader2, Sparkles, Send } from 'lucide-react';
 import { hasVoiceFill } from '../utils/plan';
+import IconButton from './ui/IconButton';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -140,9 +141,9 @@ const JarvisWidget = ({ plan }) => {
                   </p>
                 </div>
               </div>
-              <button onClick={handleToggleOpen} className="p-1.5 hover:bg-white/15 rounded-lg transition-colors">
+              <IconButton variant="bare" title="Close" onClick={handleToggleOpen} className="hover:bg-white/15">
                 <X className="w-4 h-4" />
-              </button>
+              </IconButton>
             </div>
 
             <div className="p-4 max-h-72 overflow-y-auto space-y-3">
@@ -185,24 +186,26 @@ const JarvisWidget = ({ plan }) => {
                   placeholder="Message likhiye..."
                   className="flex-1 min-w-0 px-3 py-2 text-sm rounded-xl border border-crimson-100 focus:outline-none focus:ring-2 focus:ring-magenta-400 focus:border-magenta-400 disabled:opacity-50"
                 />
-                <motion.button
-                  whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                <IconButton
+                  variant="bare"
                   type="submit"
+                  title="Send message"
                   disabled={status === 'thinking' || status === 'speaking' || !textInput.trim()}
-                  className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white flex items-center justify-center disabled:opacity-30 shadow-sm"
+                  className="shrink-0 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white shadow-sm"
                 >
                   <Send className="w-4 h-4" />
-                </motion.button>
+                </IconButton>
                 {canUseVoice && (
-                  <motion.button
-                    whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+                  <IconButton
+                    variant="bare"
                     type="button"
+                    title={status === 'listening' ? 'Stop listening' : 'Start listening'}
                     onClick={() => (status === 'listening' ? recognitionRef.current?.stop() : startListening())}
                     disabled={status === 'thinking' || status === 'speaking'}
-                    className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition disabled:opacity-50 shadow-sm ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-gradient-to-br from-crimson-800 to-magenta-500 text-white'}`}
+                    className={`shrink-0 rounded-full shadow-sm ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-gradient-to-br from-crimson-800 to-magenta-500 text-white'}`}
                   >
                     {status === 'thinking' ? <Loader2 className="w-4 h-4 animate-spin" /> : status === 'listening' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </motion.button>
+                  </IconButton>
                 )}
               </form>
             </div>
@@ -218,10 +221,10 @@ const JarvisWidget = ({ plan }) => {
             transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
           />
         )}
-        <motion.button
-          whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
+        <IconButton
+          variant="bare" size="lg"
           onClick={handleToggleOpen}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white shadow-[0_8px_28px_rgba(231,12,101,0.4)] flex items-center justify-center"
+          className="relative !w-14 !h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white shadow-[0_8px_28px_rgba(231,12,101,0.4)]"
           title={canUseVoice ? 'Jarvis Voice Assistant' : 'Jarvis Chat Assistant'}
         >
           <AnimatePresence mode="wait">
@@ -235,7 +238,7 @@ const JarvisWidget = ({ plan }) => {
               </motion.span>
             )}
           </AnimatePresence>
-        </motion.button>
+        </IconButton>
       </div>
     </>
   );

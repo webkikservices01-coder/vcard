@@ -6,6 +6,8 @@ import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check } from 'lucide-react';
 import { hasChatFill } from '../../utils/plan';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
 import { plans as pricingPlans, featureSections } from '../../data/plans.jsx';
@@ -272,14 +274,14 @@ const AiPersona = () => {
             <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>FAQs</p>
             <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Pre-set Q&A pairs for accurate instant answers</p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={addFaq}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:opacity-90 fast-transition"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add FAQ</span>
-          </motion.button>
+            Add FAQ
+          </Button>
         </div>
 
         <div>
@@ -300,9 +302,9 @@ const AiPersona = () => {
                 <div className="p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--surface-text-2)' }}>FAQ #{i + 1}</span>
-                    <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} onClick={() => removeFaq(i)} className="p-1 hover:text-red-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                    <IconButton variant="danger" title="Remove FAQ" onClick={() => removeFaq(i)}>
                       <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                    </IconButton>
                   </div>
                   <input
                     value={faq.question}

@@ -6,6 +6,8 @@ import ChatHeader from './ChatHeader';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
+import IconButton from '../ui/IconButton';
+import Button from '../ui/Button';
 
 const API_URL = import.meta.env.VITE_API_URL;
 let idCounter = 0;
@@ -98,12 +100,14 @@ const ChatWidget = ({ slug, aiName, greeting }) => {
 
               <AnimatePresence>
                 {showScrollBtn && (
-                  <motion.button
+                  <IconButton
+                    variant="bare" size="sm"
                     initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
                     onClick={scrollToBottom}
-                    className="absolute bottom-3 right-3 z-10 w-8 h-8 bg-[#1a1a1a] border border-[#333] rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#222] transition-all shadow-lg">
+                    title="Scroll to bottom"
+                    className="absolute bottom-3 right-3 z-10 bg-[#1a1a1a] border border-[#333] text-gray-400 hover:text-white hover:bg-[#222] shadow-lg">
                     ↓
-                  </motion.button>
+                  </IconButton>
                 )}
               </AnimatePresence>
             </div>
@@ -116,10 +120,12 @@ const ChatWidget = ({ slug, aiName, greeting }) => {
                   className="px-3 pb-2.5 pt-2 flex flex-wrap gap-1.5 flex-shrink-0 border-t border-[#1a1a1a]"
                 >
                   {initSuggestions.map(s => (
-                    <button key={s} onClick={() => sendMessage(s)}
-                      className="text-[11px] text-gray-400 border border-[#2a2a2a] rounded-full px-3 py-1.5 hover:border-indigo-500/50 hover:text-white hover:bg-indigo-500/10 transition-all bg-[#111]">
+                    <Button
+                      key={s} variant="themed" size="sm" onClick={() => sendMessage(s)}
+                      className="!min-h-0 !py-1.5 !px-3 !text-[11px] !font-normal !rounded-full text-gray-400 border border-[#2a2a2a] hover:border-indigo-500/50 hover:text-white hover:bg-indigo-500/10 bg-[#111]"
+                    >
                       {s}
-                    </button>
+                    </Button>
                   ))}
                 </motion.div>
               )}
@@ -163,11 +169,11 @@ const ChatWidget = ({ slug, aiName, greeting }) => {
           />
         )}
 
-        <motion.button
-          whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
+        <IconButton
+          variant="bare" size="lg"
           onClick={() => setIsOpen(o => !o)}
-          className="relative w-14 h-14 bg-gradient-to-br from-[#111] to-black text-white rounded-full shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex items-center justify-center border border-white/10"
-          aria-label={isOpen ? 'Close chat' : 'Open chat'}
+          className="relative !w-14 !h-14 bg-gradient-to-br from-[#111] to-black text-white shadow-[0_8px_28px_rgba(0,0,0,0.5)] border border-white/10"
+          title={isOpen ? 'Close chat' : 'Open chat'}
         >
           <AnimatePresence mode="wait">
             {isOpen ? (
@@ -187,7 +193,7 @@ const ChatWidget = ({ slug, aiName, greeting }) => {
               transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
             />
           )}
-        </motion.button>
+        </IconButton>
       </div>
 
       <style>{`

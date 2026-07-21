@@ -10,6 +10,8 @@ import { MdEmail, MdLocationOn, MdOutlineLink } from 'react-icons/md';
 import { Eye, Share2, X, Download, QrCode, ChevronRight } from 'lucide-react';
 import { allThemes, buildCustomTheme } from './vCard/Theme';
 import ChatWidget from '../components/chatbot/ChatWidget';
+import Button from '../components/ui/Button';
+import IconButton from '../components/ui/IconButton';
 
 // SafeHtml Component (Shadow DOM) for CSS Isolation & Overflow Fix
 const SafeHtml = ({ html, textColor }) => {
@@ -153,14 +155,13 @@ const EnquiryForm = ({ slug, s }) => {
       </div>
       <textarea required placeholder="Type your message" rows={3} value={form.message} onChange={set('message')} className={`${inputClass} resize-none`} style={inputStyle} />
       {status === 'error' && <p className="text-xs text-red-500">Something went wrong. Please try again.</p>}
-      <motion.button
-        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-        type="submit" disabled={status === 'sending'}
-        className="w-full py-3 rounded-xl text-sm font-bold disabled:opacity-60"
+      <Button
+        variant="themed" fullWidth
+        type="submit" loading={status === 'sending'}
         style={{ background: s.contactBg, color: s.contactText }}
       >
         {status === 'sending' ? 'Sending…' : 'Send'}
-      </motion.button>
+      </Button>
     </form>
   );
 };
@@ -195,26 +196,26 @@ const renderSection = (id, data, theme) => {
           ))}
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             {settings?.showPhonebook !== false && (
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+              <Button
+                variant="themed" size="md" fullWidth
                 onClick={data.onPhonebook}
-                className="flex items-center justify-center space-x-2 py-3 rounded-2xl text-xs font-bold"
+                className="rounded-2xl !text-xs"
+                leftIcon={<Download className="w-3.5 h-3.5" />}
                 style={{ border: `1.5px solid ${s.contactBg}`, color: s.nameColor }}
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Save Contact</span>
-              </motion.button>
+                Save Contact
+              </Button>
             )}
             {settings?.showShare !== false && (
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+              <Button
+                variant="themed" size="md" fullWidth
                 onClick={data.onShare}
-                className="flex items-center justify-center space-x-2 py-3 rounded-2xl text-xs font-bold"
+                className="rounded-2xl !text-xs"
+                leftIcon={<Share2 className="w-3.5 h-3.5" />}
                 style={{ background: s.contactBg, color: s.contactText }}
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Share Card</span>
-              </motion.button>
+                Share Card
+              </Button>
             )}
           </div>
         </div>
@@ -474,7 +475,7 @@ const PublicVcard = () => {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
         <h1 className="text-5xl font-black text-black mb-3">404</h1>
         <p className="text-gray-500 text-sm mb-5">This vCard doesn't exist or has been removed.</p>
-        <a href="/" className="bg-pink-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-pink-700 transition">Go Home</a>
+        <a href="/" className="btn-primary inline-flex text-sm">Go Home</a>
       </motion.div>
     </div>
   );
@@ -530,14 +531,14 @@ const PublicVcard = () => {
               </div>
             )}
             {settings.showShare !== false && (
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setShareOpen(true)} className="bg-black/70 backdrop-blur-sm text-white p-1.5 rounded-full">
+              <IconButton variant="bare" size="sm" title="Share" onClick={() => setShareOpen(true)} className="bg-black/70 backdrop-blur-sm text-white rounded-full">
                 <Share2 className="w-3.5 h-3.5" />
-              </motion.button>
+              </IconButton>
             )}
             {settings.showQr !== false && (
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setQrOpen(true)} className="bg-black/70 backdrop-blur-sm text-white p-1.5 rounded-full">
+              <IconButton variant="bare" size="sm" title="QR code" onClick={() => setQrOpen(true)} className="bg-black/70 backdrop-blur-sm text-white rounded-full">
                 <QrCode className="w-3.5 h-3.5" />
-              </motion.button>
+              </IconButton>
             )}
           </div>
         </motion.div>
@@ -580,14 +581,14 @@ const PublicVcard = () => {
                   </div>
                 )}
                 {settings.showShare !== false && (
-                  <button onClick={() => setShareOpen(true)} className="p-1.5 rounded-lg" style={{ background: s.sectionBg, color: s.nameColor }}>
+                  <IconButton variant="bare" size="sm" title="Share" onClick={() => setShareOpen(true)} style={{ background: s.sectionBg, color: s.nameColor }}>
                     <Share2 className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 )}
                 {settings.showQr !== false && (
-                  <button onClick={() => setQrOpen(true)} className="p-1.5 rounded-lg" style={{ background: s.sectionBg, color: s.nameColor }}>
+                  <IconButton variant="bare" size="sm" title="QR code" onClick={() => setQrOpen(true)} style={{ background: s.sectionBg, color: s.nameColor }}>
                     <QrCode className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 )}
               </div>
               {sectionOrder.map(id => renderSection(id, sectionData, theme))}
@@ -808,7 +809,7 @@ const PublicVcard = () => {
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900">Share Card</h3>
-                <button onClick={() => setShareOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+                <IconButton variant="bare" title="Close" onClick={() => setShareOpen(false)} className="text-gray-500 hover:bg-gray-100"><X className="w-5 h-5" /></IconButton>
               </div>
               <div className="p-5 space-y-4">
                 {settings.showQrOnShare !== false && (
@@ -818,7 +819,7 @@ const PublicVcard = () => {
                 )}
                 <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2.5">
                   <p className="text-xs text-gray-600 flex-1 truncate font-mono">{cardUrl}</p>
-                  <button onClick={handleCopy} className="shrink-0 text-xs font-bold text-pink-600 hover:underline">
+                  <button onClick={handleCopy} className="shrink-0 text-xs font-bold text-crimson-600 hover:underline">
                     {copied ? '✓ Copied!' : 'Copy'}
                   </button>
                 </div>
@@ -859,11 +860,11 @@ const PublicVcard = () => {
             >
               <div className="flex items-center justify-between w-full">
                 <h3 className="font-bold text-gray-900">QR Code</h3>
-                <button onClick={() => setQrOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+                <IconButton variant="bare" title="Close" onClick={() => setQrOpen(false)} className="text-gray-500 hover:bg-gray-100"><X className="w-5 h-5" /></IconButton>
               </div>
               <QRCodeSVG value={cardUrl} size={200} bgColor="#fff" fgColor="#000" level="H" />
               <p className="text-xs text-gray-400 text-center">Scan to open this digital card</p>
-              <button onClick={() => setQrOpen(false)} className="w-full bg-pink-600 text-white font-bold py-2.5 rounded-xl text-sm hover:bg-pink-700 transition">Close</button>
+              <Button variant="primary" fullWidth onClick={() => setQrOpen(false)}>Close</Button>
             </motion.div>
           </motion.div>
         )}

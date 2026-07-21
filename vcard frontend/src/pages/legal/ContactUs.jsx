@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Clock, MessageCircle, Send, CheckCircle2 } from 'lucide-react';
 import MeshBackground from '../../components/ui/MeshBackground';
 import GlassCard from '../../components/ui/GlassCard';
+import Button from '../../components/ui/Button';
 import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../../components/PublicFooter';
 import { COMPANY } from '../../components/PublicFooter';
@@ -86,9 +87,9 @@ const ContactUs = () => {
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Message</label>
                     <textarea required rows={5} value={form.message} onChange={set('message')} placeholder="Tell us how we can help..." className="input-premium resize-none" />
                   </div>
-                  <button type="submit" className="btn-primary w-full">
-                    Send Message <Send className="h-4 w-4" />
-                  </button>
+                  <Button type="submit" variant="primary" rightIcon={<Send className="h-4 w-4" />}>
+                    Send Message
+                  </Button>
                 </form>
               )}
             </GlassCard>

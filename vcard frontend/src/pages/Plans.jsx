@@ -5,7 +5,8 @@ import { Check, X as XIcon, ShieldCheck, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
 import GlassCard from '../components/ui/GlassCard';
-import GradientButton from '../components/ui/GradientButton';
+import Button from '../components/ui/Button';
+import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
 import { plans, featureSections } from '../data/plans.jsx';
@@ -276,36 +277,21 @@ const Plans = () => {
                 </p>
 
                 {plan.popular ? (
-                  <GradientButton onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }} disabled={loading === plan.id}>
-                    {loading === plan.id && (
-                      <motion.span
-                        className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
-                      />
-                    )}
-                    <span>{loading === plan.id ? 'Processing...' : 'GET STARTED →'}</span>
-                  </GradientButton>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
+                  <Button
+                    variant="primary" fullWidth
                     onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
-                    disabled={loading === plan.id}
-                    className="w-full py-2.5 rounded-xl font-bold text-sm fast-transition hover:border-brand-500 hover:text-brand-500 disabled:opacity-60"
-                    style={{ border: '2px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                    loading={loading === plan.id}
                   >
-                    {loading === plan.id ? (
-                      <span className="inline-flex items-center gap-2">
-                        <motion.span
-                          className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
-                        />
-                        Processing...
-                      </span>
-                    ) : 'GET STARTED →'}
-                  </motion.button>
+                    {loading === plan.id ? 'Processing...' : 'GET STARTED →'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary" fullWidth
+                    onClick={(e) => { e.stopPropagation(); handleSubscribe(plan); }}
+                    loading={loading === plan.id}
+                  >
+                    {loading === plan.id ? 'Processing...' : 'GET STARTED →'}
+                  </Button>
                 )}
               </div>
             </GlassCard>
@@ -383,13 +369,13 @@ const Plans = () => {
                     <strong style={{ color: 'var(--surface-text)' }}>{selectedPlan.name}</strong> is highlighted below — see exactly what's different.
                   </p>
                 </div>
-                <button
+                <IconButton
                   onClick={() => setSelectedPlan(null)}
-                  className="p-1.5 rounded-lg hover:bg-brand-500/10 fast-transition shrink-0"
-                  style={{ color: 'var(--surface-text-2)' }}
+                  title="Close"
+                  className="hover:bg-brand-500/10 shrink-0"
                 >
                   <XIcon className="w-4 h-4" />
-                </button>
+                </IconButton>
               </div>
 
               <FeatureComparisonTable highlightId={selectedPlan.id} />
@@ -405,19 +391,13 @@ const Plans = () => {
                   </p>
                 </div>
                 <div className="w-full sm:w-56">
-                  <GradientButton
+                  <Button
+                    variant="primary" fullWidth
                     onClick={() => { const p = selectedPlan; setSelectedPlan(null); handleSubscribe(p); }}
-                    disabled={loading === selectedPlan.id}
+                    loading={loading === selectedPlan.id}
                   >
-                    {loading === selectedPlan.id && (
-                      <motion.span
-                        className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
-                      />
-                    )}
-                    <span>{loading === selectedPlan.id ? 'Processing...' : 'GET STARTED →'}</span>
-                  </GradientButton>
+                    {loading === selectedPlan.id ? 'Processing...' : 'GET STARTED →'}
+                  </Button>
                 </div>
               </div>
             </motion.div>

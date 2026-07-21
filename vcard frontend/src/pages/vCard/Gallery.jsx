@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/motion';
 
@@ -174,13 +176,14 @@ const Gallery = () => {
                         {item.type === 'video' ? <Video className="w-2.5 h-2.5" /> : <ImageIcon className="w-2.5 h-2.5" />}
                         <span className="capitalize">{item.type}</span>
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      <IconButton
+                        variant="danger"
+                        title="Remove"
                         onClick={() => handleDelete(item._id)}
-                        className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-red-500 fast-transition"
+                        className="absolute top-1.5 right-1.5 bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </motion.button>
+                      </IconButton>
                     </div>
                     <p className="text-[11px] mt-1.5 px-0.5 truncate" style={{ color: 'var(--surface-text-2)' }}>{item.url || '—'}</p>
                   </GlassCard>
@@ -206,13 +209,9 @@ const Gallery = () => {
               >
                 <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid var(--surface-border)' }}>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>Add to Gallery</h3>
-                  <button
-                    onClick={() => setModalOpen(false)}
-                    className="p-2 rounded-lg hover:bg-brand-500/10 fast-transition"
-                    style={{ color: 'var(--surface-text-2)' }}
-                  >
+                  <IconButton variant="ghost" title="Close" onClick={() => setModalOpen(false)}>
                     <X className="w-5 h-5" />
-                  </button>
+                  </IconButton>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
@@ -254,13 +253,14 @@ const Gallery = () => {
                   )}
                 </div>
                 <div className="flex justify-end space-x-3 p-6 pt-0">
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setModalOpen(false)}
-                    className="px-4 py-2.5 rounded-lg text-sm font-medium hover:border-brand-500 hover:text-brand-500 fast-transition"
                     style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                    className="hover:border-brand-500 hover:text-brand-500"
                   >
                     Cancel
-                  </button>
+                  </Button>
                   <GradientButton onClick={handleSave} disabled={saving} loading={saving} className="!w-auto px-6">
                     <span>{saving ? 'Adding...' : 'Add'}</span>
                   </GradientButton>

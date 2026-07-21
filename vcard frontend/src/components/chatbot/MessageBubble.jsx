@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Copy, Check, Volume2, VolumeX } from 'lucide-react';
 import { BotMessage } from './markdown';
 import { speakText } from './useSpeech';
+import IconButton from '../ui/IconButton';
 
 const MessageBubble = ({ msg, avatarLetter }) => {
   const [copied, setCopied] = useState(false);
@@ -48,13 +49,15 @@ const MessageBubble = ({ msg, avatarLetter }) => {
 
         {!isUser && (
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pl-1">
-            <button onClick={handleCopy} title="Copy" className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/5 transition-all">
+            <IconButton variant="bare" size="sm" onClick={handleCopy} title="Copy" className="text-gray-600 hover:text-white hover:bg-white/5">
               {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-            </button>
-            <button onClick={handleSpeak} title={speaking ? 'Stop' : 'Read aloud'}
-              className={`p-1 rounded-lg transition-all ${speaking ? 'text-indigo-400' : 'text-gray-600 hover:text-white hover:bg-white/5'}`}>
+            </IconButton>
+            <IconButton
+              variant="bare" size="sm" onClick={handleSpeak} title={speaking ? 'Stop' : 'Read aloud'}
+              className={speaking ? 'text-indigo-400' : 'text-gray-600 hover:text-white hover:bg-white/5'}
+            >
               {speaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-            </button>
+            </IconButton>
           </div>
         )}
       </div>

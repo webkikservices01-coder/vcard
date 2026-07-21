@@ -9,6 +9,8 @@ import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/motion';
 
@@ -197,22 +199,12 @@ const Products = () => {
                   <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--surface-border)' }}>
                     <span className="text-sm font-black text-brand-500">{item.price ? `₹${item.price}` : '—'}</span>
                     <div className="flex items-center gap-1">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                        onClick={() => openEdit(item)}
-                        className="p-2 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
-                        style={{ color: 'var(--surface-text-2)' }}
-                      >
+                      <IconButton variant="ghost" title="Edit" onClick={() => openEdit(item)}>
                         <Pencil className="w-4 h-4" />
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                        onClick={() => handleDelete(item._id)}
-                        className="p-2 rounded-lg hover:bg-red-500/10 hover:text-red-500 fast-transition"
-                        style={{ color: 'var(--surface-text-2)' }}
-                      >
+                      </IconButton>
+                      <IconButton variant="danger" title="Delete" onClick={() => handleDelete(item._id)}>
                         <Trash2 className="w-4 h-4" />
-                      </motion.button>
+                      </IconButton>
                     </div>
                   </div>
                 </GlassCard>
@@ -239,23 +231,17 @@ const Products = () => {
                   <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Product' : 'Add Product'}</h3>
                   <div className="flex items-center space-x-1">
                     {hasVoiceFill(plan) && (
-                      <button
-                        type="button"
-                        onClick={() => setShowVoiceFill(true)}
+                      <IconButton
+                        variant="ghost"
                         title="Fill with Voice"
-                        className="p-2 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
-                        style={{ color: 'var(--surface-text-2)' }}
+                        onClick={() => setShowVoiceFill(true)}
                       >
                         <Mic className="w-4 h-4" />
-                      </button>
+                      </IconButton>
                     )}
-                    <button
-                      onClick={() => setModalOpen(false)}
-                      className="p-2 rounded-lg hover:bg-brand-500/10 fast-transition"
-                      style={{ color: 'var(--surface-text-2)' }}
-                    >
+                    <IconButton variant="ghost" title="Close" onClick={() => setModalOpen(false)}>
                       <X className="w-5 h-5" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
@@ -299,13 +285,14 @@ const Products = () => {
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 p-6 pt-0">
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setModalOpen(false)}
-                    className="px-4 py-2.5 rounded-lg text-sm font-medium hover:border-brand-500 hover:text-brand-500 fast-transition"
                     style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                    className="hover:border-brand-500 hover:text-brand-500"
                   >
                     Cancel
-                  </button>
+                  </Button>
                   <GradientButton onClick={handleSave} disabled={saving} loading={saving} className="!w-auto px-6">
                     <span>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</span>
                   </GradientButton>

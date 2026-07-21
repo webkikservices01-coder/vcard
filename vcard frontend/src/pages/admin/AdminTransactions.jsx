@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import GlassCard from '../../components/ui/GlassCard';
+import Button from '../../components/ui/Button';
 
 const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -83,20 +84,18 @@ const AdminTransactions = () => {
           <div className="px-5 py-3 flex justify-between items-center" style={{ borderTop: '1px solid var(--surface-border)' }}>
             <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Page {page} of {pages}</span>
             <div className="flex space-x-2">
-              <button
+              <Button
+                variant="secondary" size="sm"
                 onClick={() => setPage(p => Math.max(1, p-1))} disabled={page===1}
-                className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 fast-transition hover:border-brand-500 hover:text-brand-500"
-                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
               >
                 Prev
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary" size="sm"
                 onClick={() => setPage(p => Math.min(pages, p+1))} disabled={page===pages}
-                className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 fast-transition hover:border-brand-500 hover:text-brand-500"
-                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}

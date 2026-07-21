@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Eye, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import IconButton from '../../components/ui/IconButton';
 
 const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -148,13 +149,14 @@ const AdminUsers = () => {
                   <td className="px-4 py-3.5 text-sm" style={{ color: 'var(--surface-text-2)' }}>{u.card?.viewCount || 0}</td>
                   <td className="px-4 py-3.5 text-xs" style={{ color: 'var(--surface-text-2)' }}>{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="px-4 py-3.5">
-                    <button
+                    <IconButton
+                      variant="ghost"
+                      title="View user"
                       onClick={() => openDetail(u)}
-                      className="p-1.5 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
-                      style={{ color: 'var(--surface-text-2)' }}
+                      className="hover:bg-brand-500/10 hover:text-brand-500"
                     >
                       <Eye className="w-4 h-4" />
-                    </button>
+                    </IconButton>
                   </td>
                 </tr>
               ))}
@@ -166,20 +168,22 @@ const AdminUsers = () => {
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--surface-border)' }}>
             <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Page {page} of {pages}</span>
             <div className="flex space-x-2">
-              <button
+              <IconButton
+                variant="ghost"
+                title="Previous page"
                 onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}
-                className="p-1.5 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 disabled:opacity-30 fast-transition"
-                style={{ color: 'var(--surface-text-2)' }}
+                className="hover:bg-brand-500/10 hover:text-brand-500"
               >
                 <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
+                variant="ghost"
+                title="Next page"
                 onClick={() => setPage(p => Math.min(pages, p+1))} disabled={page === pages}
-                className="p-1.5 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 disabled:opacity-30 fast-transition"
-                style={{ color: 'var(--surface-text-2)' }}
+                className="hover:bg-brand-500/10 hover:text-brand-500"
               >
                 <ChevronRight className="w-4 h-4" />
-              </button>
+              </IconButton>
             </div>
           </div>
         )}
@@ -199,13 +203,14 @@ const AdminUsers = () => {
             >
               <div className="flex items-center justify-between px-5 py-4 sticky top-0 glass" style={{ borderBottom: '1px solid var(--surface-border)' }}>
                 <h3 className="font-bold" style={{ color: 'var(--surface-text)' }}>{selected.name}</h3>
-                <button
+                <IconButton
+                  variant="ghost"
+                  title="Close"
                   onClick={() => { setSelected(null); setDetail(null); }}
-                  className="p-1 rounded-lg hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
-                  style={{ color: 'var(--surface-text-2)' }}
+                  className="hover:bg-brand-500/10 hover:text-brand-500"
                 >
                   <X className="w-5 h-5" />
-                </button>
+                </IconButton>
               </div>
               <div className="p-5 space-y-5">
                 {/* User info */}

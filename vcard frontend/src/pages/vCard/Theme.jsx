@@ -406,6 +406,7 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
 
@@ -511,12 +512,14 @@ const BgPicker = ({ title, colorKey, imageKey, ct, setCt, uploading, onUpload })
     {ct[imageKey] ? (
       <div className="relative mt-1">
         <img src={ct[imageKey]} alt="bg" className="w-full h-20 object-cover rounded-lg" style={{ border: '1px solid var(--surface-border)' }} />
-        <button
+        <IconButton
+          variant="bare"
+          title="Remove image"
           onClick={() => setCt(p => ({ ...p, [imageKey]: '' }))}
-          className="absolute top-1 right-1 w-5 h-5 bg-brand-600/80 text-white rounded-full flex items-center justify-center fast-transition hover:bg-brand-600"
+          className="absolute top-1 right-1 rounded-full bg-brand-600/80 text-white hover:bg-brand-600"
         >
           <X className="w-3 h-3" />
-        </button>
+        </IconButton>
         <p className="text-[10px] mt-1" style={{ color: 'var(--surface-text-2)' }}>Image is active — overrides color above</p>
       </div>
     ) : (

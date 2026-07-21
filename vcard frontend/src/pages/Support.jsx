@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, X, LifeBuoy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
+import Button from '../components/ui/Button';
+import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
 
@@ -102,9 +104,9 @@ const Support = () => {
           <div className="p-12 text-center">
             <LifeBuoy className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.4 }} />
             <p className="text-sm mb-4" style={{ color: 'var(--surface-text-2)' }}>No support tickets yet.</p>
-            <button onClick={() => setModalOpen(true)} className="bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 fast-transition">
+            <Button variant="primary" onClick={() => setModalOpen(true)} className="!w-auto px-5">
               Create Ticket
-            </button>
+            </Button>
           </div>
         ) : (
           <table className="w-full">
@@ -136,9 +138,9 @@ const Support = () => {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end">
-                      <button onClick={() => handleDelete(ticket._id)} className="p-2 hover:text-red-600 hover:bg-red-500/10 rounded-lg fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                      <IconButton variant="danger" title="Delete ticket" onClick={() => handleDelete(ticket._id)}>
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </IconButton>
                     </div>
                   </td>
                 </tr>
@@ -163,9 +165,9 @@ const Support = () => {
               <GlassCard className="w-full max-w-md">
                 <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid var(--surface-border)' }}>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>Create Support Ticket</h3>
-                  <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-[var(--surface-2)] rounded-lg fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                  <IconButton variant="ghost" title="Close" onClick={() => setModalOpen(false)}>
                     <X className="w-5 h-5" />
-                  </button>
+                  </IconButton>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
@@ -202,13 +204,9 @@ const Support = () => {
                   </div>
                 </div>
                 <div className="flex justify-end space-x-3 p-6 pt-0">
-                  <button
-                    onClick={() => setModalOpen(false)}
-                    className="px-4 py-2.5 text-sm font-medium rounded-lg hover:border-brand-500 hover:text-brand-500 fast-transition"
-                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                  >
+                  <Button variant="secondary" onClick={() => setModalOpen(false)}>
                     Cancel
-                  </button>
+                  </Button>
                   <GradientButton onClick={handleCreate} disabled={saving} className="!w-auto px-6">
                     <span>{saving ? 'Submitting...' : 'Submit Ticket'}</span>
                   </GradientButton>

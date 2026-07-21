@@ -1,4 +1,4 @@
-import React from 'react';
+import Button from './ui/Button';
 
 // Naya prop add kiya: nextText (jiska default value "Next Step" hai)
 const ActionPopup = ({ isOpen, onClose, onPreview, onNext, nextText = "Next Step" }) => {
@@ -18,27 +18,26 @@ const ActionPopup = ({ isOpen, onClose, onPreview, onNext, nextText = "Next Step
         <p className="text-gray-500 mb-8 text-sm">Aapka data save ho gaya hai. Ab aap kya karna chahte hain?</p>
         
         <div className="flex flex-col gap-3">
-          <button 
-            onClick={onPreview} 
-            className="w-full py-2.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-brand-600 hover:text-brand-600 hover:bg-gray-50 transition-all"
+          <Button
+            variant="themed" fullWidth
+            onClick={onPreview}
+            className="border-2 border-gray-200 text-gray-700 hover:border-brand-600 hover:text-brand-600 hover:bg-gray-50"
           >
             Preview Vcard
-          </button>
-          
-          <button 
-            onClick={onNext} 
-            className="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 shadow-md hover:shadow-lg transition-all"
-          >
+          </Button>
+
+          <Button variant="primary" onClick={onNext}>
             {/* Yahan humne nextText variable laga diya */}
             {nextText}
-          </button>
+          </Button>
 
-          <button 
-            onClick={onClose} 
-            className="mt-2 text-sm text-gray-400 hover:text-gray-600 underline"
+          <Button
+            variant="themed" fullWidth
+            onClick={onClose}
+            className="mt-2 !py-0 !min-h-0 !font-normal text-sm text-gray-400 hover:text-gray-600 underline"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

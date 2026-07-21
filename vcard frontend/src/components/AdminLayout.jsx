@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe } from 'lucide-react';
 import ThemeToggle from './ui/ThemeToggle';
 import Logo from './ui/Logo';
+import IconButton from './ui/IconButton';
 
 const navItems = [
   { path: '/admin',              label: 'Overview',      icon: LayoutDashboard },
@@ -68,9 +69,9 @@ const AdminLayout = () => {
             <Logo size={26} to="/admin" showWordmark={true} />
             <p className="text-[9px] font-bold tracking-widest uppercase mt-0.5 ml-0.5" style={{ color: 'var(--surface-text-2)' }}>Admin Panel</p>
           </div>
-          <button onClick={() => setOpen(false)} className="lg:hidden p-1 hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+          <IconButton onClick={() => setOpen(false)} title="Close menu" size="sm" className="lg:hidden hover:text-brand-500">
             <X className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5">
@@ -107,13 +108,13 @@ const AdminLayout = () => {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <header className="h-16 glass rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 z-20 border-x-0 border-t-0">
           <div className="flex items-center space-x-3">
-            <button
+            <IconButton
               onClick={() => setOpen(true)}
-              className="lg:hidden p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg fast-transition"
-              style={{ color: 'var(--surface-text-2)' }}
+              title="Open menu"
+              className="lg:hidden hover:text-brand-500 hover:bg-brand-500/10"
             >
               <Menu className="w-5 h-5" />
-            </button>
+            </IconButton>
             <AnimatePresence mode="wait">
               <motion.span
                 key={pageTitle}

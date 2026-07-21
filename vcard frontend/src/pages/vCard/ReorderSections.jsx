@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
+import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
 
@@ -204,18 +205,20 @@ const ReorderSections = () => {
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
+                    <IconButton
+                      variant="ghost"
+                      title="Move up"
                       onClick={() => moveUp(idx)}
                       disabled={idx === 0}
-                      className="w-6 h-6 flex items-center justify-center rounded hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-20 disabled:cursor-not-allowed fast-transition"
-                      style={{ color: 'var(--surface-text-2)' }}
-                    >▲</button>
-                    <button
+                      className="hover:text-brand-500 hover:bg-brand-500/10"
+                    >▲</IconButton>
+                    <IconButton
+                      variant="ghost"
+                      title="Move down"
                       onClick={() => moveDown(idx)}
                       disabled={idx === sections.length - 1}
-                      className="w-6 h-6 flex items-center justify-center rounded hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-20 disabled:cursor-not-allowed fast-transition"
-                      style={{ color: 'var(--surface-text-2)' }}
-                    >▼</button>
+                      className="hover:text-brand-500 hover:bg-brand-500/10"
+                    >▼</IconButton>
                   </div>
                 </motion.div>
               ))}

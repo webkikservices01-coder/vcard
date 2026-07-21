@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Receipt, Download, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Receipt, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import GlassCard from '../components/ui/GlassCard';
+import Button from '../components/ui/Button';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
 
@@ -120,16 +121,15 @@ const Transactions = () => {
                   </td>
                   <td className="px-5 py-4">
                     {txn.status === 'completed' ? (
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleDownloadInvoice(txn)}
-                        disabled={downloadingId === txn._id}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-500 hover:text-brand-600 disabled:opacity-50 fast-transition"
+                        loading={downloadingId === txn._id}
+                        leftIcon={<Download className="w-3.5 h-3.5" />}
                       >
-                        {downloadingId === txn._id
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <Download className="w-3.5 h-3.5" />}
-                        <span>{downloadingId === txn._id ? 'Downloading...' : 'Download'}</span>
-                      </button>
+                        {downloadingId === txn._id ? 'Downloading...' : 'Download'}
+                      </Button>
                     ) : (
                       <span className="text-xs" style={{ color: 'var(--surface-text-2)', opacity: 0.4 }}>—</span>
                     )}

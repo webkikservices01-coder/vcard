@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import { Camera, User, Briefcase, Phone, Link2, ArrowRight, ArrowLeft, Check, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import AuthBrandPanel from '../components/AuthBrandPanel';
 import GlassCard from '../components/ui/GlassCard';
-import GradientButton from '../components/ui/GradientButton';
+import Button from '../components/ui/Button';
+import IconButton from '../components/ui/IconButton';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import MeshBackground from '../components/ui/MeshBackground';
 import Logo from '../components/ui/Logo';
@@ -336,10 +337,9 @@ const Onboarding = () => {
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }} className="pt-2">
-                          <GradientButton type="button" onClick={goToTheme}>
-                            <span>Continue</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </GradientButton>
+                          <Button type="button" onClick={goToTheme} rightIcon={<ArrowRight className="w-4 h-4" />}>
+                            Continue
+                          </Button>
                         </motion.div>
                       </motion.div>
                     ) : (
@@ -360,24 +360,22 @@ const Onboarding = () => {
                         </div>
 
                         <div className="flex items-center gap-2 pt-1">
-                          <motion.button
-                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
+                          <IconButton
+                            variant="solid" size="lg"
                             type="button"
+                            title="Back"
                             onClick={() => setStep(1)}
-                            className="shrink-0 w-11 h-11 rounded-lg flex items-center justify-center fast-transition hover:border-brand-400 hover:text-brand-500"
-                            style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text-2)' }}
+                            className="hover:border-brand-400 hover:text-brand-500"
                           >
                             <ArrowLeft className="w-4 h-4" />
-                          </motion.button>
+                          </IconButton>
                           <div className="flex-1">
-                            <GradientButton type="button" onClick={handleSubmit} disabled={saving}>
-                              {saving ? (
-                                <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-                              ) : (
-                                <ArrowRight className="w-4 h-4" />
-                              )}
-                              <span>{saving ? 'Saving...' : 'Continue to Pricing'}</span>
-                            </GradientButton>
+                            <Button
+                              type="button" onClick={handleSubmit} loading={saving}
+                              rightIcon={<ArrowRight className="w-4 h-4" />}
+                            >
+                              {saving ? 'Saving...' : 'Continue to Pricing'}
+                            </Button>
                           </div>
                         </div>
                       </motion.div>

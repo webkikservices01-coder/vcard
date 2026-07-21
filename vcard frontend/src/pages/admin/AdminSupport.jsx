@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import GlassCard from '../../components/ui/GlassCard';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 
 const API = `${import.meta.env.VITE_API_URL}/api/admin`;
 const h = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -77,20 +79,22 @@ const AdminSupport = () => {
               </div>
               <div className="flex items-center space-x-2 ml-3 shrink-0" onClick={e => e.stopPropagation()}>
                 {t.status !== 'closed' && (
-                  <button
+                  <Button
+                    variant="themed" size="sm"
                     onClick={() => updateStatus(t._id, 'closed')}
-                    className="text-[10px] px-2.5 py-1 bg-emerald-500/15 text-emerald-400 rounded-lg font-bold hover:bg-emerald-500/25 fast-transition"
+                    className="!px-2.5 !py-1 !text-[10px] !min-h-0 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
                   >
                     Close
-                  </button>
+                  </Button>
                 )}
                 {t.status === 'open' && (
-                  <button
+                  <Button
+                    variant="themed" size="sm"
                     onClick={() => updateStatus(t._id, 'in-progress')}
-                    className="text-[10px] px-2.5 py-1 bg-yellow-500/15 text-yellow-400 rounded-lg font-bold hover:bg-yellow-500/25 fast-transition"
+                    className="!px-2.5 !py-1 !text-[10px] !min-h-0 bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25"
                   >
                     In Progress
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -112,9 +116,9 @@ const AdminSupport = () => {
             >
               <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--surface-border)' }}>
                 <h3 className="font-bold" style={{ color: 'var(--surface-text)' }}>{selected.subject}</h3>
-                <button onClick={() => setSelected(null)} className="hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+                <IconButton variant="ghost" title="Close" onClick={() => setSelected(null)} className="hover:text-brand-500">
                   <X className="w-5 h-5" />
-                </button>
+                </IconButton>
               </div>
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -142,29 +146,32 @@ const AdminSupport = () => {
                 </div>
                 <div className="flex space-x-2">
                   {selected.status !== 'in-progress' && (
-                    <button
+                    <Button
+                      variant="themed" size="sm"
                       onClick={() => updateStatus(selected._id, 'in-progress')}
-                      className="flex-1 py-2 bg-yellow-500/15 text-yellow-400 text-xs font-bold rounded-xl hover:bg-yellow-500/25 fast-transition"
+                      className="flex-1 bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25"
                     >
                       Mark In Progress
-                    </button>
+                    </Button>
                   )}
                   {selected.status !== 'closed' && (
-                    <button
+                    <Button
+                      variant="themed" size="sm"
                       onClick={() => updateStatus(selected._id, 'closed')}
-                      className="flex-1 py-2 bg-emerald-500/15 text-emerald-400 text-xs font-bold rounded-xl hover:bg-emerald-500/25 fast-transition"
+                      className="flex-1 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
                     >
                       Mark Closed
-                    </button>
+                    </Button>
                   )}
                   {selected.status !== 'open' && (
-                    <button
+                    <Button
+                      variant="themed" size="sm"
                       onClick={() => updateStatus(selected._id, 'open')}
-                      className="flex-1 py-2 text-xs font-bold rounded-xl hover:bg-brand-500/10 hover:text-brand-500 fast-transition"
+                      className="flex-1 hover:bg-brand-500/10 hover:text-brand-500"
                       style={{ background: 'var(--surface-2)', color: 'var(--surface-text-2)' }}
                     >
                       Reopen
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

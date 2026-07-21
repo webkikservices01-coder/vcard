@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
 import { Mic, Square, ArrowUp } from 'lucide-react';
 import { useSpeech } from './useSpeech';
+import IconButton from '../ui/IconButton';
 
 const ChatInput = ({ value, onChange, onSubmit, isBusy, inputRef }) => {
   const { isListening, isSupported, toggleListening } = useSpeech((transcript) => {
@@ -25,12 +25,11 @@ const ChatInput = ({ value, onChange, onSubmit, isBusy, inputRef }) => {
       />
 
       {isSupported && (
-        <motion.button
-          type="button" onClick={toggleListening}
-          whileTap={{ scale: 0.88 }}
+        <IconButton
+          type="button" size="sm" variant="bare" onClick={toggleListening}
           animate={isListening ? { scale: [1, 1.1, 1] } : { scale: 1 }}
           transition={isListening ? { repeat: Infinity, duration: 0.9 } : {}}
-          className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center border transition-all ${
+          className={`rounded-full border ${
             isListening
               ? 'bg-red-500 border-red-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.45)]'
               : 'bg-[#1a1a1a] border-[#333] text-gray-400 hover:text-white hover:border-gray-500'
@@ -38,19 +37,18 @@ const ChatInput = ({ value, onChange, onSubmit, isBusy, inputRef }) => {
           title={isListening ? 'Listening… (auto-sends)' : 'Speak your message'}
         >
           {isListening ? <Square className="w-3 h-3 fill-current" /> : <Mic className="w-4 h-4" />}
-        </motion.button>
+        </IconButton>
       )}
 
-      <motion.button
-        type="submit"
+      <IconButton
+        type="submit" size="sm" variant="bare"
         disabled={isBusy || !value.trim()}
-        whileHover={{ scale: isBusy || !value.trim() ? 1 : 1.08 }}
-        whileTap={{ scale: 0.9 }}
-        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all disabled:opacity-30"
+        title="Send message"
+        className="rounded-full"
         style={{ background: (!isBusy && value.trim()) ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : '#1a1a1a' }}
       >
         <ArrowUp className="w-4 h-4" style={{ color: (!isBusy && value.trim()) ? '#fff' : '#555' }} />
-      </motion.button>
+      </IconButton>
     </form>
   );
 };

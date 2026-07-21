@@ -12,6 +12,13 @@ import StatCard from '../components/ui/StatCard';
 import VcardTile from '../components/ui/VcardTile';
 import { fadeUp } from '../utils/motion';
 
+// Shared look for the hero's single CTA — same button whether the user already has a
+// live card ("View Live Card") or not yet ("New card"), just a different target/icon.
+const HERO_CTA_CLASS = 'flex items-center gap-2 bg-white text-crimson-700 text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-crimson-50 transition shrink-0';
+
+// 40px tap target (was a cramped 32px p-2) for the vCard tile's view/edit/QR row.
+const TILE_ICON_LINK_CLASS = 'w-10 h-10 inline-flex items-center justify-center rounded-lg fast-transition hover:text-brand-500 hover:bg-brand-500/10';
+
 const PLAN_COLORS = {
   'Free Trial':    { badge: 'bg-gray-500/15 text-gray-400',   bar: 'bg-gray-400',   icon: 'bg-gray-500/10 text-gray-400' },
   'DIGITAL CARD':  { badge: 'bg-blue-500/15 text-blue-400',    bar: 'bg-blue-500',   icon: 'bg-blue-500/10 text-blue-400' },
@@ -84,15 +91,14 @@ const Dashboard = () => {
             <motion.a
               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-white text-crimson-700 text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-crimson-50 transition shrink-0"
+              className={HERO_CTA_CLASS}
             >
               <Eye className="w-4 h-4" />
               <span>View Live Card</span>
             </motion.a>
           ) : (
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/dashboard/vcard/profile"
-                className="flex items-center gap-2 bg-white text-crimson-700 text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-crimson-50 transition shrink-0">
+              <Link to="/dashboard/vcard/profile" className={HERO_CTA_CLASS}>
                 <Sparkles className="w-4 h-4" />
                 <span>New card</span>
               </Link>
@@ -158,16 +164,16 @@ const Dashboard = () => {
               viewCount={stats?.viewCount ?? 0}
               footer={
                 <>
-                  <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer"
-                    className="p-2 rounded-lg fast-transition hover:text-brand-500 hover:bg-brand-500/10" style={{ color: 'var(--surface-text-2)' }} title="View">
+                  <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer" title="View"
+                    className={TILE_ICON_LINK_CLASS} style={{ color: 'var(--surface-text-2)' }}>
                     <Eye className="w-4 h-4" />
                   </a>
-                  <Link to="/dashboard/vcard/profile"
-                    className="p-2 rounded-lg fast-transition hover:text-brand-500 hover:bg-brand-500/10" style={{ color: 'var(--surface-text-2)' }} title="Edit">
+                  <Link to="/dashboard/vcard/profile" title="Edit"
+                    className={TILE_ICON_LINK_CLASS} style={{ color: 'var(--surface-text-2)' }}>
                     <Pencil className="w-4 h-4" />
                   </Link>
-                  <Link to="/dashboard/vcard/qr"
-                    className="p-2 rounded-lg fast-transition hover:text-brand-500 hover:bg-brand-500/10" style={{ color: 'var(--surface-text-2)' }} title="QR">
+                  <Link to="/dashboard/vcard/qr" title="QR"
+                    className={TILE_ICON_LINK_CLASS} style={{ color: 'var(--surface-text-2)' }}>
                     <QrCode className="w-4 h-4" />
                   </Link>
                 </>

@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
 import ThemeToggle from './ui/ThemeToggle';
 import MeshBackground from './ui/MeshBackground';
+import IconButton from './ui/IconButton';
 import axios from 'axios';
 import { hasChatFill } from '../utils/plan';
 
@@ -116,13 +117,13 @@ const DashboardLayout = () => {
         {/* Header */}
         <header className="h-16 glass rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 z-20 border-x-0 border-t-0">
           <div className="flex items-center space-x-3">
-            <button
+            <IconButton
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg fast-transition"
-              style={{ color: 'var(--surface-text-2)' }}
+              title="Open menu"
+              className="lg:hidden hover:text-brand-500 hover:bg-brand-500/10"
             >
               <Menu className="w-5 h-5" />
-            </button>
+            </IconButton>
             <div>
               <AnimatePresence mode="wait">
                 <motion.h2
@@ -154,9 +155,9 @@ const DashboardLayout = () => {
                 <span>Admin</span>
               </a>
             )}
-            <button className="p-2 hover:text-brand-500 hover:bg-brand-500/10 rounded-lg relative fast-transition" style={{ color: 'var(--surface-text-2)' }}>
+            <IconButton title="Notifications" className="hover:text-brand-500 hover:bg-brand-500/10">
               <Bell className="w-5 h-5" />
-            </button>
+            </IconButton>
 
             {/* User dropdown */}
             <div className="relative" ref={dropdownRef}>

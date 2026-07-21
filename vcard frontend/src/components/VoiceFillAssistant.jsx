@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, X, Loader2, Volume2 } from 'lucide-react';
+import Button from './ui/Button';
+import IconButton from './ui/IconButton';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -122,7 +124,7 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
       <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center space-y-3">
           <p className="text-sm text-gray-700">Voice input is not supported in this browser. Please use Chrome, or fill the form manually.</p>
-          <button onClick={onClose} className="bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-lg">Close</button>
+          <Button variant="themed" size="sm" onClick={onClose} className="!w-auto mx-auto bg-brand-600 text-white hover:bg-brand-700">Close</Button>
         </div>
       </div>
     );
@@ -147,9 +149,9 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
             </div>
             <p className="text-sm font-bold text-gray-900">Voice Assistant</p>
           </div>
-          <button onClick={handleStop} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg">
+          <IconButton variant="bare" title="Close" onClick={handleStop} className="text-gray-400 hover:text-gray-700">
             <X className="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         <div className="p-5 max-h-64 overflow-y-auto space-y-3">
@@ -165,15 +167,17 @@ const VoiceFillAssistant = ({ page, onFill, getKnown, onClose }) => {
         <div className="p-5 pt-0 text-center">
           <p className="text-xs text-gray-400 mb-3">{statusText}</p>
           {status === 'done' ? (
-            <button onClick={handleStop} className="bg-brand-600 text-white text-sm font-medium px-6 py-2.5 rounded-lg">Done</button>
+            <Button variant="themed" size="md" onClick={handleStop} className="!w-auto mx-auto bg-brand-600 text-white hover:bg-brand-700">Done</Button>
           ) : (
-            <button
+            <IconButton
+              variant="bare" size="lg"
+              title={status === 'listening' ? 'Stop listening' : 'Start listening'}
               onClick={() => (status === 'listening' ? recognitionRef.current?.stop() : startListening())}
               disabled={status === 'thinking' || status === 'speaking'}
-              className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto transition disabled:opacity-50 ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-brand-600 text-white'}`}
+              className={`!w-14 !h-14 mx-auto ${status === 'listening' ? 'bg-red-500 text-white' : 'bg-brand-600 text-white'}`}
             >
               {status === 'listening' ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
