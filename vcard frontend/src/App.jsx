@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
 import AdminRoute from './components/AdminRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 // Auth
 import LandingPage from './pages/LandingPage';
@@ -57,6 +58,7 @@ import CancellationPolicy from './pages/legal/CancellationPolicy';
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
       <Routes>
         {/* Auth */}
