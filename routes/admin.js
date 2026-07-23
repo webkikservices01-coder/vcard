@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const ExcelJS = require('exceljs');
 const adminAuth = require('../middleware/adminAuth');
 const User = require('../models/User');
 const vCard = require('../models/vCard');
@@ -10,6 +11,7 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const AiPersona = require('../models/AiPersona');
+const AiUsageLog = require('../models/AiUsageLog');
 
 // GET /api/admin/stats — platform overview
 router.get('/stats', adminAuth, async (req, res) => {
@@ -168,6 +170,79 @@ router.get('/cards', adminAuth, async (req, res) => {
         const cards = await vCard.find().sort({ viewCount: -1 }).limit(20).populate('userId', 'name email plan');
         res.json(cards);
     } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// GET /api/admin/ai-usage — summary + recent rows
+router.get('/ai-usage', adminAuth, async (req, res) => {
+    try {
+        const { page = 1, limit = 50 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const [logs, total, totals] = await Promise.all([
+            AiUsageLog.find().sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit))
+                .populate('userId', 'name email').populate('vcardId', 'username'),
+            AiUsageLog.countDocuments(),
+            AiUsageLog.aggregate([{ $group: {
+                _id: null,
+                inputTokens: { $sum: '$inputTokens' },
+                outputTokens: { $sum: '$outputTokens' },
+                costUsd: { $sum: '$costUsd' },
+            } }]),
+        ]);
+        res.json({
+            logs, total, pages: Math.ceil(total / parseInt(limit)),
+            summary: totals[0] || { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        });
+    } catch (err) { console.error(err); res.status(500).send('Server Error'); }
+});
+
+// GET /api/admin/ai-usage/export — download all usage rows as an .xlsx file
+router.get('/ai-usage/export', adminAuth, async (req, res) => {
+    try {
+        const logs = await AiUsageLog.find().sort({ createdAt: -1 })
+            .populate('userId', 'name email').populate('vcardId', 'username');
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('AI Usage');
+        sheet.columns = [
+            { header: 'Date', key: 'date', width: 20 },
+            { header: 'Route', key: 'route', width: 14 },
+            { header: 'User', key: 'user', width: 26 },
+            { header: 'vCard', key: 'vcard', width: 18 },
+            { header: 'Model', key: 'model', width: 20 },
+            { header: 'Input Tokens', key: 'inputTokens', width: 16 },
+            { header: 'Output Tokens', key: 'outputTokens', width: 16 },
+            { header: 'Cost (USD)', key: 'costUsd', width: 14 },
+        ];
+        sheet.getRow(1).font = { bold: true };
+
+        let totalInput = 0, totalOutput = 0, totalCost = 0;
+        for (const log of logs) {
+            totalInput += log.inputTokens;
+            totalOutput += log.outputTokens;
+            totalCost += log.costUsd;
+            sheet.addRow({
+                date: log.createdAt.toISOString(),
+                route: log.route,
+                user: log.userId ? `${log.userId.name} (${log.userId.email})` : '—',
+                vcard: log.vcardId?.username || '—',
+                model: log.model,
+                inputTokens: log.inputTokens,
+                outputTokens: log.outputTokens,
+                costUsd: Number(log.costUsd.toFixed(6)),
+            });
+        }
+
+        sheet.addRow({});
+        const totalsRow = sheet.addRow({
+            date: 'TOTAL', inputTokens: totalInput, outputTokens: totalOutput, costUsd: Number(totalCost.toFixed(6)),
+        });
+        totalsRow.font = { bold: true };
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="ai-usage-${new Date().toISOString().slice(0, 10)}.xlsx"`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
 
 module.exports = router;
