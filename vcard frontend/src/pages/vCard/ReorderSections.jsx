@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical, Save } from 'lucide-react';
+import { GripVertical, Save, Sparkles, Layers } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import GradientButton from '../../components/ui/GradientButton';
 import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
+import { useTheme } from '../../context/ThemeContext';
 
 const allSections = [
   { id: 'contact',      label: 'Contact Details',     emoji: '📞' },
@@ -19,6 +20,7 @@ const allSections = [
   { id: 'testimonials', label: 'Testimonials',        emoji: '⭐' },
   { id: 'custom',       label: 'Custom Sections',     emoji: '📝' },
   { id: 'enquiry',      label: 'Enquiry Form',        emoji: '✉️' },
+  { id: 'qr',           label: 'QR Code',             emoji: '🔲' },
 ];
 
 const getSectionById = (id) => allSections.find(s => s.id === id);
@@ -27,6 +29,9 @@ const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 
 const ReorderSections = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const [slug, setSlug] = useState('');
@@ -69,9 +74,6 @@ const ReorderSections = () => {
     loadInitialData();
   }, []);
 
-  // Native HTML5 drag-and-drop — reorder is committed only on dragEnd, using refs to avoid stale closures.
-  // Visual feedback (opacity/highlight) is applied directly to the DOM to stay perfectly in sync with the drag gesture;
-  // the actual list re-order below is what drives the framer-motion `layout` animation on each row.
   const handleDragStart = (e, idx) => {
     dragItem.current = idx;
     e.dataTransfer.effectAllowed = 'move';
@@ -85,8 +87,8 @@ const ReorderSections = () => {
     dragOverItem.current = idx;
     const rows = document.querySelectorAll('[data-drag-row]');
     rows.forEach((r, i) => {
-      r.style.background = i === idx ? '#f3f4f6' : '';
-      r.style.borderTop = i === idx && idx !== dragItem.current ? '2px solid #000' : '';
+      r.style.background = i === idx ? 'rgba(231, 12, 101, 0.1)' : '';
+      r.style.borderTop = i === idx && idx !== dragItem.current ? '2px solid #E70C65' : '';
     });
   };
 
@@ -149,91 +151,138 @@ const ReorderSections = () => {
 
   const info = previewData?.card?.personalInfo || {};
   const s = previewData?.card?.customTheme || {
-    bg: '#f8fafc', sectionBg: '#ffffff', nameColor: '#1e293b',
-    designationColor: '#64748b', border: '#e2e8f0', contactBg: '#1e293b', contactText: '#fff'
+    bg: '#0b1329', sectionBg: '#121b33', nameColor: '#ffffff',
+    designationColor: '#ff80ab', border: 'rgba(255,255,255,0.15)', contactBg: '#1e293b', contactText: '#fff'
   };
 
-  if (loading) return <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>;
+  let profilePicUrl = info.profilePic || '';
+  if (profilePicUrl && !profilePicUrl.startsWith('http') && !profilePicUrl.startsWith('blob:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    profilePicUrl = `${apiUrl}${profilePicUrl.startsWith('/') ? profilePicUrl : '/' + profilePicUrl}`;
+  }
+
+  let bannerUrl = info.bannerImage || '';
+  if (bannerUrl && !bannerUrl.startsWith('http') && !bannerUrl.startsWith('blob:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    bannerUrl = `${apiUrl}${bannerUrl.startsWith('/') ? bannerUrl : '/' + bannerUrl}`;
+  }
+
+  if (loading) return <div className={`p-12 text-center text-sm font-bold ${isDark ? "text-slate-400" : "text-slate-600"}`}>Loading Order Matrix...</div>;
 
   return (
     <>
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-start relative">
+      <style>{`
+        @keyframes slowSlideLeftToRight {
+          0% {
+            opacity: 0;
+            transform: translateX(-50px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .anim-item-1 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+        .anim-item-2 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
+        .anim-item-3 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; }
+        .anim-item-4 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both; }
+        .anim-item-5 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both; }
+        .anim-item-6 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both; }
+        .anim-item-7 { animation: slowSlideLeftToRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.0s both; }
+      `}</style>
+
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-start relative px-4">
 
         {/* LEFT COLUMN: Drag and Drop Editor */}
-        <div className="flex-1 w-full max-w-lg space-y-5">
-          <div className="relative rounded-2xl overflow-hidden">
+        <div className="flex-1 w-full max-w-lg space-y-6">
+          <motion.div {...fadeUp(0)} className="relative overflow-hidden rounded-3xl p-6 text-white shadow-xl border border-white/15 bg-gradient-to-r from-[#E70C65] via-[#cf0a55] to-[#9F1C44] anim-item-1">
             <MeshBackground className="opacity-30" />
-            <motion.div {...fadeUp(0)} className="relative p-1">
-              <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Reorder Sections</h2>
-              <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Drag or use arrows to arrange sections on your vCard</p>
-            </motion.div>
-          </div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-2 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Flow Matrix
+              </div>
+              <h2 className="text-2xl font-black tracking-tight text-white">Reorder Sections</h2>
+              <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Drag or use arrow buttons to arrange sections on your digital vCard</p>
+            </div>
+          </motion.div>
 
-          <GlassCard {...fadeUp(0.08)} className="overflow-hidden">
-            <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
-              <p className="text-xs font-medium" style={{ color: 'var(--surface-text-2)' }}>Drag rows or use ▲ ▼ buttons to reorder</p>
-              <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{sections.length} sections</span>
+          <GlassCard {...fadeUp(0.08)} className={`overflow-hidden border shadow-2xl backdrop-blur-2xl transition-colors duration-300 anim-item-2 ${
+            isDark ? "border-white/20 bg-[#0b1329]/85 text-white" : "border-pink-100 bg-white/95 text-slate-900 shadow-pink-100/50"
+          }`}>
+            <div className={`px-5 py-3.5 flex items-center justify-between border-b transition-colors ${
+              isDark ? "border-white/10 bg-white/[0.04]" : "border-pink-100 bg-pink-50/50"
+            }`}>
+              <p className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                <Layers className="w-3.5 h-3.5 text-[#E70C65]" /> Drag rows or use ▲ ▼ buttons
+              </p>
+              <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                isDark ? "text-white bg-[#E70C65]/30 border-[#E70C65]/40" : "text-[#9F1C44] bg-pink-100 border-pink-200"
+              }`}>{sections.length} active</span>
             </div>
 
-            {/* NOTE: drag-and-drop mechanics below (data-drag-row, draggable, onDragStart/Enter/Over/End,
-                the dragItem/dragOverItem refs, and the layout/transition props that drive the framer-motion
-                reorder animation) are untouched — only className/style (purely visual) were changed. */}
             <div>
-              {sections.map((section, idx) => (
-                <motion.div
-                  key={section.id}
-                  layout
-                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                  data-drag-row
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragEnter={(e) => handleDragEnter(e, idx)}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  className="flex items-center gap-3 px-5 py-4 hover:bg-[var(--surface-2)] fast-transition cursor-grab active:cursor-grabbing select-none"
-                  style={{ borderBottom: idx === sections.length - 1 ? 'none' : '1px solid var(--surface-border)' }}
-                >
-                  <GripVertical className="w-5 h-5 shrink-0" style={{ color: 'var(--surface-text-2)' }} />
+              {sections.map((section, idx) => {
+                const animClass = `anim-item-${Math.min(idx + 3, 7)}`;
+                return (
+                  <motion.div
+                    key={section.id}
+                    layout
+                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    data-drag-row
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragEnter={(e) => handleDragEnter(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center gap-3 px-5 py-4 transition-colors cursor-grab active:cursor-grabbing select-none ${animClass} ${
+                      isDark ? "hover:bg-white/[0.06]" : "hover:bg-pink-50/60"
+                    }`}
+                    style={{ borderBottom: idx === sections.length - 1 ? 'none' : (isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(231,12,101,0.1)') }}
+                  >
+                    <GripVertical className={`w-5 h-5 shrink-0 ${isDark ? "text-slate-400" : "text-slate-500"}`} />
 
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--surface-2)' }}>
-                    <span className="text-[10px] font-bold" style={{ color: 'var(--surface-text-2)' }}>{idx + 1}</span>
-                  </div>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${
+                      isDark ? "bg-white/10 border-white/15 text-white" : "bg-pink-100 border-pink-200 text-[#9F1C44]"
+                    }`}>
+                      <span className="text-[11px] font-bold">{idx + 1}</span>
+                    </div>
 
-                  <div className="flex items-center gap-2.5 flex-1">
-                    <span className="text-lg leading-none">{section.emoji}</span>
-                    <span className="text-sm font-medium" style={{ color: 'var(--surface-text)' }}>{section.label}</span>
-                  </div>
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="text-base">{section.emoji}</span>
+                      <span className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{section.label}</span>
+                    </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <IconButton
-                      variant="ghost"
-                      title="Move up"
-                      onClick={() => moveUp(idx)}
-                      disabled={idx === 0}
-                      className="hover:text-brand-500 hover:bg-brand-500/10"
-                    >▲</IconButton>
-                    <IconButton
-                      variant="ghost"
-                      title="Move down"
-                      onClick={() => moveDown(idx)}
-                      disabled={idx === sections.length - 1}
-                      className="hover:text-brand-500 hover:bg-brand-500/10"
-                    >▼</IconButton>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <IconButton
+                        variant="ghost"
+                        title="Move up"
+                        onClick={() => moveUp(idx)}
+                        disabled={idx === 0}
+                        className={`disabled:opacity-30 ${isDark ? "text-slate-300 hover:text-white hover:bg-white/10" : "text-slate-600 hover:text-slate-900 hover:bg-pink-100"}`}
+                      >▲</IconButton>
+                      <IconButton
+                        variant="ghost"
+                        title="Move down"
+                        onClick={() => moveDown(idx)}
+                        disabled={idx === sections.length - 1}
+                        className={`disabled:opacity-30 ${isDark ? "text-slate-300 hover:text-white hover:bg-white/10" : "text-slate-600 hover:text-slate-900 hover:bg-pink-100"}`}
+                      >▼</IconButton>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </GlassCard>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end anim-item-7">
             <div className="w-full sm:w-48">
-              <GradientButton onClick={handleSave} disabled={saving}>
+              <GradientButton onClick={handleSave} disabled={saving} className="py-3 rounded-2xl shadow-lg shadow-[#E70C65]/30 font-bold cursor-pointer">
                 {saving ? (
-                  <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
+                  <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 mr-2 inline" />
                 )}
-                <span>{saving ? 'Saving...' : 'Save Order'}</span>
+                <span>{saving ? 'Saving Order...' : 'Save Order'}</span>
               </GradientButton>
             </div>
           </div>
@@ -241,54 +290,76 @@ const ReorderSections = () => {
 
         {/* RIGHT COLUMN: Live Mobile Preview */}
         <motion.div
-          initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.1 }}
-          className="hidden lg:flex w-[350px] shrink-0 sticky top-6 justify-center"
+          initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1.0, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="hidden lg:flex w-[350px] shrink-0 sticky top-6 justify-center ml-auto"
         >
-          <div className="w-[320px] h-[650px] border-[12px] border-gray-900 rounded-[3rem] shadow-2xl relative bg-white overflow-hidden flex flex-col">
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-[3.5rem] bg-gradient-to-tr from-[#E70C65]/50 via-indigo-500/35 to-pink-500/40 blur-2xl opacity-75 animate-pulse pointer-events-none" />
 
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-3xl z-50"></div>
+            <div className="w-[330px] h-[660px] border-[10px] border-slate-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative bg-slate-950 overflow-hidden flex flex-col z-10">
 
-            <div
-              className="w-full h-full overflow-y-auto pb-10 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400/80"
-              style={{ background: s.bg }}
-            >
-
-              <div className="h-32 w-full relative" style={{ background: s.contactBg }}>
-                {info.bannerImage && <img src={info.bannerImage} alt="Banner" className="w-full h-full object-cover" />}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-3xl z-50 flex items-center justify-center">
+                <div className="w-12 h-1.5 bg-slate-800 rounded-full" />
               </div>
-              <div className="flex justify-center -mt-10 relative z-10">
-                <div className="w-20 h-20 rounded-full border-4 overflow-hidden shadow-md" style={{ borderColor: s.bg, background: s.sectionBg }}>
-                  {info.profilePic
-                    ? <img src={info.profilePic} alt="Profile" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-xl font-bold" style={{ color: s.nameColor }}>{info.name?.[0]?.toUpperCase() || '?'}</div>
-                  }
+
+              <div
+                className="w-full h-full overflow-y-auto pb-10 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
+                style={{ background: s.bg || '#0b1329' }}
+              >
+                {/* Banner Image */}
+                <div className="h-32 w-full relative bg-slate-900">
+                  {bannerUrl ? (
+                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-[#E70C65]/40 to-indigo-600/40" />
+                  )}
                 </div>
-              </div>
-              <div className="text-center px-4 mt-2 mb-6">
-                <h2 className="font-black text-lg leading-tight" style={{ color: s.nameColor }}>{info.name || 'Your Name'}</h2>
-                <p className="text-[11px] font-medium mt-0.5" style={{ color: s.designationColor }}>{info.designation || 'Your Designation'}</p>
-              </div>
 
-              <div className="space-y-4 px-4">
-                {sections.map(sec => (
-                  <motion.div
-                    key={sec.id}
-                    layout
-                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                    className="rounded-2xl p-4 border shadow-sm"
-                    style={{ background: s.sectionBg, borderColor: s.border }}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className="text-base">{sec.emoji}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: s.designationColor }}>
-                        {sec.label}
-                      </span>
-                    </div>
-                    <div className="mt-3 h-8 rounded-lg w-full mx-auto" style={{ background: s.contactBg, opacity: 0.08 }}></div>
-                  </motion.div>
-                ))}
-              </div>
+                {/* Profile Avatar */}
+                <div className="flex justify-center -mt-10 relative z-10">
+                  <div className="w-20 h-20 rounded-2xl border-2 p-0.5 shadow-xl overflow-hidden backdrop-blur-md" style={{ borderColor: '#facc15', background: '#0b0f19' }}>
+                    {profilePicUrl ? (
+                      <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <div className="w-full h-full rounded-xl flex items-center justify-center text-xl font-black text-white" style={{ background: '#E70C65' }}>
+                        {info.name?.[0]?.toUpperCase() || 'SK'}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
+                {/* Name & Designation */}
+                <div className="text-center px-4 mt-2.5 mb-6">
+                  <h2 className="font-black text-base leading-tight text-white" style={{ color: s.nameColor || '#ffffff' }}>
+                    {info.name || 'SHUBHAM KHURANA'}
+                  </h2>
+                  <p className="text-[11px] font-bold mt-1 tracking-wider uppercase" style={{ color: s.designationColor || '#ff80ab' }}>
+                    {info.designation || 'FOUNDER & CEO'}
+                  </p>
+                </div>
+
+                {/* Ordered Sections including QR Code */}
+                <div className="space-y-3 px-4 pb-6">
+                  {sections.map(sec => (
+                    <motion.div
+                      key={sec.id}
+                      layout
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                      className="rounded-2xl p-3.5 border shadow-md backdrop-blur-md"
+                      style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)' }}
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-sm">{sec.emoji}</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#ff80ab]">
+                          {sec.label}
+                        </span>
+                      </div>
+                      <div className="mt-2.5 h-6 rounded-lg w-full mx-auto bg-white/10"></div>
+                    </motion.div>
+                  ))}
+                </div>
+
+              </div>
             </div>
           </div>
         </motion.div>

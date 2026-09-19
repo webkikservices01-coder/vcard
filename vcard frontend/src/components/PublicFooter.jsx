@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   MapPin,
@@ -9,6 +10,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { FaInstagram, FaLinkedinIn, FaFacebookF } from "react-icons/fa";
+import { useTheme } from "../context/ThemeContext";
 
 export const COMPANY = {
   name: "Webkik Services",
@@ -45,12 +47,17 @@ const socials = [
 ];
 
 function FooterLogo() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
-    <Link to="/" className="group inline-flex items-center gap-2.5">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30 transition-transform group-hover:-rotate-6">
-        <span className="text-base font-black">P</span>
+    <Link to="/" className="group inline-flex items-center gap-3 transition-transform duration-300 hover:scale-105">
+      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30 transition-all duration-300 group-hover:-rotate-6">
+        <span className="text-lg font-black">P</span>
       </span>
-      <span className="text-lg font-semibold tracking-tight text-[#3b0a1e]">
+      <span className={`text-xl font-bold tracking-tight transition-colors ${
+        isDark ? "text-white" : "text-slate-900"
+      }`}>
         Webcard<span className="text-[#E70C65]">.ai</span>
       </span>
     </Link>
@@ -58,28 +65,68 @@ function FooterLogo() {
 }
 
 export function PublicFooter() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const footerRef = useRef(null);
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsFooterVisible(entry.isIntersecting);
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -20px 0px" }
+    );
+
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <footer className="relative overflow-hidden border-t border-[#E70C65]/15 bg-white/60 backdrop-blur">
-      <div className="relative h-px w-full overflow-hidden bg-[#E70C65]/15">
+    <footer 
+      ref={footerRef}
+      className={`relative overflow-hidden border-t backdrop-blur-2xl transition-colors duration-500 pb-12 ${
+        isDark 
+          ? "border-white/10 bg-[#07090E] text-slate-100" 
+          : "border-pink-100/80 bg-white text-slate-900"
+      }`}
+    >
+      {/* Top Animated Laser Signal Line */}
+      <div className={`relative h-[2px] w-full overflow-hidden ${isDark ? "bg-white/10" : "bg-pink-100"}`}>
         <div className="signal-line" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="footer-blob footer-blob-a" />
-        <div className="footer-blob footer-blob-b" />
-      </div>
-
-      <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_0.8fr_1.3fr]">
-          {/* Brand column */}
-          <div className="fade-in">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 lg:px-10">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_1.3fr] items-start">
+          
+          {/* Brand Column */}
+          <div 
+            style={{ transitionDelay: isFooterVisible ? "0ms" : "0ms" }}
+            className={`pt-6 sm:pt-8 transform transition-all duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isFooterVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
+            }`}
+          >
             <FooterLogo />
-            <p className="mt-5 max-w-xs text-sm leading-relaxed text-[#6a4757]">
+            <p className={`mt-4 max-w-sm text-sm sm:text-base leading-relaxed ${
+              isDark ? "text-slate-300" : "text-slate-600 font-medium"
+            }`}>
               The AI-powered digital business card platform — built and operated by{" "}
-              <span className="font-semibold text-[#3b0a1e]">{COMPANY.name}</span>.
+              <a 
+                href="https://webkik.co.in/" 
+                target="_blank" 
+                rel="noreferrer" 
+                className={`font-semibold underline hover:text-[#E70C65] transition-colors ${isDark ? "text-white" : "text-slate-900"}`}
+              >
+                {COMPANY.name}
+              </a>.
             </p>
 
-            <div className="mt-7 flex items-center gap-3">
+            {/* Social Links */}
+            <div className="mt-5 flex items-center gap-3.5">
               {socials.map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
@@ -87,155 +134,197 @@ export function PublicFooter() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="social-btn group relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#E70C65]/20 bg-white/70 text-[#9F1C44] transition-all duration-300 hover:-translate-y-1"
+                  className={`group relative flex h-10 w-10 items-center justify-center rounded-xl border shadow-md backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#E70C65]/60 hover:text-white ${
+                    isDark 
+                      ? "border-white/10 bg-white/[0.04] text-slate-300" 
+                      : "border-pink-200/80 bg-white text-slate-700 shadow-pink-100/50"
+                  }`}
                 >
                   <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <Icon className="relative h-4 w-4 transition-colors duration-300 group-hover:text-white" />
+                  <Icon className="relative z-10 h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Quick links column */}
-          <div className="fade-in" style={{ animationDelay: "0.08s" }}>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#9F1C44]">
+          {/* Quick Links Column */}
+          <div 
+            style={{ transitionDelay: isFooterVisible ? "150ms" : "0ms" }}
+            className={`pt-2 transform transition-all duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isFooterVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
+            }`}
+          >
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b9d]">
               Quick links
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {quickLinks.map((l) => (
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="group inline-flex items-center text-sm text-[#6a4757] transition-colors duration-300 hover:text-[#9F1C44]"
+                    className={`group inline-flex items-center text-xs sm:text-sm transition-all duration-300 hover:translate-x-1 ${
+                      isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-[#9F1C44] font-medium"
+                    }`}
                   >
-                    <span className="relative">
-                      {l.label}
-                      <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#9F1C44] transition-all duration-300 group-hover:w-full" />
-                    </span>
+                    <span className="mr-2 h-1 w-1 rounded-full bg-[#E70C65] opacity-0 transition-all duration-300 group-hover:opacity-100" />
+                    <span>{l.label}</span>
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Company details + map column */}
-          <div className="fade-in" style={{ animationDelay: "0.16s" }}>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-[#9F1C44]">
+          {/* Company Details + Map Column */}
+          <div 
+            style={{ transitionDelay: isFooterVisible ? "300ms" : "0ms" }}
+            className={`transform transition-all duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isFooterVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
+            }`}
+          >
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b9d]">
               Company details
             </p>
-            <p className="mb-4 text-base font-semibold text-[#3b0a1e]">{COMPANY.name}</p>
+            <a 
+              href="https://webkik.co.in/" 
+              target="_blank" 
+              rel="noreferrer"
+              className={`mb-2 text-base font-semibold block hover:text-[#E70C65] transition-colors ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              {COMPANY.name}
+            </a>
 
-            <ul className="space-y-3 text-sm text-[#6a4757]">
-              <li className="flex items-start gap-3">
+            <ul className={`space-y-2.5 text-xs sm:text-sm ${isDark ? "text-slate-300" : "text-slate-600 font-medium"}`}>
+              <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#E70C65]" />
-                <span>
-                  {COMPANY.addressLines[0]}
-                  <br />
-                  {COMPANY.addressLines[1]}
+                <span className="leading-relaxed">
+                  {COMPANY.addressLines[0]} {COMPANY.addressLines[1]}
                 </span>
               </li>
-              <li className="flex items-center gap-3">
+              <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0 text-[#E70C65]" />
-                <a href={COMPANY.phoneHref} className="hover:text-[#9F1C44] transition-colors">
+                <a href={COMPANY.phoneHref} className={`transition-colors ${isDark ? "hover:text-white" : "hover:text-[#9F1C44]"}`}>
                   {COMPANY.phone}
                 </a>
               </li>
-              <li className="flex items-center gap-3">
+              <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-[#E70C65]" />
-                <a href={`mailto:${COMPANY.email}`} className="hover:text-[#9F1C44] transition-colors">
+                <a href={`mailto:${COMPANY.email}`} className={`transition-colors ${isDark ? "hover:text-white" : "hover:text-[#9F1C44]"}`}>
                   {COMPANY.email}
                 </a>
               </li>
             </ul>
 
-            <p className="mt-3 text-xs text-[#6a4757]/70">GSTIN: {COMPANY.gstin}</p>
+            <p className={`mt-2.5 text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              GSTIN: <span className={`font-medium ${isDark ? "text-slate-300" : "text-slate-700"}`}>{COMPANY.gstin}</span>
+            </p>
 
+            {/* Embedded Compact Map Card */}
             <a
               href={MAPS_DIRECTIONS_URL}
               target="_blank"
               rel="noreferrer"
-              className="group relative mt-6 block overflow-hidden rounded-2xl border border-[#E70C65]/15"
+              className="map-beam-wrapper group relative mt-4 block shadow-md transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="relative h-40 w-full">
-                <iframe
-                  title="Webkik Services location"
-                  src={MAPS_EMBED_SRC}
-                  className="h-full w-full grayscale-[30%] transition-all duration-500 group-hover:grayscale-0"
-                  style={{ border: 0, filter: "hue-rotate(-8deg) saturate(1.3)" }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-                <div
-                  className="pointer-events-none absolute inset-0 mix-blend-multiply transition-opacity duration-500 group-hover:opacity-40"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(231,12,101,0.22), rgba(159,28,68,0.10))",
-                  }}
-                />
+              <div className={`relative overflow-hidden rounded-xl border backdrop-blur-xl ${
+                isDark ? "bg-slate-950/90 border-white/10" : "bg-white border-pink-200/80 shadow-sm"
+              }`}>
+                <div className="relative h-28 w-full overflow-hidden">
+                  <iframe
+                    title="Webkik Services location"
+                    src={MAPS_EMBED_SRC}
+                    className={`h-full w-full transition-all duration-300 ${
+                      isDark ? "grayscale-[40%] invert-[85%] hue-rotate-[180deg]" : "grayscale-[10%]"
+                    }`}
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <div className="directions-tag absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/80 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-md opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <Navigation className="h-2.5 w-2.5 text-[#ff6b9d]" /> Get directions
+                  </div>
+                </div>
 
-                <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full">
-                  <span className="relative flex h-6 w-6 items-center justify-center">
-                    <span className="map-pulse absolute inline-flex h-full w-full rounded-full bg-[#E70C65]/60" />
-                    <span className="relative flex h-3 w-3 rounded-full bg-gradient-to-br from-[#E70C65] to-[#9F1C44] shadow-lg shadow-[#E70C65]/50" />
+                <div className={`flex items-center justify-between border-t px-3 py-2 text-xs font-semibold ${
+                  isDark ? "border-white/10 bg-white/[0.04] text-white" : "border-pink-100 bg-pink-50/50 text-slate-800"
+                }`}>
+                  <span className="inline-flex items-center gap-1">
+                    <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> Tagore Garden, Delhi
                   </span>
+                  <ArrowUpRight className="h-4 w-4 text-[#E70C65]" />
                 </div>
-
-                <div className="directions-tag absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-[#1a0812]/85 px-3 py-1.5 text-xs font-semibold text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
-                  <Navigation className="h-3 w-3" /> Get directions
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between bg-[#fff5f8] px-4 py-3 text-xs font-semibold text-[#3b0a1e]">
-                <span className="inline-flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-[#E70C65]" /> Visit us in Tagore Garden, Delhi
-                </span>
-                <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </div>
             </a>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-[#E70C65]/15 pt-8 sm:flex-row">
-          <p className="text-sm text-[#6a4757]">
-            © {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
+        {/* Bottom Copyright Bar */}
+        <div className={`mt-10 flex flex-col items-center justify-between gap-3 border-t pt-6 text-xs sm:flex-row ${
+          isDark ? "border-white/10 text-slate-400" : "border-pink-100 text-slate-500"
+        }`}>
+          <p>© {new Date().getFullYear()} {COMPANY.name}. All rights reserved.</p>
+          <p className="font-semibold text-[#E70C65] z-10">
+            Webcard.ai is a platform by{" "}
+            <a href="https://webkik.co.in/" target="_blank" rel="noreferrer" className="underline hover:text-slate-900 dark:hover:text-white transition-colors">
+              {COMPANY.name}
+            </a>
           </p>
-
-          <p className="shimmer-text bg-gradient-to-r from-[#E70C65] via-[#9F1C44] to-[#E70C65] bg-clip-text text-sm font-semibold text-transparent">
-            Webcard.ai is a digital card platform by {COMPANY.name}
-          </p>
-
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Back to top"
-            className="back-to-top flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30 transition-transform duration-300 hover:-translate-y-1"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-md transition-transform duration-300 hover:-translate-y-1 active:scale-95 cursor-pointer z-10"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
         </div>
       </div>
 
+      {/* ── Compact & Centered Background Watermark Text (Optimized Size & Balanced Opacity) ── */}
+      <div 
+        className="pointer-events-none absolute bottom-2 left-0 right-0 w-full flex justify-center items-center overflow-hidden z-0 select-none"
+      >
+        <span 
+          className="text-[6vw] sm:text-[4.5vw] font-black tracking-widest uppercase text-center whitespace-nowrap"
+          style={{
+            color: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(231, 12, 101, 0.07)"
+          }}
+        >
+          WEBKIK SERVICES
+        </span>
+      </div>
+
       <style>{`
-        .fade-in{opacity:0;transform:translateY(16px);animation:footerFadeIn .7s ease-out forwards}
-        @keyframes footerFadeIn{to{opacity:1;transform:none}}
+        @keyframes borderSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
 
-        .signal-line{position:absolute;inset:0 auto 0 0;width:33%;background:linear-gradient(90deg,transparent,#E70C65,#9F1C44,transparent);animation:signalMove 6s linear infinite}
-        @keyframes signalMove{0%{left:-33%}100%{left:100%}}
+        .map-beam-wrapper {
+          position: relative;
+          border-radius: 14px;
+          padding: 1.5px;
+          overflow: hidden;
+        }
+        .map-beam-wrapper::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: conic-gradient(transparent, #E70C65 20%, #6366f1 40%, transparent 60%);
+          animation: borderSpin 6s linear infinite;
+        }
 
-        .footer-blob{position:absolute;border-radius:9999px;filter:blur(90px);opacity:.35}
-        .footer-blob-a{width:420px;height:420px;left:-140px;top:0;background:radial-gradient(circle,#ffb3cf,transparent 60%);animation:footerBlobA 16s ease-in-out infinite}
-        .footer-blob-b{width:460px;height:460px;right:-160px;bottom:-120px;background:radial-gradient(circle,#ffd4e2,transparent 60%);animation:footerBlobB 18s ease-in-out infinite}
-        @keyframes footerBlobA{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-20px)}}
-        @keyframes footerBlobB{0%,100%{transform:translate(0,0)}50%{transform:translate(-24px,16px)}}
-
-        .map-pulse{animation:mapPulse 1.8s ease-out infinite}
-        @keyframes mapPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.4);opacity:0}}
-
-        .shimmer-text{background-size:200% auto;animation:shimmer 4s linear infinite}
-        @keyframes shimmer{to{background-position:200% center}}
-
-        @media (prefers-reduced-motion: reduce){
-          .fade-in,.signal-line,.footer-blob,.map-pulse,.shimmer-text{animation:none;opacity:1;transform:none}
+        .signal-line {
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 33%;
+          background: linear-gradient(90deg, transparent, #E70C65, #6366f1, transparent);
+          animation: signalMove 5s linear infinite;
+        }
+        @keyframes signalMove {
+          0% { left: -33%; }
+          100% { left: 100%; }
         }
       `}</style>
     </footer>

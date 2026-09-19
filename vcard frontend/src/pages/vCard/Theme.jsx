@@ -1,876 +1,484 @@
-﻿// import React, { useState, useEffect, useRef } from 'react';
-// import axios from 'axios';
-// import toast from 'react-hot-toast';
-// import { Upload, X, Palette } from 'lucide-react';
-
-// export const allThemes = [
-//   {
-//     id: 'theme-one', name: 'Theme One', text: 'Classic White', type: 'basic', layout: 'classic',
-//     styles: { bg: '#ffffff', cardBg: '#ffffff', nameColor: '#111827', designationColor: '#6b7280', contactBg: '#111827', contactText: '#ffffff', sectionBg: '#f9fafb', border: '#e5e7eb', accent: '#111827' }
-//   },
-//   {
-//     id: 'theme-two', name: 'Theme Two', text: 'Dark Minimal', type: 'basic', layout: 'classic',
-//     styles: { bg: '#0f172a', cardBg: '#0f172a', nameColor: '#f1f5f9', designationColor: '#94a3b8', contactBg: '#1e293b', contactText: '#f1f5f9', sectionBg: '#1e293b', border: '#334155', accent: '#38bdf8' }
-//   },
-//   {
-//     id: 'theme-three', name: 'Theme Three', text: 'Soft Gray', type: 'basic', layout: 'wave',
-//     styles: { bg: '#f8fafc', cardBg: '#f8fafc', nameColor: '#1e293b', designationColor: '#64748b', contactBg: '#1e293b', contactText: '#ffffff', sectionBg: '#ffffff', border: '#e2e8f0', accent: '#1e293b' }
-//   },
-//   {
-//     id: 'theme-four', name: 'Theme Four', text: 'Zinc Dark', type: 'basic', layout: 'wave',
-//     styles: { bg: '#18181b', cardBg: '#18181b', nameColor: '#fafafa', designationColor: '#a1a1aa', contactBg: '#27272a', contactText: '#fafafa', sectionBg: '#27272a', border: '#3f3f46', accent: '#a1a1aa' }
-//   },
-//   {
-//     id: 'theme-five', name: 'Theme Five', text: 'Charcoal Pro', type: 'predefined', layout: 'hero',
-//     gradient: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-//     bannerGradient: 'linear-gradient(160deg, #111827 0%, #374151 60%, #4b5563 100%)',
-//     styles: { bg: '#1f2937', cardBg: '#1f2937', nameColor: '#ffffff', designationColor: '#9ca3af', contactBg: '#374151', contactText: '#ffffff', sectionBg: '#374151', border: '#4b5563', accent: '#60a5fa' }
-//   },
-//   {
-//     id: 'theme-six', name: 'Theme Six', text: 'Royal Slate', type: 'predefined', layout: 'hero',
-//     gradient: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%)',
-//     bannerGradient: 'linear-gradient(160deg, #1e1b4b 0%, #3730a3 60%, #4f46e5 100%)',
-//     styles: { bg: '#1e1b4b', cardBg: '#1e1b4b', nameColor: '#e0e7ff', designationColor: '#a5b4fc', contactBg: '#3730a3', contactText: '#e0e7ff', sectionBg: '#312e81', border: '#4338ca', accent: '#818cf8' }
-//   },
-//   {
-//     id: 'theme-seven', name: 'Theme Seven', text: 'Midnight Glass', type: 'predefined', layout: 'glass',
-//     gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-//     bannerGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-//     styles: { bg: '#0f0c29', cardBg: '#0f0c29', nameColor: '#ffffff', designationColor: '#c4b5fd', contactBg: 'rgba(255,255,255,0.12)', contactText: '#ffffff', sectionBg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', accent: '#a78bfa' }
-//   },
-//   {
-//     id: 'theme-eight', name: 'Theme Eight', text: 'Aurora Dark', type: 'predefined', layout: 'glass',
-//     gradient: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #0f766e 100%)',
-//     bannerGradient: 'linear-gradient(135deg, #022c22 0%, #064e3b 40%, #065f46 100%)',
-//     styles: { bg: '#022c22', cardBg: '#022c22', nameColor: '#ecfdf5', designationColor: '#6ee7b7', contactBg: 'rgba(255,255,255,0.12)', contactText: '#ecfdf5', sectionBg: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)', accent: '#34d399' }
-//   },
-// ];
-
-// // Build a live theme object from custom settings — used by Theme.jsx preview + PublicVcard
-// export const buildCustomTheme = (ct) => {
-//   const bannerBg = ct.bannerImage
-//     ? `url(${ct.bannerImage}) center/cover no-repeat`
-//     : (ct.bannerColor || '#111827');
-//   return {
-//     id: 'custom',
-//     name: 'Custom',
-//     text: 'Your Design',
-//     type: 'custom',
-//     layout: ct.layout || 'classic',
-//     gradient: bannerBg,
-//     bannerGradient: bannerBg,
-//     bgImage: ct.bgImage || '',
-//     styles: {
-//       bg: ct.bg || '#ffffff',
-//       cardBg: ct.bg || '#ffffff',
-//       nameColor: ct.nameColor || '#111827',
-//       designationColor: ct.designationColor || '#6b7280',
-//       contactBg: ct.contactBg || '#111827',
-//       contactText: ct.contactText || '#ffffff',
-//       sectionBg: ct.sectionBg || '#f9fafb',
-//       border: ct.border || '#e5e7eb',
-//       accent: ct.accent || '#111827',
-//     }
-//   };
-// };
-
-// const defaultCustom = {
-//   layout: 'classic',
-//   bg: '#ffffff', bgImage: '',
-//   bannerColor: '#111827', bannerImage: '',
-//   nameColor: '#111827', designationColor: '#6b7280',
-//   contactBg: '#111827', contactText: '#ffffff',
-//   sectionBg: '#f9fafb', border: '#e5e7eb', accent: '#111827',
-// };
-
-// // ─── Small color picker swatch ───────────────────────────────────────────────
-// const ColorSwatch = ({ value, onChange, label }) => (
-//   <div className="flex items-center justify-between py-2">
-//     <span className="text-xs text-gray-600">{label}</span>
-//     <div className="flex items-center space-x-2">
-//       <div className="relative w-7 h-7 rounded-lg border border-gray-300 overflow-hidden shrink-0" title={value}>
-//         <div className="absolute inset-0" style={{ background: value }} />
-//         <input
-//           type="color" value={value} onChange={e => onChange(e.target.value)}
-//           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-//         />
-//       </div>
-//       <span className="text-[10px] text-gray-400 font-mono w-14 shrink-0">{value}</span>
-//     </div>
-//   </div>
-// );
-
-// // ─── Background picker (color + optional image upload) ───────────────────────
-// const BgPicker = ({ title, colorKey, imageKey, ct, setCt, uploading, onUpload }) => (
-//   <div className="border border-gray-100 rounded-xl p-4 space-y-3">
-//     <h4 className="text-sm font-bold text-gray-800">{title}</h4>
-//     <ColorSwatch label="Color" value={ct[colorKey]} onChange={v => setCt(p => ({ ...p, [colorKey]: v }))} />
-//     {ct[imageKey] ? (
-//       <div className="relative mt-1">
-//         <img src={ct[imageKey]} alt="bg" className="w-full h-20 object-cover rounded-lg border border-gray-200" />
-//         <button
-//           onClick={() => setCt(p => ({ ...p, [imageKey]: '' }))}
-//           className="absolute top-1 right-1 w-5 h-5 bg-pink-600/80 text-white rounded-full flex items-center justify-center"
-//         >
-//           <X className="w-3 h-3" />
-//         </button>
-//         <p className="text-[10px] text-gray-400 mt-1">Image is active — overrides color above</p>
-//       </div>
-//     ) : (
-//       <label className={`flex items-center justify-center space-x-2 border-2 border-dashed border-gray-200 rounded-lg py-3 cursor-pointer hover:border-gray-400 transition text-xs text-gray-500 mt-1 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-//         <Upload className="w-3.5 h-3.5" />
-//         <span>{uploading ? 'Uploading…' : 'Upload image (optional)'}</span>
-//         <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && onUpload(e.target.files[0])} />
-//       </label>
-//     )}
-//   </div>
-// );
-
-// // ─── Theme thumbnail mockup ───────────────────────────────────────────────────
-// const ThemeMockup = ({ theme }) => {
-//   const s = theme.styles;
-//   const isLight = ['theme-one', 'theme-three'].includes(theme.id);
-//   const bar = isLight ? '#d1d5db' : 'rgba(255,255,255,0.2)';
-
-//   if (theme.layout === 'hero') return (
-//     <div className="w-full h-28 rounded-lg overflow-hidden relative" style={{ background: theme.bannerGradient || theme.gradient || s.bg, border: `1px solid ${s.border}` }}>
-//       <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 flex items-end space-x-2">
-//         <div className="w-9 h-9 rounded-full border-2 border-white/30 shrink-0" style={{ background: s.contactBg }} />
-//         <div className="flex-1 mb-1">
-//           <div className="w-16 h-1.5 rounded mb-1" style={{ background: bar }} />
-//           <div className="w-10 h-1 rounded" style={{ background: bar, opacity: 0.6 }} />
-//         </div>
-//       </div>
-//       <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ background: s.accent || s.contactText, opacity: 0.6 }} />
-//     </div>
-//   );
-
-//   if (theme.layout === 'glass') return (
-//     <div className="w-full h-28 rounded-lg overflow-hidden relative" style={{ background: theme.bannerGradient || theme.gradient || s.bg, border: `1px solid ${s.border}` }}>
-//       <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 pt-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-//         <div className="flex items-center space-x-2">
-//           <div className="w-8 h-8 rounded-full border border-white/30 shrink-0" style={{ background: s.contactBg }} />
-//           <div>
-//             <div className="w-14 h-1.5 rounded mb-1" style={{ background: 'rgba(255,255,255,0.7)' }} />
-//             <div className="w-10 h-1 rounded" style={{ background: 'rgba(255,255,255,0.4)' }} />
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   if (theme.layout === 'wave') return (
-//     <div className="w-full h-28 rounded-lg overflow-hidden flex flex-col items-center justify-start" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-//       <div className="w-full h-10 relative" style={{ background: theme.gradient || s.contactBg }}>
-//         <svg viewBox="0 0 100 20" className="absolute bottom-0 w-full" preserveAspectRatio="none" style={{ height: '10px' }}>
-//           <path d="M0,10 Q25,0 50,10 Q75,20 100,10 L100,20 L0,20 Z" fill={s.bg} />
-//         </svg>
-//       </div>
-//       <div className="w-8 h-8 rounded-full -mt-4 mb-1 border-2 z-10" style={{ background: s.contactBg, borderColor: s.bg }} />
-//       <div className="w-14 h-1.5 rounded mb-1" style={{ background: bar }} />
-//       <div className="w-10 h-1 rounded mb-1.5" style={{ background: bar, opacity: 0.6 }} />
-//       <div className="w-4/5 h-4 rounded" style={{ background: s.contactBg, opacity: 0.25 }} />
-//     </div>
-//   );
-
-//   return (
-//     <div className="w-full h-28 rounded-lg overflow-hidden flex flex-col items-center justify-start" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-//       <div className="w-full h-10" style={{ background: theme.gradient || s.contactBg }} />
-//       <div className="w-9 h-9 rounded-full -mt-4 mb-1 border-2 z-10" style={{ background: s.contactBg, borderColor: s.bg }} />
-//       <div className="w-14 h-1.5 rounded mb-1" style={{ background: bar }} />
-//       <div className="w-10 h-1 rounded mb-2" style={{ background: bar, opacity: 0.6 }} />
-//       <div className="w-4/5 h-4 rounded" style={{ background: s.contactBg, opacity: 0.25 }} />
-//     </div>
-//   );
-// };
-
-// const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
-
-// const Theme = () => {
-//   const [selected, setSelected] = useState('theme-one');
-//   const [ct, setCt] = useState(defaultCustom);
-//   const [saving, setSaving] = useState(false);
-//   const [loading, setLoading] = useState(true);
-//   const [uploading, setUploading] = useState({ bg: false, banner: false });
-
-//   useEffect(() => {
-//     const load = async () => {
-//       try {
-//         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/me`, { headers: headers() });
-//         if (res.data?.theme) setSelected(res.data.theme);
-//         if (res.data?.customTheme) setCt(prev => ({ ...prev, ...res.data.customTheme }));
-//       } catch {} finally { setLoading(false); }
-//     };
-//     load();
-//   }, []);
-
-//   const uploadImage = async (file, key) => {
-//     const which = key === 'bgImage' ? 'bg' : 'banner';
-//     setUploading(p => ({ ...p, [which]: true }));
-//     try {
-//       const fd = new FormData();
-//       fd.append('image', file);
-//       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard/upload-image`, fd, {
-//         headers: { ...headers(), 'Content-Type': 'multipart/form-data' }
-//       });
-//       setCt(p => ({ ...p, [key]: res.data.url }));
-//       toast.success('Image uploaded!');
-//     } catch { toast.error('Image upload failed'); }
-//     finally { setUploading(p => ({ ...p, [which]: false })); }
-//   };
-
-//   const handleSave = async () => {
-//     setSaving(true);
-//     try {
-//       if (selected === 'custom') {
-//         await Promise.all([
-//           axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: 'custom' }, { headers: headers() }),
-//           axios.put(`${import.meta.env.VITE_API_URL}/api/vcard/custom-theme`, ct, { headers: headers() }),
-//         ]);
-//       } else {
-//         await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: selected }, { headers: headers() });
-//       }
-//       toast.success('Theme saved!');
-//     } catch { toast.error('Failed to save. Make sure you have created a vCard profile first.'); }
-//     finally { setSaving(false); }
-//   };
-
-//   const layouts = [
-//     { value: 'classic', label: 'Classic', desc: 'Centered' },
-//     { value: 'wave',    label: 'Wave',    desc: 'Curved header' },
-//     { value: 'hero',    label: 'Hero',    desc: 'Side layout' },
-//     { value: 'glass',   label: 'Glass',   desc: 'Glassmorphism' },
-//   ];
-
-//   const previewTheme = buildCustomTheme(ct);
-
-//   if (loading) return <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>;
-
-//   const ThemeCard = ({ theme }) => (
-//     <button
-//       onClick={() => setSelected(theme.id)}
-//       className={`rounded-xl p-3 border-2 transition-all ${selected === theme.id ? 'border-black shadow-md' : 'border-gray-200 hover:border-gray-400'}`}
-//     >
-//       <ThemeMockup theme={theme} />
-//       <p className="text-xs font-semibold text-gray-700 mt-2 text-center">{theme.name}</p>
-//       <p className="text-[10px] text-gray-400 text-center">{theme.text}</p>
-//       {selected === theme.id && (
-//         <div className="mt-2 flex justify-center">
-//           <span className="bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full">✓ SELECTED</span>
-//         </div>
-//       )}
-//     </button>
-//   );
-
-//   return (
-//     <div className="space-y-6 max-w-4xl">
-
-//       {/* Basic Themes */}
-//       <div className="bg-white rounded-xl border border-gray-200 p-6">
-//         <h3 className="text-base font-bold text-gray-900 mb-1">Basic Themes</h3>
-//         <p className="text-sm text-gray-500 mb-5">Clean, minimal themes for your digital card.</p>
-//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//           {allThemes.filter(t => t.type === 'basic').map(t => <ThemeCard key={t.id} theme={t} />)}
-//         </div>
-//       </div>
-
-//       {/* Predefined Themes */}
-//       <div className="bg-white rounded-xl border border-gray-200 p-6">
-//         <h3 className="text-base font-bold text-gray-900 mb-1">Predefined Themes</h3>
-//         <p className="text-sm text-gray-500 mb-5">Fixed color &amp; layout — visually distinct designs.</p>
-//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//           {allThemes.filter(t => t.type === 'predefined').map(t => <ThemeCard key={t.id} theme={t} />)}
-//         </div>
-//       </div>
-
-//       {/* Custom Theme */}
-//       <div className={`bg-white rounded-xl border-2 transition-all p-6 ${selected === 'custom' ? 'border-black' : 'border-gray-200'}`}>
-//         <div className="flex items-center justify-between mb-5">
-//           <div className="flex items-center space-x-3">
-//             <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-pink-500 rounded-xl flex items-center justify-center shrink-0">
-//               <Palette className="w-5 h-5 text-white" />
-//             </div>
-//             <div>
-//               <h3 className="text-base font-bold text-gray-900">Custom Theme</h3>
-//               <p className="text-sm text-gray-500">Set your own colors, backgrounds &amp; layout</p>
-//             </div>
-//           </div>
-//           <button
-//             onClick={() => setSelected('custom')}
-//             className={`px-4 py-2 rounded-lg text-sm font-semibold transition shrink-0 ${selected === 'custom' ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-//           >
-//             {selected === 'custom' ? '✓ Active' : 'Use This'}
-//           </button>
-//         </div>
-
-//         {selected === 'custom' && (
-//           <div className="space-y-5">
-
-//             {/* Live preview + layout picker */}
-//             <div className="flex flex-col sm:flex-row gap-4">
-//               <div className="shrink-0">
-//                 <p className="text-xs text-gray-500 mb-2 text-center font-medium">Live Preview</p>
-//                 <div className="w-36">
-//                   <ThemeMockup theme={previewTheme} />
-//                 </div>
-//               </div>
-//               <div className="flex-1 space-y-2">
-//                 <p className="text-sm font-bold text-gray-800">Card Layout</p>
-//                 <div className="grid grid-cols-2 gap-2">
-//                   {layouts.map(l => (
-//                     <button
-//                       key={l.value}
-//                       onClick={() => setCt(p => ({ ...p, layout: l.value }))}
-//                       className={`text-left px-3 py-2.5 rounded-lg border text-xs transition ${ct.layout === l.value ? 'border-black bg-black text-white' : 'border-gray-200 text-gray-700 hover:border-gray-400'}`}
-//                     >
-//                       <span className="font-bold block">{l.label}</span>
-//                       <span className={ct.layout === l.value ? 'text-gray-300' : 'text-gray-400'}>{l.desc}</span>
-//                     </button>
-//                   ))}
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* Background pickers */}
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//               <BgPicker
-//                 title="Card Background"
-//                 colorKey="bg" imageKey="bgImage"
-//                 ct={ct} setCt={setCt}
-//                 uploading={uploading.bg}
-//                 onUpload={f => uploadImage(f, 'bgImage')}
-//               />
-//               <BgPicker
-//                 title="Banner / Header Background"
-//                 colorKey="bannerColor" imageKey="bannerImage"
-//                 ct={ct} setCt={setCt}
-//                 uploading={uploading.banner}
-//                 onUpload={f => uploadImage(f, 'bannerImage')}
-//               />
-//             </div>
-
-//             {/* Text & accent colors */}
-//             <div className="border border-gray-100 rounded-xl p-4">
-//               <h4 className="text-sm font-bold text-gray-800 mb-1">Text &amp; Accent Colors</h4>
-//               <div className="divide-y divide-gray-50">
-//                 <ColorSwatch label="Name / Title Color" value={ct.nameColor} onChange={v => setCt(p => ({ ...p, nameColor: v }))} />
-//                 <ColorSwatch label="Subtitle / Designation Color" value={ct.designationColor} onChange={v => setCt(p => ({ ...p, designationColor: v }))} />
-//                 <ColorSwatch label="Accent / Highlight Color" value={ct.accent} onChange={v => setCt(p => ({ ...p, accent: v }))} />
-//                 <ColorSwatch label="Section Background" value={ct.sectionBg} onChange={v => setCt(p => ({ ...p, sectionBg: v }))} />
-//                 <ColorSwatch label="Border Color" value={ct.border} onChange={v => setCt(p => ({ ...p, border: v }))} />
-//               </div>
-//             </div>
-
-//             {/* Button colors */}
-//             <div className="border border-gray-100 rounded-xl p-4">
-//               <h4 className="text-sm font-bold text-gray-800 mb-1">Contact Button Colors</h4>
-//               <div className="divide-y divide-gray-50">
-//                 <ColorSwatch label="Button Background" value={ct.contactBg} onChange={v => setCt(p => ({ ...p, contactBg: v }))} />
-//                 <ColorSwatch label="Button Text / Icon" value={ct.contactText} onChange={v => setCt(p => ({ ...p, contactText: v }))} />
-//               </div>
-//             </div>
-
-//           </div>
-//         )}
-//       </div>
-
-//       <div className="flex justify-end">
-//         <button
-//           onClick={handleSave} disabled={saving}
-//           className="bg-black hover:bg-gray-800 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition disabled:opacity-60"
-//         >
-//           {saving ? 'Saving…' : 'Save Theme'}
-//         </button>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Theme;
-
-
-
-
-
-
-
-
-
-
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Upload, X, Palette, Save } from 'lucide-react';
+import { Palette, Save, Radio, Sliders, Sparkles, Wand2, Undo2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
-import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
+import DynamicCyberCard3D from '../../components/ui/DynamicCyberCard3D';
+import { useTheme } from '../../context/ThemeContext';
 import { fadeUp } from '../../utils/motion';
 
 export const allThemes = [
   {
-    id: 'theme-one', name: 'Theme One', text: 'Classic White', type: 'basic', layout: 'classic',
-    styles: { bg: '#ffffff', cardBg: '#ffffff', nameColor: '#111827', designationColor: '#6b7280', contactBg: '#111827', contactText: '#ffffff', sectionBg: '#f9fafb', border: '#e5e7eb', accent: '#111827' }
+    id: 'midnight-tech',
+    name: 'Midnight — Tech/Developer',
+    text: 'Sleek dark developer layout',
+    type: 'basic',
+    laserColor: '#3B82F6',
+    styles: { bg: '#0F172A', cardBg: '#1E293B', nameColor: '#F8FAFC', designationColor: '#94A3B8', contactBg: '#3B82F6', contactText: '#F8FAFC', sectionBg: '#1E293B', border: '#334155', accent: '#3B82F6', subTextColor: '#FFFFFF' }
   },
   {
-    id: 'theme-two', name: 'Theme Two', text: 'Dark Minimal', type: 'basic', layout: 'classic',
-    styles: { bg: '#0f172a', cardBg: '#0f172a', nameColor: '#f1f5f9', designationColor: '#94a3b8', contactBg: '#1e293b', contactText: '#f1f5f9', sectionBg: '#1e293b', border: '#334155', accent: '#38bdf8' }
+    id: 'corporate-business',
+    name: 'Corporate — Business/Company',
+    text: 'Clean professional presentation',
+    type: 'basic',
+    laserColor: '#2563EB',
+    styles: { bg: '#FFFFFF', cardBg: '#F3F4F6', nameColor: '#111827', designationColor: '#4B5563', contactBg: '#2563EB', contactText: '#FFFFFF', sectionBg: '#F3F4F6', border: '#E5E7EB', accent: '#2563EB', subTextColor: '#4B5563' }
   },
   {
-    id: 'theme-three', name: 'Theme Three', text: 'Soft Gray', type: 'basic', layout: 'wave',
-    styles: { bg: '#f8fafc', cardBg: '#f8fafc', nameColor: '#1e293b', designationColor: '#64748b', contactBg: '#1e293b', contactText: '#ffffff', sectionBg: '#ffffff', border: '#e2e8f0', accent: '#1e293b' }
+    id: 'royal-premium',
+    name: 'Royal — Premium/Creative',
+    text: 'Deep violet creative finish',
+    type: 'basic',
+    laserColor: '#8B5CF6',
+    styles: { bg: '#1E1B4B', cardBg: '#312E81', nameColor: '#F5F3FF', designationColor: '#C4B5FD', contactBg: '#8B5CF6', contactText: '#F5F3FF', sectionBg: '#312E81', border: '#4338CA', accent: '#8B5CF6', subTextColor: '#C4B5FD' }
   },
   {
-    id: 'theme-four', name: 'Theme Four', text: 'Zinc Dark', type: 'basic', layout: 'wave',
-    styles: { bg: '#18181b', cardBg: '#18181b', nameColor: '#fafafa', designationColor: '#a1a1aa', contactBg: '#27272a', contactText: '#fafafa', sectionBg: '#27272a', border: '#3f3f46', accent: '#a1a1aa' }
+    id: 'emerald-fresh',
+    name: 'Emerald — Fresh/Modern',
+    text: 'Vibrant modern green tones',
+    type: 'basic',
+    laserColor: '#10B981',
+    styles: { bg: '#064E3B', cardBg: '#065F46', nameColor: '#ECFDF5', designationColor: '#A7F3D0', contactBg: '#10B981', contactText: '#ECFDF5', sectionBg: '#065F46', border: '#047857', accent: '#10B981', subTextColor: '#A7F3D0' }
   },
   {
-    id: 'theme-five', name: 'Theme Five', text: 'Charcoal Pro', type: 'predefined', layout: 'hero',
-    gradient: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-    bannerGradient: 'linear-gradient(160deg, #111827 0%, #374151 60%, #4b5563 100%)',
-    styles: { bg: '#1f2937', cardBg: '#1f2937', nameColor: '#ffffff', designationColor: '#9ca3af', contactBg: '#374151', contactText: '#ffffff', sectionBg: '#374151', border: '#4b5563', accent: '#60a5fa' }
-  },
-  {
-    id: 'theme-six', name: 'Theme Six', text: 'Royal Slate', type: 'predefined', layout: 'hero',
-    gradient: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%)',
-    bannerGradient: 'linear-gradient(160deg, #1e1b4b 0%, #3730a3 60%, #4f46e5 100%)',
-    styles: { bg: '#1e1b4b', cardBg: '#1e1b4b', nameColor: '#e0e7ff', designationColor: '#a5b4fc', contactBg: '#3730a3', contactText: '#e0e7ff', sectionBg: '#312e81', border: '#4338ca', accent: '#818cf8' }
-  },
-  {
-    id: 'theme-seven', name: 'Theme Seven', text: 'Midnight Glass', type: 'predefined', layout: 'glass',
-    gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    bannerGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    styles: { bg: '#0f0c29', cardBg: '#0f0c29', nameColor: '#ffffff', designationColor: '#c4b5fd', contactBg: 'rgba(255,255,255,0.12)', contactText: '#ffffff', sectionBg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', accent: '#a78bfa' }
-  },
-  {
-    id: 'theme-eight', name: 'Theme Eight', text: 'Aurora Dark', type: 'predefined', layout: 'glass',
-    gradient: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #0f766e 100%)',
-    bannerGradient: 'linear-gradient(135deg, #022c22 0%, #064e3b 40%, #065f46 100%)',
-    styles: { bg: '#022c22', cardBg: '#022c22', nameColor: '#ecfdf5', designationColor: '#6ee7b7', contactBg: 'rgba(255,255,255,0.12)', contactText: '#ecfdf5', sectionBg: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)', accent: '#34d399' }
-  },
+    id: 'dark-gold-luxury',
+    name: 'Dark Gold — Luxury',
+    text: 'Exclusive dark gold aesthetics',
+    type: 'basic',
+    laserColor: '#D4AF37',
+    styles: { bg: '#18181B', cardBg: '#27272A', nameColor: '#FAFAFA', designationColor: '#D4AF37', contactBg: '#D4AF37', contactText: '#18181B', sectionBg: '#27272A', border: '#3F3F46', accent: '#D4AF37', subTextColor: '#D4AF37' }
+  }
 ];
 
 export const buildCustomTheme = (ct) => {
-  const bannerBg = ct.bannerImage
-    ? `url(${ct.bannerImage}) center/cover no-repeat`
-    : (ct.bannerColor || '#111827');
+  if (!ct) return allThemes[0];
+  const bannerBg = ct.bannerImage ? `url(${ct.bannerImage}) center/cover no-repeat` : (ct.accent || '#3B82F6');
   return {
     id: 'custom',
-    name: 'Custom',
-    text: 'Your Design',
+    name: 'Custom RGB Studio',
+    text: 'Real-time RGB Tuning',
     type: 'custom',
     layout: ct.layout || 'classic',
     gradient: bannerBg,
     bannerGradient: bannerBg,
     bgImage: ct.bgImage || '',
     styles: {
-      bg: ct.bg || '#ffffff',
-      cardBg: ct.bg || '#ffffff',
-      nameColor: ct.nameColor || '#111827',
-      designationColor: ct.designationColor || '#6b7280',
-      contactBg: ct.contactBg || '#111827',
-      contactText: ct.contactText || '#ffffff',
-      sectionBg: ct.sectionBg || '#f9fafb',
-      border: ct.border || '#e5e7eb',
-      accent: ct.accent || '#111827',
+      bg: ct.bg || '#0F172A',
+      cardBg: ct.cardBg || '#1E293B',
+      nameColor: ct.text || '#F8FAFC',
+      designationColor: ct.accent || '#3B82F6',
+      contactBg: ct.linkBg || '#3B82F6',
+      contactText: ct.text || '#F8FAFC',
+      sectionBg: ct.cardBg || '#1E293B',
+      border: ct.accent || '#334155',
+      accent: ct.accent || '#3B82F6',
+      subTextColor: ct.subTextColor || '#FFFFFF',
     }
   };
 };
 
 const defaultCustom = {
-  layout: 'classic',
-  bg: '#ffffff', bgImage: '',
-  bannerColor: '#111827', bannerImage: '',
-  nameColor: '#111827', designationColor: '#6b7280',
-  contactBg: '#111827', contactText: '#ffffff',
-  sectionBg: '#f9fafb', border: '#e5e7eb', accent: '#111827',
-};
-
-const ColorSwatch = ({ value, onChange, label }) => (
-  <div className="flex items-center justify-between py-2">
-    <span className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{label}</span>
-    <div className="flex items-center space-x-2">
-      <div className="relative w-7 h-7 rounded-lg overflow-hidden shrink-0 fast-transition" style={{ border: '1px solid var(--surface-border)' }} title={value}>
-        <div className="absolute inset-0" style={{ background: value }} />
-        <input
-          type="color" value={value} onChange={e => onChange(e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-      </div>
-      <span className="text-[10px] font-mono w-14 shrink-0" style={{ color: 'var(--surface-text-2)' }}>{value}</span>
-    </div>
-  </div>
-);
-
-const BgPicker = ({ title, colorKey, imageKey, ct, setCt, uploading, onUpload }) => (
-  <div className="rounded-xl p-4 space-y-3" style={{ border: '1px solid var(--surface-border)' }}>
-    <h4 className="text-sm font-bold" style={{ color: 'var(--surface-text)' }}>{title}</h4>
-    <ColorSwatch label="Color" value={ct[colorKey]} onChange={v => setCt(p => ({ ...p, [colorKey]: v }))} />
-    {ct[imageKey] ? (
-      <div className="relative mt-1">
-        <img src={ct[imageKey]} alt="bg" className="w-full h-20 object-cover rounded-lg" style={{ border: '1px solid var(--surface-border)' }} />
-        <IconButton
-          variant="bare"
-          title="Remove image"
-          onClick={() => setCt(p => ({ ...p, [imageKey]: '' }))}
-          className="absolute top-1 right-1 rounded-full bg-brand-600/80 text-white hover:bg-brand-600"
-        >
-          <X className="w-3 h-3" />
-        </IconButton>
-        <p className="text-[10px] mt-1" style={{ color: 'var(--surface-text-2)' }}>Image is active — overrides color above</p>
-      </div>
-    ) : (
-      <label
-        className={`flex items-center justify-center space-x-2 rounded-lg py-3 cursor-pointer fast-transition text-xs hover:border-brand-500 hover:text-brand-500 mt-1 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-        style={{ border: '2px dashed var(--surface-border)', color: 'var(--surface-text-2)' }}
-      >
-        <Upload className="w-3.5 h-3.5" />
-        <span>{uploading ? 'Uploading…' : 'Upload image (optional)'}</span>
-        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && onUpload(e.target.files[0])} />
-      </label>
-    )}
-  </div>
-);
-
-const ThemeMockup = ({ theme }) => {
-  const s = theme.styles;
-  const isLight = ['theme-one', 'theme-three'].includes(theme.id);
-  const bar = isLight ? '#d1d5db' : 'rgba(255,255,255,0.2)';
-
-  if (theme.layout === 'hero') return (
-    <div className="w-full h-28 rounded-lg overflow-hidden relative" style={{ background: theme.bannerGradient || theme.gradient || s.bg, border: `1px solid ${s.border}` }}>
-      <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 flex items-end space-x-2">
-        <div className="w-9 h-9 rounded-full border-2 border-white/30 shrink-0" style={{ background: s.contactBg }} />
-        <div className="flex-1 mb-1">
-          <div className="w-16 h-1.5 rounded mb-1" style={{ background: bar }} />
-          <div className="w-10 h-1 rounded" style={{ background: bar, opacity: 0.6 }} />
-        </div>
-      </div>
-      <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ background: s.accent || s.contactText, opacity: 0.6 }} />
-    </div>
-  );
-
-  if (theme.layout === 'glass') return (
-    <div className="w-full h-28 rounded-lg overflow-hidden relative" style={{ background: theme.bannerGradient || theme.gradient || s.bg, border: `1px solid ${s.border}` }}>
-      <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 pt-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full border border-white/30 shrink-0" style={{ background: s.contactBg }} />
-          <div>
-            <div className="w-14 h-1.5 rounded mb-1" style={{ background: 'rgba(255,255,255,0.7)' }} />
-            <div className="w-10 h-1 rounded" style={{ background: 'rgba(255,255,255,0.4)' }} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (theme.layout === 'wave') return (
-    <div className="w-full h-28 rounded-lg overflow-hidden flex flex-col items-center justify-start" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-      <div className="w-full h-10 relative" style={{ background: theme.gradient || s.contactBg }}>
-        <svg viewBox="0 0 100 20" className="absolute bottom-0 w-full" preserveAspectRatio="none" style={{ height: '10px' }}>
-          <path d="M0,10 Q25,0 50,10 Q75,20 100,10 L100,20 L0,20 Z" fill={s.bg} />
-        </svg>
-      </div>
-      <div className="w-8 h-8 rounded-full -mt-4 mb-1 border-2 z-10" style={{ background: s.contactBg, borderColor: s.bg }} />
-      <div className="w-14 h-1.5 rounded mb-1" style={{ background: bar }} />
-      <div className="w-10 h-1 rounded mb-1.5" style={{ background: bar, opacity: 0.6 }} />
-      <div className="w-4/5 h-4 rounded" style={{ background: s.contactBg, opacity: 0.25 }} />
-    </div>
-  );
-
-  return (
-    <div className="w-full h-28 rounded-lg overflow-hidden flex flex-col items-center justify-start" style={{ background: s.bg, border: `1px solid ${s.border}` }}>
-      <div className="w-full h-10" style={{ background: theme.gradient || s.contactBg }} />
-      <div className="w-9 h-9 rounded-full -mt-4 mb-1 border-2 z-10" style={{ background: s.contactBg, borderColor: s.bg }} />
-      <div className="w-14 h-1.5 rounded mb-1" style={{ background: bar }} />
-      <div className="w-10 h-1 rounded mb-2" style={{ background: bar, opacity: 0.6 }} />
-      <div className="w-4/5 h-4 rounded" style={{ background: s.contactBg, opacity: 0.25 }} />
-    </div>
-  );
+  text: '#F8FAFC',
+  bg: '#0F172A',
+  cardBg: '#1E293B',
+  accent: '#3B82F6',
+  linkBg: '#3B82F6',
+  subTextColor: '#FFFFFF',
 };
 
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
 
+const AI_VIBES = ['Luxury dark gold', 'Fresh modern startup', 'Clean & minimal light', 'Bold & creative'];
+
 const Theme = () => {
-  const navigate = useNavigate(); // STEP 2: Initiate navigate
-  const [selected, setSelected] = useState('theme-one');
+  const navigate = useNavigate();
+  const { theme: appTheme } = useTheme();
+  const isDark = appTheme === 'dark';
+
+  const [selected, setSelected] = useState('midnight-tech');
   const [ct, setCt] = useState(defaultCustom);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState({ bg: false, banner: false });
-  
-  // STEP 2: State for popup & slug
   const [showPopup, setShowPopup] = useState(false);
-  const [slug, setSlug] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(null); // null | 'generate' | 'harmonize'
+  const [aiPrev, setAiPrev] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
+
+  const [cardDetails, setCardDetails] = useState({
+    name: '',
+    designation: '',
+    slug: '',
+    photoUrl: null,
+    bannerUrl: null
+  });
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/me`, { headers: headers() });
-        if (res.data?.theme) setSelected(res.data.theme);
-        if (res.data?.customTheme) setCt(prev => ({ ...prev, ...res.data.customTheme }));
+        if (res.data?.theme) {
+          setSelected(res.data.theme);
+          if (res.data.theme !== 'custom') {
+            const found = allThemes.find(t => t.id === res.data.theme);
+            if (found) {
+              setCt({
+                bg: found.styles.bg,
+                cardBg: found.styles.cardBg,
+                accent: found.laserColor,
+                linkBg: found.styles.contactBg,
+                subTextColor: found.styles.subTextColor || '#FFFFFF',
+                text: found.styles.nameColor,
+              });
+            }
+          }
+        }
+        if (res.data?.customTheme) {
+          setCt(prev => ({
+            ...prev,
+            ...res.data.customTheme,
+            subTextColor: res.data.customTheme.subTextColor || '#FFFFFF'
+          }));
+        }
         
-        // STEP 3: Save slug for preview link
-        if (res.data?.username) setSlug(res.data.username);
-        
+        if (res.data) {
+          const personal = res.data.personalInfo || {};
+          let profilePic = personal.profilePic || null;
+          if (profilePic && !profilePic.startsWith('http') && !profilePic.startsWith('blob:') && !profilePic.startsWith('data:')) {
+            const apiUrl = import.meta.env.VITE_API_URL || '';
+            profilePic = `${apiUrl}${profilePic.startsWith('/') ? profilePic : '/' + profilePic}`;
+          }
+
+          let bannerImg = personal.bannerImage || null;
+          if (bannerImg && !bannerImg.startsWith('http') && !bannerImg.startsWith('blob:') && !bannerImg.startsWith('data:')) {
+            const apiUrl = import.meta.env.VITE_API_URL || '';
+            bannerImg = `${apiUrl}${bannerImg.startsWith('/') ? bannerImg : '/' + bannerImg}`;
+          }
+
+          setCardDetails({
+            name: personal.name || res.data.title || '',
+            designation: personal.designation || res.data.subTitle || '',
+            slug: res.data.username || '',
+            photoUrl: profilePic,
+            bannerUrl: bannerImg
+          });
+        }
       } catch { /* ignore */ } finally { setLoading(false); }
     };
     load();
   }, []);
 
-  const uploadImage = async (file, key) => {
-    const which = key === 'bgImage' ? 'bg' : 'banner';
-    setUploading(p => ({ ...p, [which]: true }));
-    try {
-      const fd = new FormData();
-      fd.append('image', file);
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard/upload-image`, fd, {
-        headers: { ...headers(), 'Content-Type': 'multipart/form-data' }
-      });
-      setCt(p => ({ ...p, [key]: res.data.url }));
-      toast.success('Image uploaded!');
-    } catch { toast.error('Image upload failed'); }
-    finally { setUploading(p => ({ ...p, [which]: false })); }
-  };
-
   const handleSave = async () => {
     setSaving(true);
     try {
       if (selected === 'custom') {
-        await Promise.all([
-          axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: 'custom' }, { headers: headers() }),
-          axios.put(`${import.meta.env.VITE_API_URL}/api/vcard/custom-theme`, ct, { headers: headers() }),
-        ]);
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: 'custom', customTheme: ct }, { headers: headers() });
+        await axios.put(`${import.meta.env.VITE_API_URL}/api/vcard/custom-theme`, ct, { headers: headers() });
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: selected }, { headers: headers() });
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { theme: selected, customTheme: ct }, { headers: headers() });
       }
-      toast.success('Theme saved!');
-      
-      // STEP 4: Show popup on success
+      window.dispatchEvent(new Event('vcard:data-changed'));
+      toast.success('Theme saved & synchronized successfully!');
       setShowPopup(true);
-
-    } catch { toast.error('Failed to save. Make sure you have created a vCard profile first.'); }
+    } catch { toast.error('Failed to save theme.'); }
     finally { setSaving(false); }
   };
 
-  // STEP 4: Next aur Preview ke functions
   const handlePreview = () => {
     setShowPopup(false);
-    if (slug) {
-      window.open(`/c/${slug}`, '_blank');
-    } else {
-      toast.error("Profile not found! Please create a profile first.");
-    }
+    if (cardDetails.slug) window.open(`/c/${cardDetails.slug}`, '_blank');
   };
 
   const handleNext = () => {
     setShowPopup(false);
-    // Yahan maine contact-details route daala hai, apne route ke hisaab se badal lena
     navigate('/dashboard/vcard/contact'); 
   };
 
-  const layouts = [
-    { value: 'classic', label: 'Classic', desc: 'Centered' },
-    { value: 'wave',    label: 'Wave',    desc: 'Curved header' },
-    { value: 'hero',    label: 'Hero',    desc: 'Side layout' },
-    { value: 'glass',   label: 'Glass',   desc: 'Glassmorphism' },
-  ];
+  const handlePresetSelect = (t) => {
+    setSelected(t.id);
+    const newPresetCt = {
+      bg: t.styles.bg,
+      cardBg: t.styles.cardBg,
+      accent: t.laserColor,
+      linkBg: t.styles.contactBg,
+      subTextColor: t.styles.subTextColor || '#FFFFFF',
+      text: t.styles.nameColor,
+    };
+    setCt(newPresetCt);
+    setAiResult(null);
+  };
 
-  const previewTheme = buildCustomTheme(ct);
+  const runAiTheme = async (mode) => {
+    if (aiBusy) return;
+    setAiBusy(mode);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/ai/theme`,
+        { mode, prompt: aiPrompt, current: ct },
+        { headers: headers() }
+      );
+      setAiPrev({ ct, selected });
+      setSelected('custom');
+      setCt(prev => ({ ...prev, ...res.data.theme }));
+      setAiResult({ name: res.data.name, reason: res.data.reason });
+      toast.success(`AI theme applied: ${res.data.name}`);
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'AI theme failed. Please try again.');
+    } finally { setAiBusy(null); }
+  };
+
+  const undoAiTheme = () => {
+    if (!aiPrev) return;
+    setCt(aiPrev.ct);
+    setSelected(aiPrev.selected);
+    setAiPrev(null);
+    setAiResult(null);
+  };
+
+  const handleRgbChange = (key, val) => {
+    setSelected('custom');
+    setCt(prev => ({ ...prev, [key]: val }));
+  };
+
+  const activeLaserColor = selected === 'custom' ? ct.accent : (allThemes.find(t => t.id === selected)?.laserColor || ct.accent || '#3B82F6');
+  const activeCardBg = selected === 'custom' ? ct.cardBg : (allThemes.find(t => t.id === selected)?.styles.cardBg || ct.cardBg || '#1E293B');
+  const activeSurfaceBg = selected === 'custom' ? ct.bg : (allThemes.find(t => t.id === selected)?.styles.bg || ct.bg || '#0F172A');
+  const activeLinkBg = selected === 'custom' ? ct.linkBg : (allThemes.find(t => t.id === selected)?.styles.contactBg || ct.linkBg || '#3B82F6');
+  const activeSubText = selected === 'custom' ? (ct.subTextColor || '#FFFFFF') : (allThemes.find(t => t.id === selected)?.styles.subTextColor || '#FFFFFF');
 
   if (loading) return (
-    <div className="space-y-4 max-w-4xl">
-      <div className="h-24 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
-      <div className="h-64 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
-      <div className="h-64 rounded-2xl animate-pulse" style={{ background: 'var(--surface-2)' }} />
+    <div className="space-y-4 max-w-4xl mx-auto py-6">
+      <div className={`h-24 rounded-2xl animate-pulse ${isDark ? 'bg-white/5' : 'bg-slate-200'}`} />
+      <div className={`h-64 rounded-2xl animate-pulse ${isDark ? 'bg-white/5' : 'bg-slate-200'}`} />
     </div>
-  );
-
-  const ThemeCard = ({ theme, idx }) => (
-    <GlassCard
-      as={motion.button}
-      hover
-      {...fadeUp(idx * 0.05)}
-      onClick={() => setSelected(theme.id)}
-      className={`p-3 text-left fast-transition ${selected === theme.id ? 'ring-2 ring-brand-500' : ''}`}
-    >
-      <ThemeMockup theme={theme} />
-      <p className="text-xs font-semibold mt-2 text-center" style={{ color: 'var(--surface-text)' }}>{theme.name}</p>
-      <p className="text-[10px] text-center" style={{ color: 'var(--surface-text-2)' }}>{theme.text}</p>
-      <AnimatePresence>
-        {selected === theme.id && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.7, height: 0 }}
-            animate={{ opacity: 1, scale: 1, height: 'auto' }}
-            exit={{ opacity: 0, scale: 0.7, height: 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className="mt-2 flex justify-center overflow-hidden"
-          >
-            <span className="bg-gradient-to-r from-brand-600 to-brand-700 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">✓ SELECTED</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </GlassCard>
   );
 
   return (
     <>
-      <div className="space-y-6 max-w-4xl relative">
-
-        {/* ── Hero ─────────────────────────────────── */}
-        <motion.div {...fadeUp(0)} className="relative bg-gradient-to-br from-brand-600 to-rose-600 rounded-2xl px-6 py-5 overflow-hidden">
-          <MeshBackground className="opacity-60" />
-          <div className="relative flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0">
-              <Palette className="w-5 h-5 text-white" />
+      <div className="space-y-8 max-w-7xl mx-auto pb-16">
+        <motion.div {...fadeUp(0)} className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[26px] p-7 sm:p-8 text-white shadow-xl border border-white/15 overflow-hidden">
+          <MeshBackground className="opacity-20" />
+          <div className="relative z-10 flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center shrink-0 shadow-inner border border-white/10">
+              <Palette className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-white leading-tight">Card Theme</h1>
-              <p className="text-xs text-white/70 mt-0.5">Pick a preset or design a fully custom look for your card</p>
+              <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">Professional Theme Studio</h1>
+              <p className="text-xs sm:text-sm text-slate-300 mt-0.5">Select high-grade aesthetic presets or configure custom real-time RGB tones.</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Basic Themes */}
-        <GlassCard {...fadeUp(0.08)} className="p-6">
-          <h3 className="text-base font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Basic Themes</h3>
-          <p className="text-sm mb-5" style={{ color: 'var(--surface-text-2)' }}>Clean, minimal themes for your digital card.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {allThemes.filter(t => t.type === 'basic').map((t, i) => <ThemeCard key={t.id} theme={t} idx={i} />)}
-          </div>
-        </GlassCard>
-
-        {/* Predefined Themes */}
-        <GlassCard {...fadeUp(0.14)} className="p-6">
-          <h3 className="text-base font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Predefined Themes</h3>
-          <p className="text-sm mb-5" style={{ color: 'var(--surface-text-2)' }}>Fixed color &amp; layout — visually distinct designs.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {allThemes.filter(t => t.type === 'predefined').map((t, i) => <ThemeCard key={t.id} theme={t} idx={i} />)}
-          </div>
-        </GlassCard>
-
-        {/* Custom Theme */}
-        <GlassCard
-          {...fadeUp(0.2)}
-          className="p-6 fast-transition"
-          style={{ border: selected === 'custom' ? '2px solid var(--color-brand-600, #9f1c44)' : '1px solid var(--surface-border)' }}
-        >
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-brand-500 rounded-xl flex items-center justify-center shrink-0">
-                <Palette className="w-5 h-5 text-white" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 space-y-6">
+            <GlassCard {...fadeUp(0.04)} className="p-6 relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-fuchsia-500/25 to-indigo-500/25 blur-3xl pointer-events-none" />
+              <div className="relative flex items-start gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-fuchsia-500/30">
+                  <Wand2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Theme Designer</h3>
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Describe your vibe, or let AI match colors to your profession and brand color. Always readable, always on-brand.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold" style={{ color: 'var(--surface-text)' }}>Custom Theme</h3>
-                <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Set your own colors, backgrounds &amp; layout</p>
+
+              <div className="relative space-y-3">
+                <input
+                  value={aiPrompt}
+                  onChange={e => setAiPrompt(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') runAiTheme('generate'); }}
+                  maxLength={300}
+                  placeholder="e.g. luxury dark gold for a lawyer, or fresh & friendly for a yoga coach"
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-sm outline-none border transition-colors focus:border-fuchsia-500 ${isDark ? 'bg-white/[0.04] border-white/15 text-white placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {AI_VIBES.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setAiPrompt(v)}
+                      className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors hover:border-fuchsia-500 cursor-pointer ${isDark ? 'border-white/15 text-slate-300' : 'border-slate-200 text-slate-600'}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => runAiTheme('generate')}
+                    disabled={!!aiBusy}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-fuchsia-500/25 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                  >
+                    {aiBusy === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    <span>{aiBusy === 'generate' ? 'Designing…' : 'Generate with AI'}</span>
+                  </button>
+                  <button
+                    onClick={() => runAiTheme('harmonize')}
+                    disabled={!!aiBusy}
+                    title="Keeps your accent color and rebuilds everything else around it"
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-60 cursor-pointer ${isDark ? 'border-white/20 text-white hover:bg-white/5' : 'border-slate-300 text-slate-800 hover:bg-slate-50'}`}
+                  >
+                    {aiBusy === 'harmonize' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                    <span>{aiBusy === 'harmonize' ? 'Matching…' : 'Match my accent color'}</span>
+                  </button>
+                </div>
+
+                {aiResult && (
+                  <div className={`flex items-center gap-3 rounded-xl border p-3 ${isDark ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50'}`}>
+                    <div className="flex shrink-0 -space-x-1.5">
+                      {[ct.bg, ct.cardBg, ct.accent, ct.linkBg].map((c, i) => (
+                        <span key={i} className="w-6 h-6 rounded-full border-2 border-white/40 shadow-sm" style={{ background: c }} />
+                      ))}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{aiResult.name}</p>
+                      <p className={`text-[11px] leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{aiResult.reason}</p>
+                    </div>
+                    {aiPrev && (
+                      <button onClick={undoAiTheme} className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold cursor-pointer ${isDark ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                        <Undo2 className="w-3 h-3" /> Undo
+                      </button>
+                    )}
+                  </div>
+                )}
+                <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Preview updates live on the right — press Save Theme to publish it to your card.</p>
+              </div>
+            </GlassCard>
+
+            <GlassCard {...fadeUp(0.08)} className="p-6">
+              <h3 className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Curated Theme Presets</h3>
+              <p className={`text-xs mb-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Professional color systems optimized for identity profiles.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {allThemes.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handlePresetSelect(t)}
+                    className={`p-4 rounded-2xl border text-left transition-all duration-300 cursor-pointer ${
+                      selected === t.id 
+                        ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.15)]' 
+                        : isDark ? 'border-white/10 bg-white/[0.02] hover:border-white/20' : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ background: t.laserColor }} />
+                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t.name}</span>
+                    </div>
+                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t.text}</p>
+                    {selected === t.id && (
+                      <span className="inline-block mt-3 bg-blue-600 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full">
+                        ACTIVE
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </GlassCard>
+
+            <GlassCard {...fadeUp(0.14)} className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+                    <Sliders className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Realistic Real-time RGB Studio</h3>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Directly calibrate background, card base, link &amp; sub-text colors.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelected('custom')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    selected === 'custom' ? 'bg-blue-600 text-white' : isDark ? 'bg-white/5 text-slate-300' : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {selected === 'custom' ? 'RGB Custom Active' : 'Enable Custom RGB'}
+                </button>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-white/10">
+                {[
+                  { label: 'Background Hue (BG)', key: 'bg', val: ct.bg },
+                  { label: 'Card Surface Base', key: 'cardBg', val: ct.cardBg },
+                  { label: 'Laser & Accent Glow', key: 'accent', val: ct.accent },
+                  { label: 'Link / Button Color', key: 'linkBg', val: ct.linkBg },
+                  { label: 'Sub-Text / Link Color', key: 'subTextColor', val: ct.subTextColor || '#FFFFFF' },
+                  { label: 'Name / Heading Text', key: 'text', val: ct.text || '#F8FAFC' },
+                ].map(({ label, key, val }) => (
+                  <div key={key} className="relative flex items-center justify-between py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 hover:border-blue-500/50 transition-colors shadow-xs">
+                    <span className="text-xs font-black tracking-wide text-slate-900 dark:text-slate-100">{label}</span>
+                    <div className="flex items-center space-x-3">
+                      <label className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-white/30 shadow-sm cursor-pointer block" title="Click to pick color">
+                        <div className="absolute inset-0" style={{ background: val || '#3B82F6' }} />
+                        <input
+                          type="color" 
+                          value={val || '#3B82F6'} 
+                          onChange={e => handleRgbChange(key, e.target.value)}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                        />
+                      </label>
+                      <input 
+                        type="text" 
+                        value={val || ''} 
+                        onChange={e => handleRgbChange(key, e.target.value)}
+                        className="text-[11px] font-mono w-20 bg-white dark:bg-black/30 border border-slate-300 dark:border-white/15 rounded-lg px-2 py-1 text-slate-900 dark:text-white uppercase tracking-wider outline-none focus:border-blue-500" 
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+
+            <div className="flex justify-end">
+              <div className="w-full sm:w-56">
+                <GradientButton onClick={handleSave} disabled={saving} loading={saving}>
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving…' : 'Save Theme'}</span>
+                </GradientButton>
               </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              onClick={() => setSelected('custom')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold fast-transition shrink-0 ${selected === 'custom' ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white' : 'hover:border-brand-500 hover:text-brand-500'}`}
-              style={selected !== 'custom' ? { border: '1px solid var(--surface-border)', color: 'var(--surface-text-2)' } : undefined}
-            >
-              {selected === 'custom' ? '✓ Active' : 'Use This'}
-            </motion.button>
           </div>
 
-          <AnimatePresence initial={false}>
-          {selected === 'custom' && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-5 overflow-hidden"
-            >
-
-              {/* Live preview + layout picker */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="shrink-0">
-                  <p className="text-xs mb-2 text-center font-medium" style={{ color: 'var(--surface-text-2)' }}>Live Preview</p>
-                  <div className="w-36">
-                    <ThemeMockup theme={previewTheme} />
-                  </div>
+          <div className="lg:col-span-5 sticky top-24">
+            <GlassCard className="p-5 shadow-2xl">
+              <div className="flex items-center justify-between mb-2 px-2">
+                <div className="flex items-center gap-2">
+                  <Radio className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                  <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Real-time Card Simulation
+                  </span>
                 </div>
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-bold" style={{ color: 'var(--surface-text)' }}>Card Layout</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {layouts.map(l => (
-                      <motion.button
-                        key={l.value}
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => setCt(p => ({ ...p, layout: l.value }))}
-                        className={`text-left px-3 py-2.5 rounded-lg text-xs fast-transition ${ct.layout === l.value ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white' : 'hover:border-brand-500 hover:text-brand-500'}`}
-                        style={ct.layout !== l.value ? { border: '1px solid var(--surface-border)', color: 'var(--surface-text)' } : { border: '1px solid transparent' }}
-                      >
-                        <span className="font-bold block">{l.label}</span>
-                        <span className={ct.layout === l.value ? 'text-white/70' : ''} style={ct.layout !== l.value ? { color: 'var(--surface-text-2)' } : undefined}>{l.desc}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+                  Live Preview
+                </span>
               </div>
 
-              {/* Background pickers */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <BgPicker
-                  title="Card Background"
-                  colorKey="bg" imageKey="bgImage"
-                  ct={ct} setCt={setCt}
-                  uploading={uploading.bg}
-                  onUpload={f => uploadImage(f, 'bgImage')}
-                />
-                <BgPicker
-                  title="Banner / Header Background"
-                  colorKey="bannerColor" imageKey="bannerImage"
-                  ct={ct} setCt={setCt}
-                  uploading={uploading.banner}
-                  onUpload={f => uploadImage(f, 'bannerImage')}
-                />
-              </div>
+              <DynamicCyberCard3D
+                name={cardDetails.name}
+                designation={cardDetails.designation}
+                slug={cardDetails.slug}
+                photoUrl={cardDetails.photoUrl}
+                bgImageUrl={cardDetails.bannerUrl}
+                themeColor={activeLaserColor}
+                cardBgColor={activeCardBg}
+                surfaceBgColor={activeSurfaceBg}
+                backBgColor={activeSurfaceBg}
+                linkBgColor={activeLinkBg}
+                subTextColor={activeSubText}
+                isDark={isDark}
+              />
 
-              {/* Text & accent colors */}
-              <div className="rounded-xl p-4" style={{ border: '1px solid var(--surface-border)' }}>
-                <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Text &amp; Accent Colors</h4>
-                <div>
-                  <ColorSwatch label="Name / Title Color" value={ct.nameColor} onChange={v => setCt(p => ({ ...p, nameColor: v }))} />
-                  <ColorSwatch label="Subtitle / Designation Color" value={ct.designationColor} onChange={v => setCt(p => ({ ...p, designationColor: v }))} />
-                  <ColorSwatch label="Accent / Highlight Color" value={ct.accent} onChange={v => setCt(p => ({ ...p, accent: v }))} />
-                  <ColorSwatch label="Section Background" value={ct.sectionBg} onChange={v => setCt(p => ({ ...p, sectionBg: v }))} />
-                  <ColorSwatch label="Border Color" value={ct.border} onChange={v => setCt(p => ({ ...p, border: v }))} />
-                </div>
-              </div>
-
-              {/* Button colors */}
-              <div className="rounded-xl p-4" style={{ border: '1px solid var(--surface-border)' }}>
-                <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Contact Button Colors</h4>
-                <div>
-                  <ColorSwatch label="Button Background" value={ct.contactBg} onChange={v => setCt(p => ({ ...p, contactBg: v }))} />
-                  <ColorSwatch label="Button Text / Icon" value={ct.contactText} onChange={v => setCt(p => ({ ...p, contactText: v }))} />
-                </div>
-              </div>
-
-            </motion.div>
-          )}
-          </AnimatePresence>
-        </GlassCard>
-
-        <motion.div {...fadeUp(0.26)} className="flex justify-end">
-          <div className="w-full sm:w-56">
-            <GradientButton onClick={handleSave} disabled={saving} loading={saving}>
-              {saving ? (
-                <motion.span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }} />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>{saving ? 'Saving…' : 'Save Theme'}</span>
-            </GradientButton>
+              <p className={`text-center text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Rotate card to preview live RGB lighting finishes.
+              </p>
+            </GlassCard>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       <ActionPopup 

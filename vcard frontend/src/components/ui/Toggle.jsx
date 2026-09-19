@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 // Generic boolean pill-switch: spring-animated knob, gradient-crimson track when on.
-const Toggle = ({ checked, onChange, disabled = false, className = '' }) => (
+const Toggle = ({ checked, onChange, disabled = false, className = '', ...rest }) => (
   <button
     type="button"
     role="switch"
@@ -12,6 +12,7 @@ const Toggle = ({ checked, onChange, disabled = false, className = '' }) => (
       checked ? 'bg-gradient-crimson' : ''
     } ${className}`}
     style={checked ? undefined : { background: 'var(--surface-2)', border: '1px solid var(--surface-border)' }}
+    {...rest}
   >
     <motion.span
       layout

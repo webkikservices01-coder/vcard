@@ -2,9 +2,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check } from 'lucide-react';
+import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink } from 'lucide-react';
 import { hasChatFill } from '../../utils/plan';
+import { getVideoRoomUrl } from '../../utils/videoRoom';
 import GlassCard from '../../components/ui/GlassCard';
+import Toggle from '../../components/ui/Toggle';
 import GradientButton from '../../components/ui/GradientButton';
 import Button from '../../components/ui/Button';
 import IconButton from '../../components/ui/IconButton';
@@ -23,6 +25,8 @@ const AiPersona = () => {
   const [plan, setPlan] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cardId, setCardId] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [form, setForm] = useState({
     enabled: true,
@@ -53,7 +57,8 @@ const AiPersona = () => {
       if (statsRes && statsRes.data) {
         // Ek bar console log karke check kar lein ki data ka structure kya hai
         console.log('Stats Data:', statsRes.data); 
-        setPlan(statsRes.data?.user?.plan || statsRes.data?.plan || ''); 
+        setPlan(statsRes.data?.user?.plan || statsRes.data?.plan || '');
+        setCardId(statsRes.data?.cardId || null);
       }
 
       // 2. Set Persona Form (agar personaRes success hua)
@@ -88,6 +93,14 @@ const AiPersona = () => {
     faqs[i] = { ...faqs[i], [field]: val };
     return { ...f, faqs };
   });
+
+  const videoRoomUrl = cardId ? getVideoRoomUrl(cardId) : null;
+  const handleCopyRoomLink = () => {
+    if (!videoRoomUrl) return;
+    navigator.clipboard.writeText(videoRoomUrl);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1800);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -166,11 +179,11 @@ const AiPersona = () => {
         <MeshBackground className="opacity-30" />
         <motion.div {...fadeUp(0)} className="relative flex items-center justify-between p-1">
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}>
+            <h2 className="text-2xl font-black flex items-center gap-2" style={{ color: 'var(--surface-text)' }}>
               <Bot className="w-5 h-5" />
-              <span>AI Persona Setup</span>
+              <span>AI Agent</span>
             </h2>
-            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Configure your AI assistant that talks to visitors on your card</p>
+            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Your live, plan-enabled assistant for visitors on your public card</p>
           </div>
           <motion.div
             key={form.enabled}
@@ -187,19 +200,58 @@ const AiPersona = () => {
       <GlassCard {...fadeUp(0.05)} className="p-5 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Enable AI Chat on vCard</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>Show chat bubble to visitors on your public card</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>Show chat bubble to visitors on your public card. Save changes to apply.</p>
         </div>
-        <button
-          onClick={() => setForm(f => ({ ...f, enabled: !f.enabled }))}
-          className={`relative w-12 h-6 rounded-full fast-transition ${form.enabled ? 'bg-brand-600' : ''}`}
-          style={!form.enabled ? { background: 'var(--surface-2)' } : undefined}
-        >
-          <motion.span
-            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow"
-            animate={{ x: form.enabled ? 24 : 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          />
-        </button>
+        <Toggle
+          checked={form.enabled}
+          onChange={(val) => setForm(f => ({ ...f, enabled: val }))}
+          aria-label="Enable AI Agent on vCard"
+        />
+      </GlassCard>
+
+      {/* Instant video call room */}
+      <GlassCard {...fadeUp(0.06)} className="p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shrink-0">
+            <Video className="w-4.5 h-4.5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Instant Video Call Room</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
+              Visitors get a "Video Call" button next to the chat bubble on your card. It opens this same free room — join it whenever you want to take a call. Shown/hidden together with the toggle above.
+            </p>
+            {videoRoomUrl ? (
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(videoRoomUrl, '_blank', 'noopener,noreferrer')}
+                  leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                >
+                  Join My Room
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopyRoomLink}
+                  leftIcon={linkCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                >
+                  {linkCopied ? 'Copied!' : 'Copy Link'}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs mt-2 italic" style={{ color: 'var(--surface-text-2)' }}>Create your vCard profile first to get a room link.</p>
+            )}
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard {...fadeUp(0.08)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Sparkles className="w-4 h-4 text-brand-600" />AI can answer</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>It uses your published card information and the knowledge you provide below.</p>
+        <div className="mt-3 grid sm:grid-cols-2 gap-2 text-xs" style={{ color: 'var(--surface-text-2)' }}>
+          {['Your profile, bio, and contact links', 'Products, services, and portfolio', 'Your configured FAQs and about text', 'Questions supported by your public vCard'].map(item => <div key={item} className="flex gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--surface-2)' }}><Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />{item}</div>)}
+        </div>
       </GlassCard>
 
       <GlassCard {...fadeUp(0.1)}>

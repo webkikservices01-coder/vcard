@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Layout } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Layout, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -11,39 +11,51 @@ import Button from '../../components/ui/Button';
 import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
+import { useTheme } from '../../context/ThemeContext';
 
 const API = `${import.meta.env.VITE_API_URL}/api/custom-sections`;
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
 const emptyForm = { title: '', content: '' };
 
-// Shadow DOM component for CSS isolation — user's custom HTML/CSS never leaks into the rest of the site
+// Shadow DOM component with automatic light/dark theme text color support
 const SafeHtml = ({ html, textColor }) => {
   const containerRef = useRef(null);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     if (containerRef.current) {
       let shadow = containerRef.current.shadowRoot;
       if (!shadow) shadow = containerRef.current.attachShadow({ mode: 'open' });
 
+      // Fallback text color depending on global theme if textColor is not explicitly provided
+      const defaultColor = textColor || (isDark ? '#e2e8f0' : '#1e293b');
+
       shadow.innerHTML = `
         <style>
           :host {
             display: block;
             font-family: inherit;
-            color: ${textColor || 'inherit'};
+            color: ${defaultColor};
+          }
+          p, span, div, h1, h2, h3, h4, h5, h6, li {
+            color: inherit;
           }
         </style>
         <div>${html || '<p style="opacity: 0.5; text-align: center; font-style: italic;">Your custom HTML content will appear here...</p>'}</div>
       `;
     }
-  }, [html, textColor]);
+  }, [html, textColor, isDark]);
 
   return <div ref={containerRef} className="w-full text-xs leading-relaxed break-words" />;
 };
 
 const CustomSections = () => {
   const navigate = useNavigate();
+  const { theme: appTheme } = useTheme();
+  const isDark = appTheme === 'dark';
+
   const [showPopup, setShowPopup] = useState(false);
   const [slug, setSlug] = useState('');
 
@@ -117,44 +129,58 @@ const CustomSections = () => {
 
   const info = previewData?.card?.personalInfo || {};
   const s = previewData?.card?.customTheme || {
-    bg: '#f8fafc', sectionBg: '#ffffff', nameColor: '#1e293b',
-    designationColor: '#64748b', border: '#e2e8f0', contactBg: '#1e293b', contactText: '#fff'
+    bg: '#0b1329', sectionBg: '#121b33', nameColor: '#ffffff',
+    designationColor: '#ff80ab', border: 'rgba(255,255,255,0.15)', contactBg: '#1e293b', contactText: '#fff'
   };
+
+  let profilePicUrl = info.profilePic || '';
+  if (profilePicUrl && !profilePicUrl.startsWith('http') && !profilePicUrl.startsWith('blob:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    profilePicUrl = `${apiUrl}${profilePicUrl.startsWith('/') ? profilePicUrl : '/' + profilePicUrl}`;
+  }
+
+  let bannerUrl = info.bannerImage || '';
+  if (bannerUrl && !bannerUrl.startsWith('http') && !bannerUrl.startsWith('blob:')) {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    bannerUrl = `${apiUrl}${bannerUrl.startsWith('/') ? bannerUrl : '/' + bannerUrl}`;
+  }
 
   return (
     <>
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-start relative">
 
         {/* LEFT COLUMN: Editor & List */}
-        <div className="flex-1 w-full max-w-lg space-y-5">
-          <div className="relative rounded-2xl overflow-hidden">
+        <div className="flex-1 w-full max-w-lg space-y-6">
+          <motion.div {...fadeUp(0)} className="relative overflow-hidden rounded-3xl p-6 text-white shadow-xl border border-white/15 bg-gradient-to-r from-[#E70C65] via-[#cf0a55] to-[#9F1C44]">
             <MeshBackground className="opacity-30" />
-            <motion.div {...fadeUp(0)} className="relative flex flex-wrap items-center justify-between gap-3 p-1">
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Custom Sections</h2>
-                <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Add custom HTML content blocks to your vCard</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-2 backdrop-blur-md">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Modular Matrix
+                </div>
+                <h2 className="text-2xl font-black tracking-tight text-white">Custom Sections</h2>
+                <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Add custom HTML & CSS content blocks to your digital vCard</p>
               </div>
               {!formOpen && (
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       value={search}
                       onChange={e => setSearch(e.target.value)}
-                      className="pl-9 pr-4 py-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
-                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      className="w-full sm:w-44 pl-9 pr-4 py-2 rounded-xl text-xs outline-none border border-white/20 bg-white/15 text-white placeholder:text-slate-300 focus:ring-2 focus:ring-[#E70C65] transition-all font-medium"
                       placeholder="Search..."
                     />
                   </div>
-                  <div className="w-32 shrink-0">
-                    <GradientButton onClick={openCreate} className="py-2! text-sm">
+                  <div className="w-28 shrink-0">
+                    <GradientButton onClick={openCreate} className="py-2! text-xs font-bold shadow-lg">
                       <Plus className="w-4 h-4" /><span>Create</span>
                     </GradientButton>
                   </div>
                 </div>
               )}
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
 
           <AnimatePresence mode="wait">
             {formOpen ? (
@@ -162,52 +188,63 @@ const CustomSections = () => {
                 key="form"
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="overflow-hidden"
+                className="overflow-hidden border shadow-2xl backdrop-blur-2xl"
+                style={{
+                  background: isDark ? 'rgba(11, 15, 25, 0.75)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(231, 12, 101, 0.2)',
+                }}
               >
-                <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
-                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Section' : 'Create Section'}</h3>
+                <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0' }}>
+                  <h3 className="text-base font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>{editing ? 'Edit Custom Section' : 'Create Custom Section'}</h3>
                   <IconButton
                     variant="solid"
                     title="Close"
                     onClick={() => setFormOpen(false)}
-                    style={{ background: 'var(--surface-1)' }}
-                    className="hover:bg-brand-500/10 hover:text-brand-500 hover:border-brand-400"
+                    className="bg-white/10 text-slate-700 dark:text-white hover:bg-[#E70C65]/30 hover:text-[#ff80ab]"
                   >
                     <X className="w-5 h-5" />
                   </IconButton>
                 </div>
                 <div className="p-6 space-y-5">
                   <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Section Title *</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>Section Title *</label>
                     <input
                       value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
-                      style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                      className="w-full px-4 py-3 rounded-2xl text-xs sm:text-sm outline-none border transition-all font-medium"
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+                        borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1',
+                        color: isDark ? '#ffffff' : '#0f172a'
+                      }}
                       placeholder="e.g., About My Work" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5 flex justify-between" style={{ color: 'var(--surface-text)' }}>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 flex justify-between" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
                       <span>Content (HTML/CSS allowed) *</span>
-                      <span className="text-xs text-brand-500 font-medium">Live Previewing 👉</span>
+                      <span className="text-xs text-[#E70C65] font-bold">Live Previewing 👉</span>
                     </label>
-                    <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={12}
-                      className="w-full px-4 py-3 rounded-lg text-sm outline-none resize-none font-mono focus:ring-2 focus:ring-brand-400 fast-transition"
-                      style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                      placeholder={`<style>\n  .my-text { color: red; }\n</style>\n<h1 class="my-text">Hello</h1>`} />
-                    <p className="text-xs mt-2" style={{ color: 'var(--surface-text-2)' }}>Note: CSS written here is completely isolated. It will not break the rest of the site!</p>
+                    <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={10}
+                      className="w-full px-4 py-3 rounded-2xl text-xs sm:text-sm outline-none resize-none font-mono border transition-all"
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.05)' : '#f8fafc',
+                        borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1',
+                        color: isDark ? '#ffffff' : '#0f172a'
+                      }}
+                      placeholder={`<style>\n  .my-text { color: #E70C65; }\n</style>\n<h1 class="my-text">Hello World</h1>`} />
+                    <p className="text-[11px] mt-2 font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Note: CSS written here is isolated inside Shadow DOM and will not break site styles.</p>
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 p-6 pt-0">
                   <Button
                     variant="ghost"
                     onClick={() => setFormOpen(false)}
-                    style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                    className="hover:border-brand-500 hover:text-brand-500"
+                    className="border text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white"
+                    style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1' }}
                   >
                     Cancel
                   </Button>
-                  <Button variant="primary" onClick={handleSave} loading={saving} className="!w-auto px-6">
-                    {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
+                  <Button variant="primary" onClick={handleSave} loading={saving} className="!w-auto px-6 font-bold shadow-lg shadow-[#E70C65]/30">
+                    {saving ? 'Saving...' : editing ? 'Update Section' : 'Create Section'}
                   </Button>
                 </div>
               </GlassCard>
@@ -216,23 +253,27 @@ const CustomSections = () => {
                 key="table"
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
-                className="overflow-hidden"
+                className="overflow-hidden border shadow-xl backdrop-blur-2xl"
+                style={{
+                  background: isDark ? 'rgba(11, 15, 25, 0.75)' : '#ffffff',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(231, 12, 101, 0.2)',
+                }}
               >
-                {loading ? <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>
+                {loading ? <div className="p-8 text-center text-sm font-bold" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Loading Sections...</div>
                 : filtered.length === 0 ? (
                   <div className="p-12 text-center">
-                    <Layout className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.4 }} />
-                    <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>No custom sections yet.</p>
-                    <Button variant="primary" onClick={openCreate} className="!w-auto mt-4">Create Section</Button>
+                    <Layout className="w-10 h-10 mx-auto mb-3 text-slate-400 opacity-50" />
+                    <p className="text-sm font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>No custom sections created yet.</p>
+                    <Button variant="primary" onClick={openCreate} className="!w-auto mt-4 font-bold shadow-lg shadow-[#E70C65]/30">Create First Section</Button>
                   </div>
                 ) : (
                   <table className="w-full">
-                    <thead style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--surface-border)' }}>
+                    <thead className="border-b" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0', background: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }}>
                       <tr>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>#</th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>Title</th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase hidden md:table-cell" style={{ color: 'var(--surface-text-2)' }}>Content Preview</th>
-                        <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase" style={{ color: 'var(--surface-text-2)' }}>Actions</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-bold uppercase" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>#</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-bold uppercase" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Title</th>
+                        <th className="px-5 py-3.5 text-left text-xs font-bold uppercase hidden md:table-cell" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Preview</th>
+                        <th className="px-5 py-3.5 text-right text-xs font-bold uppercase" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -241,18 +282,18 @@ const CustomSections = () => {
                           key={item._id}
                           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25, delay: idx * 0.04 }}
-                          className="hover:bg-brand-500/5 fast-transition"
-                          style={{ borderTop: idx === 0 ? 'none' : '1px solid var(--surface-border)' }}
+                          className="transition-colors"
+                          style={{ borderTop: idx === 0 ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'}` }}
                         >
-                          <td className="px-5 py-4 text-sm font-mono" style={{ color: 'var(--surface-text-2)' }}>{idx + 1}</td>
-                          <td className="px-5 py-4 text-sm font-medium" style={{ color: 'var(--surface-text)' }}>{item.title}</td>
+                          <td className="px-5 py-4 text-xs font-mono" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{idx + 1}</td>
+                          <td className="px-5 py-4 text-sm font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>{item.title}</td>
                           <td className="px-5 py-4 hidden md:table-cell">
-                            <p className="text-xs truncate max-w-[150px]" style={{ color: 'var(--surface-text-2)' }}>{item.content?.replace(/<[^>]*>?/gm, '').substring(0, 50)}...</p>
+                            <p className="text-xs truncate max-w-[150px] font-mono" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>{item.content?.replace(/<[^>]*>?/gm, '').substring(0, 45)}...</p>
                           </td>
                           <td className="px-5 py-4">
-                            <div className="flex items-center justify-end space-x-1">
-                              <IconButton variant="ghost" title="Edit" onClick={() => openEdit(item)}><Pencil className="w-4 h-4" /></IconButton>
-                              <IconButton variant="danger" title="Delete" onClick={() => handleDelete(item._id)}><Trash2 className="w-4 h-4" /></IconButton>
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <IconButton variant="ghost" title="Edit" onClick={() => openEdit(item)} className="text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"><Pencil className="w-4 h-4" /></IconButton>
+                              <IconButton variant="danger" title="Delete" onClick={() => handleDelete(item._id)} className="text-red-500 hover:bg-red-500/20"><Trash2 className="w-4 h-4" /></IconButton>
                             </div>
                           </td>
                         </motion.tr>
@@ -265,59 +306,78 @@ const CustomSections = () => {
           </AnimatePresence>
         </div>
 
-        {/* RIGHT COLUMN: Live Mobile Preview */}
+        {/* RIGHT COLUMN: Live Mobile Preview with Lighting & Glow Animation */}
         <motion.div
           initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.1 }}
-          className="hidden lg:flex w-[350px] shrink-0 sticky top-6 justify-center"
+          className="hidden lg:flex w-[360px] shrink-0 sticky top-6 justify-center"
         >
-          <div className="w-[320px] h-[650px] border-[12px] border-gray-900 rounded-[3rem] shadow-2xl relative bg-white overflow-hidden flex flex-col">
+          <div className="relative">
+            <div className="absolute -inset-3 rounded-[3.5rem] bg-gradient-to-tr from-[#E70C65]/50 via-indigo-500/35 to-pink-500/40 blur-2xl opacity-75 animate-pulse pointer-events-none" />
 
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-3xl z-50"></div>
+            <div className="w-[330px] h-[660px] border-[10px] border-slate-900 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative bg-slate-950 overflow-hidden flex flex-col z-10">
 
-            <div
-              className="w-full h-full overflow-y-auto pb-10 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400/80"
-              style={{ background: s.bg }}
-            >
-              <div className="h-32 w-full relative" style={{ background: s.contactBg }}>
-                {info.bannerImage && <img src={info.bannerImage} alt="Banner" className="w-full h-full object-cover" />}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-3xl z-50 flex items-center justify-center">
+                <div className="w-12 h-1.5 bg-slate-800 rounded-full" />
               </div>
-              <div className="flex justify-center -mt-10 relative z-10">
-                <div className="w-20 h-20 rounded-full border-4 overflow-hidden shadow-md" style={{ borderColor: s.bg, background: s.sectionBg }}>
-                  {info.profilePic
-                    ? <img src={info.profilePic} alt="Profile" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-xl font-bold" style={{ color: s.nameColor }}>{info.name?.[0]?.toUpperCase() || '?'}</div>
-                  }
+
+              <div
+                className="w-full h-full overflow-y-auto pb-10 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
+                style={{ background: s.bg || '#0b1329' }}
+              >
+                <div className="h-32 w-full relative bg-slate-900">
+                  {bannerUrl ? (
+                    <img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-[#E70C65]/40 to-indigo-600/40" />
+                  )}
                 </div>
-              </div>
-              <div className="text-center px-4 mt-2 mb-6">
-                <h2 className="font-black text-lg leading-tight" style={{ color: s.nameColor }}>{info.name || 'Your Name'}</h2>
-                <p className="text-[11px] font-medium mt-0.5" style={{ color: s.designationColor }}>{info.designation || 'Your Designation'}</p>
-              </div>
 
-              <div className="space-y-4 px-4 pb-6">
-                {formOpen ? (
-                  <div className="py-2" style={{ borderTop: `1px solid ${s.border}` }}>
-                    <div className="flex items-center justify-center space-x-3 mb-4 mt-2">
-                      <div className="flex-1 h-px" style={{ background: s.designationColor, opacity: 0.15 }} />
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.designationColor }}>
-                        {form.title || 'Section Title'}
-                      </h3>
-                      <div className="flex-1 h-px" style={{ background: s.designationColor, opacity: 0.15 }} />
-                    </div>
-                    <SafeHtml html={form.content} textColor={s.designationColor} />
-                  </div>
-                ) : (
-                  items.map(section => (
-                    <div key={section._id} className="py-2" style={{ borderTop: `1px solid ${s.border}` }}>
-                      <div className="flex items-center justify-center space-x-3 mb-4 mt-2">
-                        <div className="flex-1 h-px" style={{ background: s.designationColor, opacity: 0.15 }} />
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.designationColor }}>{section.title}</h3>
-                        <div className="flex-1 h-px" style={{ background: s.designationColor, opacity: 0.15 }} />
+                <div className="flex justify-center -mt-10 relative z-10">
+                  <div className="w-20 h-20 rounded-2xl border-2 p-0.5 shadow-xl overflow-hidden backdrop-blur-md" style={{ borderColor: '#facc15', background: '#0b0f19' }}>
+                    {profilePicUrl ? (
+                      <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <div className="w-full h-full rounded-xl flex items-center justify-center text-xl font-black text-white" style={{ background: '#E70C65' }}>
+                        {info.name?.[0]?.toUpperCase() || 'SK'}
                       </div>
-                      <SafeHtml html={section.content} textColor={s.designationColor} />
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-center px-4 mt-2.5 mb-6">
+                  <h2 className="font-black text-base leading-tight text-white" style={{ color: s.nameColor || '#ffffff' }}>
+                    {info.name || 'SHUBHAM KHURANA'}
+                  </h2>
+                  <p className="text-[11px] font-bold mt-1 tracking-wider uppercase" style={{ color: s.designationColor || '#ff80ab' }}>
+                    {info.designation || 'FOUNDER & CEO'}
+                  </p>
+                </div>
+
+                <div className="space-y-4 px-4 pb-6">
+                  {formOpen ? (
+                    <div className="py-2" style={{ borderTop: `1px solid ${s.border || 'rgba(255,255,255,0.15)'}` }}>
+                      <div className="flex items-center justify-center space-x-3 mb-4 mt-2">
+                        <div className="flex-1 h-px bg-white/20" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ff80ab]">
+                          {form.title || 'Section Title'}
+                        </h3>
+                        <div className="flex-1 h-px bg-white/20" />
+                      </div>
+                      <SafeHtml html={form.content} textColor={s.designationColor || '#cbd5e1'} />
                     </div>
-                  ))
-                )}
+                  ) : (
+                    items.map(section => (
+                      <div key={section._id} className="py-2" style={{ borderTop: `1px solid ${s.border || 'rgba(255,255,255,0.15)'}` }}>
+                        <div className="flex items-center justify-center space-x-3 mb-4 mt-2">
+                          <div className="flex-1 h-px bg-white/20" />
+                          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ff80ab]">{section.title}</h3>
+                          <div className="flex-1 h-px bg-white/20" />
+                        </div>
+                        <SafeHtml html={section.content} textColor={s.designationColor || '#cbd5e1'} />
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -36,7 +36,10 @@ const Portfolio = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = async () => {
-    try { const res = await axios.get(API, { headers: headers() }); setItems(res.data); }
+    try { 
+      const res = await axios.get(API, { headers: headers() }); 
+      setItems(res.data); 
+    }
     catch { toast.error('Failed to load portfolio'); }
     finally { setLoading(false); }
   };
@@ -64,8 +67,15 @@ const Portfolio = () => {
 
   const openEdit = (item) => {
     setForm({ title: item.title, description: item.description, url: item.url, coverImage: null });
-    setPreview(item.coverImage || '');
+    setPreview(getImageUrl(item.coverImage) || '');
     setEditing(item._id); setModalOpen(true);
+  };
+
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return null;
+    if (imgPath.startsWith('http') || imgPath.startsWith('blob:') || imgPath.startsWith('data:')) return imgPath;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    return `${apiUrl}${imgPath.startsWith('/') ? imgPath : '/' + imgPath}`;
   };
 
   const handleSave = async () => {
@@ -85,6 +95,7 @@ const Portfolio = () => {
       setModalOpen(false);
       fetch();
       setShowPopup(true);
+      toast.success('Portfolio item saved successfully!');
     } catch (err) { toast.error(err.response?.data?.msg || 'Failed to save'); }
     finally { setSaving(false); }
   };
@@ -178,7 +189,7 @@ const Portfolio = () => {
                 >
                   <div className="aspect-video rounded-xl overflow-hidden mb-3" style={{ background: 'var(--surface-2)' }}>
                     {item.coverImage ? (
-                      <img src={item.coverImage} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(item.coverImage)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon className="w-6 h-6" style={{ color: 'var(--surface-text-2)' }} />

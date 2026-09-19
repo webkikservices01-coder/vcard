@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck } from 'lucide-react';
+import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles } from 'lucide-react';
 import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
 import ThemeToggle from './ui/ThemeToggle';
@@ -27,11 +27,11 @@ const breadcrumbMap = {
   '/dashboard/vcard/ai-persona': 'AI Persona Setup',
   '/dashboard/plans': 'Plans',
   '/dashboard/transactions': 'Transactions',
-  '/dashboard/support': 'Support',
+  '/dashboard/support': 'Support',  
   '/dashboard/profile': 'My Profile',
 };
 
-const vcardTabs = [
+const primaryVcardTabs = [
   { name: 'All vCards',      icon: FolderOpen,  path: '/dashboard/vcard/all' },
   { name: 'Profile',         icon: User,        path: '/dashboard/vcard/profile' },
   { name: 'Theme',           icon: Palette,     path: '/dashboard/vcard/theme' },
@@ -41,6 +41,9 @@ const vcardTabs = [
   { name: 'Gallery',         icon: ImageIcon,   path: '/dashboard/vcard/gallery' },
   { name: 'Testimonials',    icon: Star,        path: '/dashboard/vcard/testimonials' },
   { name: 'QR Code',         icon: QrCode,      path: '/dashboard/vcard/qr' },
+];
+
+const secondaryVcardTabs = [
   { name: 'Custom Sections', icon: Layout,      path: '/dashboard/vcard/custom' },
   { name: 'Reorder',         icon: ListOrdered, path: '/dashboard/vcard/reorder' },
   { name: 'Advanced',        icon: Settings2,   path: '/dashboard/vcard/advanced' },
@@ -56,13 +59,12 @@ const DashboardLayout = () => {
 
   // Mobile Tabs Dropdown State
   const [mobileTabMenuOpen, setMobileTabMenuOpen] = useState(false);
-  const tabMenuRef = useRef(null);
 
   const pageTitle = breadcrumbMap[location.pathname] || 'Dashboard';
   const isVcardSection = location.pathname.includes('/dashboard/vcard') && !location.pathname.includes('/dashboard/vcard/ai-persona');
 
-  // Current Active Tab Find karna mobile dropdown ke liye
-  const activeTab = vcardTabs.find(tab => tab.path === location.pathname) || vcardTabs[0];
+  const allTabsCombined = [...primaryVcardTabs, ...secondaryVcardTabs];
+  const activeTab = allTabsCombined.find(tab => tab.path === location.pathname) || primaryVcardTabs[0];
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -82,14 +84,10 @@ const DashboardLayout = () => {
     fetchUser();
   }, [navigate]);
 
-  // Handle clicking outside for both dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
-      }
-      if (tabMenuRef.current && !tabMenuRef.current.contains(e.target)) {
-        setMobileTabMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -106,16 +104,34 @@ const DashboardLayout = () => {
     : 'U';
 
   return (
-    <div className="flex h-screen font-['Inter']" style={{ background: 'var(--surface-bg)' }}>
-      {/* Persistent ambient wash behind the whole app shell, very low opacity — keeps the
-          product feeling alive while navigating instead of only in isolated page heroes */}
+    <div className="flex h-screen w-full font-['Inter'] relative overflow-hidden" style={{ background: 'var(--surface-bg)' }}>
+      <style>{`
+        @keyframes lightingSlideRightToLeft {
+          0% {
+            opacity: 0;
+            transform: translateX(50px);
+            filter: brightness(1.4);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+            filter: brightness(1);
+          }
+        }
+        .animate-lighting-right-to-left {
+          animation: lightingSlideRightToLeft 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
       <MeshBackground fixed className="opacity-[0.18] -z-10" />
 
+      {/* Sidebar fixed height */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} userPlan={user.plan} />
 
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      {/* Right side container strictly scrollable */}
+      <div className="flex-1 flex flex-col h-screen min-w-0 relative overflow-y-auto">
         {/* Header */}
-        <header className="h-16 glass rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 z-20 border-x-0 border-t-0">
+        <header className="sticky top-0 h-16 glass flex items-center justify-between px-4 md:px-6 shrink-0 z-35 border-x-0 border-t-0 shadow-sm">
           <div className="flex items-center space-x-3">
             <IconButton
               onClick={() => setSidebarOpen(true)}
@@ -163,7 +179,7 @@ const DashboardLayout = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-2 p-1.5 hover:bg-brand-500/10 rounded-lg fast-transition"
+                className="flex items-center space-x-2 p-1.5 hover:bg-brand-500/10 rounded-lg fast-transition cursor-pointer"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {initials}
@@ -184,7 +200,7 @@ const DashboardLayout = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.16 }}
-                    className="glass absolute right-0 top-full mt-1 w-48 rounded-xl py-1 z-50"
+                    className="glass absolute right-0 top-full mt-1 w-48 rounded-xl py-1 z-50 shadow-xl"
                   >
                     <Link
                       to="/dashboard/profile"
@@ -219,7 +235,7 @@ const DashboardLayout = () => {
                     <div style={{ borderTop: '1px solid var(--surface-border)' }} className="my-1" />
                     <button
                       onClick={handleLogout}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 w-full text-left fast-transition"
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 w-full text-left fast-transition cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Logout</span>
@@ -231,95 +247,144 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        {/* vCard sub-navigation */}
+        {/* vCard sub-navigation positioned safely below header */}
         {isVcardSection && (
-          <div className="glass rounded-none z-10 relative border-x-0 border-t-0">
-
-            {/* Mobile: dropdown menu */}
-            <div className="lg:hidden px-4 py-3 relative" ref={tabMenuRef}>
+          <div className="sticky top-16 glass shrink-0 z-30 border-x-0 border-t-0 py-3 px-4 md:px-6 shadow-md">
+            {/* Mobile: Clean Trigger Button */}
+            <div className="lg:hidden relative">
               <button
-                onClick={() => setMobileTabMenuOpen(!mobileTabMenuOpen)}
-                className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold fast-transition"
-                style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                onClick={() => setMobileTabMenuOpen(true)}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-lg border border-white/20 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] text-white cursor-pointer"
               >
                 <div className="flex items-center space-x-2.5">
-                  <activeTab.icon className="w-4 h-4 text-brand-500" />
+                  <activeTab.icon className="w-4 h-4 text-yellow-300" />
                   <span>{activeTab.name}</span>
                 </div>
-                <motion.span animate={{ rotate: mobileTabMenuOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <ChevronDown className="w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
-                </motion.span>
+                <ChevronDown className="w-4 h-4 text-white" />
               </button>
 
+              {/* Mobile Modal Drawer */}
               <AnimatePresence>
                 {mobileTabMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.18 }}
-                    className="glass absolute left-4 right-4 top-[60px] rounded-xl py-2 z-50 max-h-[60vh] overflow-y-auto"
-                  >
-                    {vcardTabs.map((tab) => {
-                      const isActive = location.pathname === tab.path;
-                      return (
-                        <Link
-                          key={tab.path}
-                          to={tab.path}
-                          onClick={() => setMobileTabMenuOpen(false)}
-                          className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium fast-transition ${
-                            isActive ? 'bg-brand-500/10 text-brand-500 font-bold' : 'hover:bg-brand-500/10 hover:text-brand-500'
-                          }`}
-                          style={!isActive ? { color: 'var(--surface-text-2)' } : undefined}
+                  <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setMobileTabMenuOpen(false)}
+                      className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                    />
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="relative w-full max-w-sm rounded-[32px] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/20 bg-slate-950 text-white overflow-hidden z-10"
+                    >
+                      <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
+                        <span className="text-xs font-bold uppercase tracking-wider text-pink-300 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Select vCard Section
+                        </span>
+                        <button 
+                          onClick={() => setMobileTabMenuOpen(false)} 
+                          className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-300 hover:text-white cursor-pointer"
                         >
-                          <tab.icon className={`w-4 h-4 ${isActive ? 'text-brand-500' : 'opacity-60'}`} />
-                          <span>{tab.name}</span>
-                          {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-500" />}
-                        </Link>
-                      );
-                    })}
-                  </motion.div>
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+                        {allTabsCombined.map((tab) => {
+                          const isActive = location.pathname === tab.path;
+                          return (
+                            <Link
+                              key={tab.path}
+                              to={tab.path}
+                              onClick={() => setMobileTabMenuOpen(false)}
+                              className={`flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all ${
+                                isActive ? 'bg-gradient-to-r from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              <tab.icon className={`w-4 h-4 ${isActive ? 'text-yellow-300' : 'text-pink-400'}`} />
+                              <span>{tab.name}</span>
+                              {isActive && <div className="ml-auto w-2 h-2 rounded-full bg-yellow-300 shadow-[0_0_8px_#facc15]" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Desktop: pill tabs with sliding active indicator */}
-            <div className="hidden lg:flex px-6 py-4 flex-wrap justify-center gap-2.5">
-              {vcardTabs.map((tab) => {
-                const isActive = location.pathname === tab.path;
-                return (
-                  <Link key={tab.path} to={tab.path} className="relative">
-                    {isActive && (
-                      <motion.div
-                        layoutId="vcard-tab-pill"
-                        className="absolute inset-0 bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl shadow-glow-crimson"
-                        transition={{ type: 'spring', stiffness: 480, damping: 36 }}
-                      />
-                    )}
-                    <div
-                      className={`relative z-10 flex items-center space-x-2 px-3.5 py-2 text-sm font-semibold rounded-xl fast-transition ${
-                        isActive ? 'text-white' : 'hover:bg-brand-500/10 hover:text-brand-500'
-                      }`}
-                      style={!isActive ? { color: 'var(--surface-text-2)', border: '1px solid var(--surface-border)' } : undefined}
-                    >
-                      <tab.icon className={`w-4 h-4 ${isActive ? 'text-white' : 'opacity-60'}`} />
-                      <span>{tab.name}</span>
-                    </div>
-                  </Link>
-                );
-              })}
+            {/* Desktop: Two Clean Structured Rows */}
+            <div className="hidden lg:flex flex-col items-center gap-2">
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {primaryVcardTabs.map((tab) => {
+                  const isActive = location.pathname === tab.path;
+                  return (
+                    <Link key={tab.path} to={tab.path} className="relative">
+                      {isActive && (
+                        <motion.div
+                          layoutId="vcard-tab-pill-1"
+                          className="absolute inset-0 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] rounded-xl shadow-[0_4px_20px_rgba(231,12,101,0.4)]"
+                          transition={{ type: 'spring', stiffness: 480, damping: 36 }}
+                        />
+                      )}
+                      <div
+                        className={`relative z-10 flex items-center space-x-1.5 px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                          isActive ? 'text-white scale-105' : 'hover:bg-[#E70C65]/10 hover:text-[#E70C65]'
+                        }`}
+                        style={!isActive ? { color: 'var(--surface-text-2)', border: '1px solid var(--surface-border)' } : undefined}
+                      >
+                        <tab.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'opacity-70'}`} />
+                        <span>{tab.name}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-center gap-2 pt-1 border-t border-white/10 w-full max-w-xl">
+                {secondaryVcardTabs.map((tab) => {
+                  const isActive = location.pathname === tab.path;
+                  return (
+                    <Link key={tab.path} to={tab.path} className="relative">
+                      {isActive && (
+                        <motion.div
+                          layoutId="vcard-tab-pill-2"
+                          className="absolute inset-0 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] rounded-xl shadow-[0_4px_20px_rgba(231,12,101,0.4)]"
+                          transition={{ type: 'spring', stiffness: 480, damping: 36 }}
+                        />
+                      )}
+                      <div
+                        className={`relative z-10 flex items-center space-x-1.5 px-4 py-1.5 text-[11px] font-bold rounded-xl transition-all cursor-pointer ${
+                          isActive ? 'text-white scale-105' : 'hover:bg-[#E70C65]/10 hover:text-[#E70C65]'
+                        }`}
+                        style={!isActive ? { color: 'var(--surface-text-2)', border: '1px solid var(--surface-border)' } : undefined}
+                      >
+                        <tab.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'opacity-70'}`} />
+                        <span>{tab.name}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
+        {/* Main Content scrollable area */}
+        <main className="flex-1 p-4 md:p-6 z-10 animate-lighting-right-to-left">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
               <Outlet />
             </motion.div>

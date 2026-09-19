@@ -44,8 +44,15 @@ const Testimonials = () => {
   const [saving, setSaving] = useState(false);
 
   const fetch = async () => {
-    try { const res = await axios.get(API, { headers: headers() }); setItems(res.data); }
-    catch { toast.error('Failed to load testimonials'); }
+    try { 
+      const res = await axios.get(API, { headers: headers() }); 
+      console.log("Fetched Testimonials:", res.data); // Debugging check
+      setItems(Array.isArray(res.data) ? res.data : []); 
+    }
+    catch (err) { 
+      console.error("Fetch Testimonials Error:", err);
+      toast.error('Failed to load testimonials'); 
+    }
     finally { setLoading(false); }
   };
 
@@ -61,10 +68,17 @@ const Testimonials = () => {
     fetchUserDetails();
   }, []);
 
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return null;
+    if (imgPath.startsWith('http') || imgPath.startsWith('blob:') || imgPath.startsWith('data:')) return imgPath;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    return `${apiUrl}${imgPath.startsWith('/') ? imgPath : '/' + imgPath}`;
+  };
+
   const openCreate = () => { setForm(emptyForm); setPhotoPreview(''); setEditing(null); setModalOpen(true); };
   const openEdit = (item) => {
     setForm({ name: item.name, review: item.review, rating: item.rating, photo: null });
-    setPhotoPreview(item.photo || '');
+    setPhotoPreview(getImageUrl(item.photo) || '');
     setEditing(item._id); setModalOpen(true);
   };
 
@@ -73,15 +87,21 @@ const Testimonials = () => {
     setSaving(true);
     try {
       const fd = new FormData();
-      fd.append('name', form.name); fd.append('review', form.review); fd.append('rating', form.rating);
+      fd.append('name', form.name); 
+      fd.append('review', form.review); 
+      fd.append('rating', form.rating);
       if (form.photo) fd.append('photo', form.photo);
 
-      if (editing) { await axios.put(`${API}/${editing}`, fd, { headers: { 'x-auth-token': token(), 'Content-Type': 'multipart/form-data' } }); }
-      else { await axios.post(API, fd, { headers: { 'x-auth-token': token(), 'Content-Type': 'multipart/form-data' } }); }
+      if (editing) { 
+        await axios.put(`${API}/${editing}`, fd, { headers: { 'x-auth-token': token(), 'Content-Type': 'multipart/form-data' } }); 
+      } else { 
+        await axios.post(API, fd, { headers: { 'x-auth-token': token(), 'Content-Type': 'multipart/form-data' } }); 
+      }
 
       setModalOpen(false);
-      fetch();
+      await fetch(); // Ensure data is re-fetched before showing popup
       setShowPopup(true);
+      toast.success('Testimonial saved successfully!');
     } catch (err) { toast.error(err.response?.data?.msg || 'Failed to save'); }
     finally { setSaving(false); }
   };
@@ -102,7 +122,14 @@ const Testimonials = () => {
     navigate('/dashboard/vcard/custom');
   };
 
-  const filtered = items.filter(i => i.name?.toLowerCase().includes(search.toLowerCase()) || i.review?.toLowerCase().includes(search.toLowerCase()));
+  // Improved search filter (shows all items if search is empty, checks name and review safely)
+  const filtered = items.filter(i => {
+    if (!search.trim()) return true;
+    const query = search.toLowerCase();
+    const nameMatch = i.name?.toLowerCase().includes(query) || false;
+    const reviewMatch = i.review?.toLowerCase().includes(query) || false;
+    return nameMatch || reviewMatch;
+  });
 
   const Stars = ({ n }) => (
     <span className="text-sm tracking-tighter">
@@ -148,8 +175,8 @@ const Testimonials = () => {
         ) : filtered.length === 0 ? (
           <motion.div {...fadeUp(0.08)} className="text-center py-16 rounded-2xl" style={{ border: '2px dashed var(--surface-border)' }}>
             <Star className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
-            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--surface-text-2)' }}>No testimonials yet.</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)', opacity: 0.8 }}>Collect and showcase customer feedback</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--surface-text-2)' }}>No testimonials found.</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)', opacity: 0.8 }}>Try clearing your search or add a new review</p>
             <Button variant="primary" onClick={openCreate} className="!w-auto" leftIcon={<Plus className="w-4 h-4" />}>
               Add Testimonial
             </Button>
@@ -161,7 +188,7 @@ const Testimonials = () => {
                 <GlassCard key={item._id} variants={staggerItem} exit={{ opacity: 0, scale: 0.94 }} hover className="p-5 flex flex-col">
                   <div className="flex items-center gap-3 mb-3">
                     {item.photo
-                      ? <img src={item.photo} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" style={{ border: '1px solid var(--surface-border)' }} />
+                      ? <img src={getImageUrl(item.photo)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" style={{ border: '1px solid var(--surface-border)' }} />
                       : <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white text-sm font-bold shrink-0">{item.name?.[0]?.toUpperCase()}</div>}
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate" style={{ color: 'var(--surface-text)' }}>{item.name}</p>

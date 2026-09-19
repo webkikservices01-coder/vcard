@@ -30,7 +30,10 @@ const Gallery = () => {
   const [saving, setSaving] = useState(false);
 
   const fetchGallery = async () => {
-    try { const res = await axios.get(API, { headers: headers() }); setItems(res.data); }
+    try { 
+      const res = await axios.get(API, { headers: headers() }); 
+      setItems(res.data); 
+    }
     catch { toast.error('Failed to load gallery'); }
     finally { setLoading(false); }
   };
@@ -51,6 +54,13 @@ const Gallery = () => {
     fetchUserDetails();
   }, []);
 
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return null;
+    if (imgPath.startsWith('http') || imgPath.startsWith('blob:') || imgPath.startsWith('data:')) return imgPath;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    return `${apiUrl}${imgPath.startsWith('/') ? imgPath : '/' + imgPath}`;
+  };
+
   const handleSave = async () => {
     if (form.type === 'video' && !form.url) { toast.error('Video URL is required'); return; }
     if (form.type === 'image' && !form.image) { toast.error('Please select an image'); return; }
@@ -69,6 +79,7 @@ const Gallery = () => {
       setPreview('');
       fetchGallery();
       setShowPopup(true);
+      toast.success('Gallery item added successfully!');
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to save');
     } finally {
@@ -152,7 +163,7 @@ const Gallery = () => {
           <motion.div {...staggerContainer(0.05, 0.1)} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <AnimatePresence>
               {filtered.map((item) => {
-                const thumb = item.type === 'video' ? getYoutubeThumbnail(item.url) : item.url;
+                const thumb = item.type === 'video' ? getYoutubeThumbnail(item.url) : getImageUrl(item.url);
                 return (
                   <GlassCard
                     key={item._id}

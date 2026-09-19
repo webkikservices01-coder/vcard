@@ -5,6 +5,7 @@ import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
+import PlatformChatWidget from './components/platformChat/PlatformChatWidget';
 
 // Auth
 import LandingPage from './pages/LandingPage';
@@ -60,6 +61,7 @@ function App() {
     <Router>
       <ScrollToTop />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
+      <PlatformChatWidget />
       <Routes>
         {/* Auth */}
         <Route path="/" element={<LandingPage />} />

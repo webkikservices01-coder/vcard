@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, X, Loader2, Sparkles, Send } from 'lucide-react';
+import { Mic, MicOff, X, Loader2, Bot, Send } from 'lucide-react';
 import { hasVoiceFill } from '../utils/plan';
 import IconButton from './ui/IconButton';
 
@@ -16,6 +16,13 @@ const SpeechRecognitionAPI = typeof window !== 'undefined'
 
 // Fires a browser-wide event so any open page can refetch its data after Jarvis mutates something.
 const notifyVcardDataChanged = () => window.dispatchEvent(new Event('vcard:data-changed'));
+
+const FAQ_CHIPS = [
+  'Naya product add karo',
+  'Mere contact links dikhao',
+  'Portfolio section pe le chalo',
+  'Meri profile ka naam aur bio dikhao',
+];
 
 const JarvisWidget = ({ plan }) => {
   const navigate = useNavigate();
@@ -57,7 +64,7 @@ const JarvisWidget = ({ plan }) => {
       if (canUseVoice) await speak(reply);
       setStatus('idle');
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Jarvis failed to respond');
+      toast.error(err.response?.data?.msg || 'Cardy failed to respond');
       setStatus('error');
     }
   }, [navigate, speak, canUseVoice]);
@@ -100,6 +107,12 @@ const JarvisWidget = ({ plan }) => {
     try { recognition.start(); } catch { /* already started */ }
   }, [handleCommand]);
 
+  const handleChipClick = useCallback((chip) => {
+    if (status === 'thinking' || status === 'speaking') return;
+    setLog(l => [...l, { role: 'user', text: chip }]);
+    handleCommand(chip);
+  }, [status, handleCommand]);
+
   const handleToggleOpen = () => {
     if (open) {
       window.speechSynthesis?.cancel();
@@ -117,24 +130,26 @@ const JarvisWidget = ({ plan }) => {
     idle: canUseVoice ? 'Type kijiye ya mic dabaiye' : 'Type karke bataiye',
   }[status];
 
+  const showFaqChips = log.length === 0 && status === 'idle';
+
   return (
-    <>
+    <div className="fixed bottom-5 right-3 sm:bottom-6 sm:right-6 z-[200]">
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.93 }}
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.93 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 370 }}
-            className="fixed bottom-24 right-4 sm:right-6 z-[200] w-[calc(100vw-2rem)] max-w-sm bg-white rounded-3xl shadow-[0_20px_60px_rgba(231,12,101,0.18)] border border-crimson-100 overflow-hidden"
+            exit={{ opacity: 0, y: 24, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 360 }}
+            className="fixed inset-0 z-10 sm:absolute sm:inset-auto sm:bottom-[74px] sm:right-0 flex h-dvh w-full flex-col overflow-hidden bg-white sm:h-[600px] sm:max-h-[calc(100dvh-112px)] sm:w-[380px] sm:rounded-[26px] border border-crimson-100 shadow-[0_20px_60px_rgba(231,12,101,0.18)]"
           >
-            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-crimson-800 to-magenta-500 text-white">
+            <div className="flex shrink-0 items-center justify-between px-4 py-3.5 text-white" style={{ backgroundImage: 'var(--background-image-gradient-crimson)' }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                  <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold leading-none">Jarvis</p>
+                  <p className="text-sm font-bold leading-none">Cardy · Dashboard Assistant</p>
                   <p className="text-[10px] text-white/80 mt-1 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 inline-block" />
                     Online now
@@ -146,7 +161,7 @@ const JarvisWidget = ({ plan }) => {
               </IconButton>
             </div>
 
-            <div className="p-4 max-h-72 overflow-y-auto space-y-3">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
               {log.length === 0 && (
                 <p className="text-xs text-gray-400 text-center py-4">
                   {canUseVoice
@@ -173,9 +188,22 @@ const JarvisWidget = ({ plan }) => {
                   <motion.span className="w-1.5 h-1.5 rounded-full bg-magenta-400" animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.3 }} />
                 </div>
               )}
+              {showFaqChips && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {FAQ_CHIPS.map(chip => (
+                    <button
+                      key={chip}
+                      onClick={() => handleChipClick(chip)}
+                      className="rounded-full border border-crimson-100 bg-crimson-50/60 px-3 py-1.5 text-[11.5px] font-medium text-gray-600 transition-colors hover:border-crimson-300 hover:text-crimson-700"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="p-4 pt-0">
+            <div className="shrink-0 border-t border-crimson-100 p-4">
               <p className="text-xs text-gray-400 mb-2 text-center">{statusText}</p>
               <form onSubmit={handleSendText} className="flex items-center space-x-2">
                 <input
@@ -213,34 +241,34 @@ const JarvisWidget = ({ plan }) => {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-6 right-4 sm:right-6 z-[200]">
-        {!open && (
-          <motion.div
-            className="absolute inset-0 w-14 h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 blur-md"
-            animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.15, 1] }}
-            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        )}
-        <IconButton
-          variant="bare" size="lg"
-          onClick={handleToggleOpen}
-          className="relative !w-14 !h-14 rounded-full bg-gradient-to-br from-crimson-800 to-magenta-500 text-white shadow-[0_8px_28px_rgba(231,12,101,0.4)]"
-          title={canUseVoice ? 'Jarvis Voice Assistant' : 'Jarvis Chat Assistant'}
-        >
-          <AnimatePresence mode="wait">
-            {open ? (
-              <motion.span key="close" initial={{ opacity: 0, rotate: -90, scale: 0.7 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 90, scale: 0.7 }} transition={{ duration: 0.18 }}>
-                <X className="w-5 h-5" />
-              </motion.span>
-            ) : (
-              <motion.span key="open" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} transition={{ duration: 0.18 }}>
-                <Sparkles className="w-6 h-6" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </IconButton>
-      </div>
-    </>
+      {!open && (
+        <motion.div
+          className="absolute inset-0 w-14 h-14 rounded-full blur-md"
+          style={{ backgroundImage: 'var(--background-image-gradient-crimson)' }}
+          animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.15, 1] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
+      <IconButton
+        variant="bare" size="lg"
+        onClick={handleToggleOpen}
+        className="relative !w-14 !h-14 rounded-full text-white"
+        style={{ backgroundImage: 'var(--background-image-gradient-crimson)', boxShadow: 'var(--shadow-glow-crimson-lg)' }}
+        title={canUseVoice ? 'Cardy Voice Assistant' : 'Cardy Chat Assistant'}
+      >
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.span key="close" initial={{ opacity: 0, rotate: -90, scale: 0.7 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 90, scale: 0.7 }} transition={{ duration: 0.18 }}>
+              <X className="w-5 h-5" />
+            </motion.span>
+          ) : (
+            <motion.span key="open" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} transition={{ duration: 0.18 }}>
+              <Bot className="w-6 h-6" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </IconButton>
+    </div>
   );
 };
 

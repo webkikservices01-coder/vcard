@@ -67,9 +67,17 @@ const Products = () => {
 
   const openEdit = (item) => {
     setForm({ title: item.title, description: item.description, price: item.price, link: item.link, coverImage: null });
-    setPreview(item.coverImage || '');
+    setPreview(getImageUrl(item.coverImage) || '');
     setEditing(item._id);
     setModalOpen(true);
+  };
+
+  // Helper to correctly resolve local uploads URL from backend server
+  const getImageUrl = (imgPath) => {
+    if (!imgPath) return null;
+    if (imgPath.startsWith('http') || imgPath.startsWith('blob:') || imgPath.startsWith('data:')) return imgPath;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    return `${apiUrl}${imgPath.startsWith('/') ? imgPath : '/' + imgPath}`;
   };
 
   const handleSave = async () => {
@@ -89,6 +97,7 @@ const Products = () => {
       setModalOpen(false);
       fetchProducts();
       setShowPopup(true);
+      toast.success('Product saved successfully!');
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to save');
     } finally { setSaving(false); }
@@ -187,7 +196,7 @@ const Products = () => {
                 >
                   <div className="aspect-video rounded-xl overflow-hidden mb-3" style={{ background: 'var(--surface-2)' }}>
                     {item.coverImage ? (
-                      <img src={item.coverImage} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(item.coverImage)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon className="w-6 h-6" style={{ color: 'var(--surface-text-2)' }} />
