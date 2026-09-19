@@ -21,6 +21,7 @@ router.get('/', auth, async (req, res) => {
             viewCount: card ? card.viewCount || 0 : 0,
             scanCount: card ? card.scanCount || 0 : 0,
             cardSlug: card?.username || null,
+            cardId: card?._id || null,
             cardProfilePic: card?.personalInfo?.profilePic || null,
             cardName: card?.personalInfo?.name || null,
             cardDesignation: card?.personalInfo?.designation || null,

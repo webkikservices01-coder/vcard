@@ -1,36 +1,3 @@
-// const mongoose = require('mongoose');
-
-// const vCardSchema = new mongoose.Schema({
-//     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-//     username: { type: String, required: true, unique: true }, // Jaise: website.com/rahul
-//     theme: { type: String, default: 'theme-one' },
-//     personalInfo: {
-//         name: String,
-//         designation: String,
-//         company: String,
-//         bio: String,
-//         profilePic: String,
-//         bannerImage: String
-//     },
-//     contactDetails: {
-//         phone: String,
-//         email: String,
-//         whatsapp: String,
-//         address: String 
-//     },
-//     socialLinks: {
-//         instagram: String,
-//         linkedin: String,
-//         facebook: String
-//     },
-//     services: [{ title: String, description: String, price: String }]
-// }, { timestamps: true });
-
-// module.exports = mongoose.model('vCard', vCardSchema);
-
-
-
-
 const mongoose = require('mongoose');
 
 const vCardSchema = new mongoose.Schema({
@@ -71,6 +38,10 @@ const vCardSchema = new mongoose.Schema({
         sectionBg:         { type: String, default: '#f9fafb' },
         border:            { type: String, default: '#e5e7eb' },
         accent:            { type: String, default: '#111827' },
+        subTextColor:      { type: String, default: '#FFFFFF' }, // Added here
+        linkBg:            { type: String, default: '#3B82F6' }, // Added here
+        cardBg:            { type: String },
+        text:              { type: String },
     }
 }, { timestamps: true });
 

@@ -11,9 +11,17 @@ const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
 const { CHAT_FILL_PLANS, VOICE_FILL_PLANS } = require('../constants/plans');
 const { logUsage } = require('../utils/usageLogger');
+const { buildCardySystemPrompt, COMPANY } = require('../constants/chatbotKnowledge');
+const { platformChatLimiter, platformLeadLimiter, themeLimiter } = require('../middleware/rateLimiter');
+const { normHex, fixTheme, THEME_KEYS } = require('../utils/themeAi');
+const { sendMail } = require('../utils/mailer');
+const PlatformLead = require('../models/PlatformLead');
 
 const AI_PLANS = CHAT_FILL_PLANS;
 const CLAUDE_MODEL = 'claude-sonnet-5';
+// Separate, cheaper/faster model for the public marketing-site chatbot — it
+// handles high-volume anonymous FAQ traffic, unlike the per-card/Jarvis routes.
+const PLATFORM_CHAT_MODEL = process.env.CHATBOT_MODEL || 'claude-haiku-4-5-20251001';
 
 const getAnthropic = () => {
   if (!process.env.ANTHROPIC_API_KEY) return null;
@@ -41,7 +49,8 @@ const fmtLink = (l) => {
     case 'Facebook':       return `📘 [Facebook](${raw.startsWith('http') ? raw : 'https://' + raw})`;
     case 'YouTube':        return `▶️ [YouTube](${raw.startsWith('http') ? raw : 'https://' + raw})`;
     case 'Twitter':        return `🐦 [Twitter](${raw.startsWith('http') ? raw : 'https://twitter.com/' + raw.replace('@','')})`;
-    case 'Location':       return `📍 [View on Map](https://maps.google.com/?q=${encodeURIComponent(raw)})`;
+    case 'Location':       return `📍 [View on Map](${/^https?:\/\//i.test(raw) ? raw : 'https://maps.google.com/?q=' + encodeURIComponent(raw)})`;
+    case 'Snapchat':       return `👻 [Snapchat](${raw.startsWith('http') ? raw : 'https://www.snapchat.com/add/' + raw.replace('@','')})`;
     default:               return `🔗 [${label}](${raw.startsWith('http') ? raw : 'https://' + raw})`;
   }
 };
@@ -129,7 +138,7 @@ Tone: ${toneDesc[persona.tone] || 'warm and friendly'}
 - SCOPE: You may ONLY answer questions about ${p.name || 'the card owner'}, their work, services, products, portfolio, or the information listed above. You are not a general-purpose assistant.
 - If the visitor asks anything unrelated to this card (general knowledge, coding help, math, essays, other people/companies, or any off-topic request), politely decline in ONE short sentence (in the visitor's language) and steer back to what this card can help with. Do not attempt to answer the off-topic question.
 - Answer only what the visitor asks. Do not volunteer unsolicited information.
-- Keep replies short and to the point.
+- Keep replies short and to the point — max ~50 words per reply. When asked "tell me about them" or similar, give one short summary line (role + a one-line highlight), never recite the full bio/about text verbatim as a long paragraph.
 - LANGUAGE: Detect the language the visitor is typing in and reply in that same language.
   - If they write in English, reply in clear English.
   - If they write in Hindi (Devanagari script, e.g. "आप कैसे हैं"), reply fully in Hindi (Devanagari script).
@@ -238,7 +247,7 @@ const VOICE_FILL_PAGES = {
   },
   contact: {
     schemaHint: `{
-  "links": [ { "fieldType": "Mobile / Phone | WhatsApp | Email | Website | LinkedIn | Instagram | Facebook | Twitter | Custom URL", "title": "short label", "url": "the number/email/url" } ]
+  "links": [ { "fieldType": "Mobile / Phone | WhatsApp | Email | Website | Location | LinkedIn | Instagram | Snapchat | Facebook | Twitter | YouTube | Custom URL", "title": "short label", "url": "the number/email/url" } ]
 }`,
     required: [],
     isList: true,
@@ -350,7 +359,7 @@ const JARVIS_TOOLS = [
     input_schema: { type: 'object', properties: {} } },
   { name: 'add_contact_link', description: 'Add a new contact or social link to the card.',
     input_schema: { type: 'object', properties: {
-      fieldType: { type: 'string', enum: ['Mobile / Phone', 'WhatsApp', 'Email', 'Website', 'LinkedIn', 'Instagram', 'Facebook', 'Twitter', 'Custom URL'] },
+      fieldType: { type: 'string', enum: ['Mobile / Phone', 'WhatsApp', 'Email', 'Website', 'Location', 'LinkedIn', 'Instagram', 'Snapchat', 'Facebook', 'Twitter', 'YouTube', 'Custom URL'] },
       title: { type: 'string' },
       url: { type: 'string', description: 'The phone number, email address, or URL' },
     }, required: ['fieldType', 'url'] } },
@@ -474,7 +483,7 @@ const executeJarvisTool = async (name, input, vcardId) => {
   }
 };
 
-const JARVIS_SYSTEM_PROMPT = `You are Jarvis, a voice-controlled assistant embedded in a user's digital vCard dashboard (mycardlink.site). The user talks to you in natural Hinglish (Hindi + English mix, Roman script). You have tools to directly view, create, update, delete card content, and to navigate the dashboard — use them instead of just describing what to do.
+const JARVIS_SYSTEM_PROMPT = `You are Cardy, the same Webcard.ai assistant the visitor sees on the public site, now embedded in a user's own vCard dashboard (mycardlink.site). The user talks to you in natural Hinglish (Hindi + English mix, Roman script). You have tools to directly view, create, update, delete card content, and to navigate the dashboard — use them instead of just describing what to do.
 
 Rules:
 - SCOPE: You only handle tasks about managing this user's vCard dashboard (profile, contact links, products, portfolio, navigation). Politely decline (one short Hinglish sentence) anything unrelated — general knowledge questions, coding help, requests about other topics — and do not call any tool for those.
@@ -574,6 +583,158 @@ router.get('/public/:username', async (req, res) => {
     res.json({ enabled: true, aiName: persona.aiName, greeting: persona.greeting });
   } catch {
     res.json({ enabled: false });
+  }
+});
+
+// ─── AI Theme Designer: generates / harmonizes a custom card colour theme ────
+const THEME_SYSTEM_PROMPT = `You are a world-class brand and UI colour designer for premium digital business cards. You design the colour theme of one person's card so it looks striking, modern and trustworthy.
+
+You receive JSON with: the owner's name/role/bio, an optional "vibe" the owner typed, the owner's current colours, and a mode.
+- mode "generate": design a fresh palette that fits the profession and the vibe (if given).
+- mode "harmonize": KEEP the owner's current "accent" colour exactly as given (it is their brand colour) and design every other colour to look great with it, respecting their vibe and current dark/light direction unless the vibe says otherwise.
+
+Colour roles (all 6-digit hex):
+- bg: page background behind the card.
+- cardBg: the card/section surface. Must be a clearly related but slightly lighter or darker tone than bg (about 4–10% lightness shift), never identical.
+- accent: the hero brand colour — used for the designation text, borders and glow. Vivid, confident, not muddy.
+- linkBg: background of contact buttons. Usually the accent or a close cousin; text colour must read on it.
+- text: the main name/heading colour — high contrast on cardBg AND bg.
+- subTextColor: body/bio text — readable on cardBg, softer than "text".
+
+Design rules: use a cohesive 60-30-10 balance (bg 60, cardBg 30, accent 10); keep hue relationships harmonious (analogous, complementary or split-complementary); avoid pure #000000/#FFFFFF backgrounds and neon overload; match mood to profession (e.g. developer → deep slate/indigo, lawyer/finance → navy/charcoal + gold, designer/creative → bold contrast, wellness → soft greens/warm neutrals, real-estate → deep teal/gold, doctor → clean light + calming blue). Prefer dark themes for tech/luxury, light themes for clean/medical/consulting unless the vibe says otherwise.
+
+Reply with ONLY one raw JSON object, no markdown, in exactly this shape:
+{"name":"2-3 word theme name","reason":"one short sentence (max 20 words) on why this palette suits them","bg":"#RRGGBB","cardBg":"#RRGGBB","accent":"#RRGGBB","linkBg":"#RRGGBB","text":"#RRGGBB","subTextColor":"#RRGGBB"}`;
+
+// ─── POST /api/ai/theme ────────────────────────────────────────────────────────
+router.post('/theme', auth, themeLimiter, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!CHAT_FILL_PLANS.includes(user.plan)) {
+      return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Theme Designer.' });
+    }
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'AI service not configured yet.' });
+
+    const card = await vCard.findOne({ userId: req.user.userId });
+    if (!card) return res.status(404).json({ msg: 'Create a vCard profile first.' });
+
+    const { prompt, mode, current } = req.body || {};
+    const vibe = typeof prompt === 'string' ? prompt.trim().slice(0, 300) : '';
+    const cur = {};
+    for (const k of THEME_KEYS) { const c = normHex(current?.[k]); if (c) cur[k] = c; }
+    const harmonize = mode === 'harmonize' && !!cur.accent;
+
+    const p = card.personalInfo || {};
+    const completion = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 400,
+      system: THEME_SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: JSON.stringify({
+          mode: harmonize ? 'harmonize' : 'generate',
+          owner: { name: p.name || '', role: p.designation || '', bio: (p.bio || '').slice(0, 200) },
+          vibe,
+          currentColors: cur,
+        }),
+      }],
+    });
+
+    logUsage({ route: 'theme', vcardId: card._id, userId: user._id, model: CLAUDE_MODEL, usage: completion.usage });
+
+    const rawText = completion.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+    const match = rawText.match(/\{[\s\S]*\}/);
+    const raw = JSON.parse(match ? match[0] : rawText);
+    if (harmonize) raw.accent = cur.accent;
+
+    const theme = fixTheme(raw, cur);
+    if (!theme) return res.status(502).json({ msg: 'AI returned an invalid palette. Please try again.' });
+
+    res.json({
+      theme,
+      name: String(raw.name || 'AI Theme').slice(0, 40),
+      reason: String(raw.reason || '').slice(0, 160),
+    });
+  } catch (err) {
+    console.error('AI theme error:', err.message);
+    res.status(500).json({ msg: 'AI theme generation failed. Please try again.' });
+  }
+});
+
+// ─── Cardy: public platform assistant for the marketing site ─────────────────
+// Persona, knowledge and rules all live in constants/chatbotKnowledge.js (built once at startup).
+const CARDY_SYSTEM_PROMPT = buildCardySystemPrompt();
+
+// ─── POST /api/ai/platform-chat ────────────────────────────────────────────────
+router.post('/platform-chat', platformChatLimiter, async (req, res) => {
+  try {
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'AI service not configured yet.' });
+
+    const { messages } = req.body;
+    const recentMessages = Array.isArray(messages) ? messages.slice(-12) : [];
+    if (recentMessages.length === 0) {
+      return res.status(400).json({ msg: 'Messages required' });
+    }
+    if (recentMessages.some(m => !['user', 'assistant'].includes(m?.role)
+      || typeof m.content !== 'string'
+      || !m.content.trim()
+      || (m.role === 'user' && m.content.length > 1000))) {
+      return res.status(400).json({ msg: 'Message too long (max 1000 characters).' });
+    }
+
+    const completion = await anthropic.messages.create({
+      model: PLATFORM_CHAT_MODEL,
+      max_tokens: 500,
+      system: CARDY_SYSTEM_PROMPT,
+      messages: recentMessages.map(m => ({ role: m.role, content: m.content })),
+    });
+
+    logUsage({ route: 'platform-chat', model: PLATFORM_CHAT_MODEL, usage: completion.usage });
+
+    const reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+    res.json({ reply });
+  } catch (err) {
+    console.error('Platform chat error:', err.message);
+    res.status(500).json({ msg: 'Cardy is having trouble responding right now. Please try WhatsApp or email instead.' });
+  }
+});
+
+// ─── POST /api/ai/platform-lead ────────────────────────────────────────────────
+router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
+  try {
+    const { name, email, phone, businessName, need, budget, timeline, message, website } = req.body;
+
+    // Honeypot: a hidden field real visitors never fill in, only bots do.
+    if (website) return res.json({ msg: "Thanks! We'll be in touch soon." });
+
+    if (!name || !String(name).trim()) return res.status(400).json({ msg: 'Name is required.' });
+    if (!email && !phone) return res.status(400).json({ msg: 'Please provide an email or phone number.' });
+
+    const clean = (v, max = 500) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
+    const lead = await PlatformLead.create({
+      name: clean(name, 100),
+      email: clean(email, 100),
+      phone: clean(phone, 30),
+      businessName: clean(businessName, 150),
+      need: clean(need, 200),
+      budget: clean(budget, 50),
+      timeline: clean(timeline, 50),
+      message: clean(message, 1000),
+    });
+
+    sendMail({
+      to: process.env.LEAD_NOTIFY_EMAIL || COMPANY.email,
+      subject: `New Webcard.ai lead: ${lead.name}`,
+      text: `Name: ${lead.name}\nEmail: ${lead.email}\nPhone: ${lead.phone}\nBusiness: ${lead.businessName}\nNeed: ${lead.need}\nBudget: ${lead.budget}\nTimeline: ${lead.timeline}\n\nMessage:\n${lead.message}`,
+    });
+
+    res.json({ msg: `Thanks, ${lead.name}! Our team will reach out within 24-48 hours.` });
+  } catch (err) {
+    console.error('Platform lead error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please reach us directly via WhatsApp or email.' });
   }
 });
 
