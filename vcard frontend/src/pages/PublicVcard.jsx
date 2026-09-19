@@ -18,8 +18,7 @@ import IconButton from '../components/ui/IconButton';
 import DynamicCyberCard3D from '../components/ui/DynamicCyberCard3D';
 import ChatWidget from '../components/chatbot/ChatWidget';
 import Modal from '../components/public/Modal';
-import { TestimonialsCarousel, PortfolioCarousel, GalleryCarousel } from '../components/public/MediaSections';
-import { getImageUrl } from '../utils/media';
+import { ProductsCarousel, TestimonialsCarousel, PortfolioCarousel, GalleryCarousel } from '../components/public/MediaSections';
 import { getVideoRoomUrl } from '../utils/videoRoom';
 
 const SafeHtml = ({ html, textColor }) => {
@@ -349,45 +348,7 @@ const renderSection = (id, data) => {
       return products.length > 0 ? (
         <div key="products" className="px-3.5 sm:px-4 py-2 border-t border-pink-100">
           <SectionTitle>Products &amp; Solutions</SectionTitle>
-          <div className="space-y-2">
-            {products.map((p) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 25 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.1 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                key={p._id} 
-                className="rounded-xl overflow-hidden border border-pink-100 bg-[#faf8fa] shadow-2xs"
-              >
-                {p.coverImage && (
-                  <div className="h-28 overflow-hidden relative">
-                    <img src={getImageUrl(p.coverImage)} alt={p.title} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <div className="p-3">
-                  <p className="text-xs font-bold text-slate-900">{p.title}</p>
-                  {p.description && <p className="text-[10px] mt-0.5 line-clamp-2 leading-relaxed text-slate-600">{p.description}</p>}
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-pink-100/60">
-                    {p.price && <p className="text-xs font-black text-[#E70C65]">₹{p.price}</p>}
-                    {p.link && (
-                      <motion.a 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        href={p.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="relative overflow-hidden text-[10px] font-bold px-3.5 py-1.5 rounded-full text-white bg-gradient-to-r from-[#E70C65] to-[#cf0a55] transition-all shadow-xs"
-                        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(231,12,101,0.3)' }}
-                      >
-                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-                        Explore →
-                      </motion.a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <ProductsCarousel products={products} />
         </div>
       ) : null;
 

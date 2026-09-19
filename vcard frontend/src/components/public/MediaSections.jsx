@@ -44,6 +44,48 @@ export const TestimonialsCarousel = ({ testimonials }) => (
   </motion.div>
 );
 
+// ─── Shared detail popup (portfolio + products) ─────────────────────────────
+const DetailModal = ({ open, onClose, label, item }) => (
+  <Modal open={open} onClose={onClose} label={label} panelClassName="sm:max-w-lg">
+    {item && (
+      <div className="overflow-hidden rounded-[24px] bg-white text-slate-900 shadow-2xl">
+        <div className="relative">
+          {item.image ? (
+            <img src={getImageUrl(item.image)} alt={item.title} className="aspect-[16/10] w-full object-cover" />
+          ) : (
+            <div className="h-16 bg-gradient-to-r from-[#E70C65] to-[#cf0a55]" />
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/75 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 break-words text-base font-black leading-snug">{item.title}</h3>
+            {item.price && <p className="shrink-0 text-base font-black text-[#E70C65]">₹{item.price}</p>}
+          </div>
+          {item.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-600">{item.description}</p>}
+          {item.href && (
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#E70C65] to-[#cf0a55] px-4 py-3 text-xs font-bold text-white shadow-md"
+            >
+              {item.cta} <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
+    )}
+  </Modal>
+);
+
 // ─── Featured works (portfolio) ──────────────────────────────────────────────
 export const PortfolioCarousel = ({ portfolio }) => {
   const [detail, setDetail] = useState({ item: null, open: false });
@@ -82,41 +124,64 @@ export const PortfolioCarousel = ({ portfolio }) => {
         })}
       </Carousel>
 
-      <Modal open={detail.open && !!openItem} onClose={close} label={openItem?.title || 'Project details'} panelClassName="sm:max-w-lg">
-        {openItem && (
-          <div className="overflow-hidden rounded-[24px] bg-white text-slate-900 shadow-2xl">
-            <div className="relative">
-              {openItem.coverImage ? (
-                <img src={getImageUrl(openItem.coverImage)} alt={openItem.title} className="aspect-[16/10] w-full object-cover" />
-              ) : (
-                <div className="h-16 bg-gradient-to-r from-[#E70C65] to-[#cf0a55]" />
+      <DetailModal
+        open={detail.open && !!openItem}
+        onClose={close}
+        label={openItem?.title || 'Project details'}
+        item={openItem && { title: openItem.title, description: openItem.description, image: openItem.coverImage, href: openItem.url, cta: 'View project' }}
+      />
+    </motion.div>
+  );
+};
+
+// ─── Products & solutions ────────────────────────────────────────────────────
+export const ProductsCarousel = ({ products }) => {
+  const [detail, setDetail] = useState({ item: null, open: false });
+  const openItem = detail.item;
+  const close = useCallback(() => setDetail((d) => ({ ...d, open: false })), []);
+
+  return (
+    <motion.div {...enter}>
+      <Carousel label="Products and solutions" autoPlayMs={6000}>
+        {products.map((p) => (
+          <div key={p._id} className="flex w-full flex-col overflow-hidden rounded-xl border border-pink-100 bg-[#faf8fa] shadow-2xs">
+            <button type="button" onClick={() => setDetail({ item: p, open: true })} className="group block w-full flex-1 text-left cursor-pointer">
+              {p.coverImage && (
+                <div className="aspect-[16/10] w-full overflow-hidden">
+                  <img src={getImageUrl(p.coverImage)} alt={p.title} loading="lazy" draggable={false} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </div>
               )}
-              <button
-                type="button"
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/75 cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="space-y-3 p-5">
-              <h3 className="break-words text-base font-black leading-snug">{openItem.title}</h3>
-              {openItem.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-600">{openItem.description}</p>}
-              {openItem.url && (
-                <a
-                  href={openItem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#E70C65] to-[#cf0a55] px-4 py-3 text-xs font-bold text-white shadow-md"
-                >
-                  View project <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              )}
-            </div>
+              <div className="p-3 pb-2">
+                <p className="text-xs font-bold text-slate-900">{p.title}</p>
+                {p.description && <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-slate-600">{p.description}</p>}
+              </div>
+            </button>
+            {(p.price || p.link) && (
+              <div className="mx-3 mb-3 flex items-center justify-between gap-2 border-t border-pink-100/60 pt-2">
+                {p.price ? <p className="text-xs font-black text-[#E70C65]">₹{p.price}</p> : <span />}
+                {p.link && (
+                  <a
+                    href={p.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-gradient-to-r from-[#E70C65] to-[#cf0a55] px-3.5 py-1.5 text-[10px] font-bold text-white shadow-xs"
+                    style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(231,12,101,0.3)' }}
+                  >
+                    Explore →
+                  </a>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </Modal>
+        ))}
+      </Carousel>
+
+      <DetailModal
+        open={detail.open && !!openItem}
+        onClose={close}
+        label={openItem?.title || 'Product details'}
+        item={openItem && { title: openItem.title, description: openItem.description, image: openItem.coverImage, price: openItem.price, href: openItem.link, cta: 'Explore' }}
+      />
     </motion.div>
   );
 };
