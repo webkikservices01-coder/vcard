@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+
 const auth = require('../middleware/auth');
 const vCard = require('../models/vCard');
 const Product = require('../models/Product');
@@ -9,40 +13,72 @@ const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
 
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    }
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: { folder: 'vcard_images', allowed_formats: ['jpg', 'png', 'jpeg', 'webp'] }
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
-const upload = multer({ storage });
 
-// POST: Create or Update vCard (profile + contact links)
 router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'bannerImage' }])], async (req, res) => {
     try {
         let updateFields = {};
 
-        if (req.body.username !== undefined) updateFields.username = req.body.username;
+        if (req.body.username !== undefined) updateFields.username = req.body.username.trim().toLowerCase();
         if (req.body.title !== undefined) updateFields['personalInfo.name'] = req.body.title;
         if (req.body.designation !== undefined) updateFields['personalInfo.designation'] = req.body.designation;
         if (req.body.bio !== undefined) updateFields['personalInfo.bio'] = req.body.bio;
         if (req.body.theme !== undefined) updateFields.theme = req.body.theme;
+        
+        // FIX: Ensure customTheme is properly parsed and included in update fields
+        if (req.body.customTheme !== undefined) {
+            updateFields.customTheme = typeof req.body.customTheme === 'string'
+                ? JSON.parse(req.body.customTheme)
+                : req.body.customTheme;
+        }
 
-        if (req.files?.['profileImage']) updateFields['personalInfo.profilePic'] = req.files['profileImage'][0].path;
-        if (req.files?.['bannerImage']) updateFields['personalInfo.bannerImage'] = req.files['bannerImage'][0].path;
+        if (req.files?.['profileImage']?.[0]) {
+            updateFields['personalInfo.profilePic'] = `/uploads/${req.files['profileImage'][0].filename}`;
+        } else if (req.body.profilePic === '') {
+            updateFields['personalInfo.profilePic'] = '';
+        } else if (req.body.profilePic && typeof req.body.profilePic === 'string' && !req.body.profilePic.startsWith('blob:')) {
+            updateFields['personalInfo.profilePic'] = req.body.profilePic;
+        }
 
-        if (req.body.dynamicLinks) {
+        if (req.files?.['bannerImage']?.[0]) {
+            updateFields['personalInfo.bannerImage'] = `/uploads/${req.files['bannerImage'][0].filename}`;
+        } else if (req.body.bannerImage === '') {
+            updateFields['personalInfo.bannerImage'] = '';
+        } else if (req.body.bannerImage && typeof req.body.bannerImage === 'string' && !req.body.bannerImage.startsWith('blob:')) {
+            updateFields['personalInfo.bannerImage'] = req.body.bannerImage;
+        }
+
+        if (req.body.dynamicLinks !== undefined) {
             updateFields.dynamicLinks = typeof req.body.dynamicLinks === 'string'
                 ? JSON.parse(req.body.dynamicLinks)
                 : req.body.dynamicLinks;
+        }
+
+        if (updateFields.username) {
+            const existing = await vCard.findOne({ username: updateFields.username, userId: { $ne: req.user.userId } });
+            if (existing) {
+                return res.status(400).json({ msg: 'This vanity URL is already taken.' });
+            }
         }
 
         let card = await vCard.findOneAndUpdate(
@@ -53,12 +89,14 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
 
         res.json({ msg: 'Data Saved Successfully!', card });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        console.error('vCard Save Error:', err);
+        if (err.code === 11000) {
+            return res.status(400).json({ msg: 'This username is already in use.' });
+        }
+        res.status(500).json({ msg: 'Server Error saving profile', error: err.message });
     }
 });
 
-// GET /me - Logged-in user's card
 router.get('/me', auth, async (req, res) => {
     try {
         const card = await vCard.findOne({ userId: req.user.userId });
@@ -67,7 +105,16 @@ router.get('/me', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// GET /all - All cards for user (currently only one)
+router.post('/upload-image', [auth, upload.single('image')], async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
+        res.json({ url: `/uploads/${req.file.filename}` });
+    } catch (err) { 
+        console.error('Upload error:', err);
+        res.status(500).json({ msg: 'Upload failed', error: err.message }); 
+    }
+});
+
 router.get('/all', auth, async (req, res) => {
     try {
         const cards = await vCard.find({ userId: req.user.userId });
@@ -75,7 +122,6 @@ router.get('/all', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// DELETE /:id - Delete a card
 router.delete('/:id', auth, async (req, res) => {
     try {
         await vCard.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
@@ -83,7 +129,6 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// GET /public/:username - Fetch card data (no increment)
 router.get('/public/:username', async (req, res) => {
     try {
         const card = await vCard.findOne({ username: req.params.username });
@@ -102,7 +147,6 @@ router.get('/public/:username', async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// POST /public/:username/view - Increment view count (called once per visit from frontend)
 router.post('/public/:username/view', async (req, res) => {
     try {
         const card = await vCard.findOneAndUpdate(
@@ -115,7 +159,6 @@ router.post('/public/:username/view', async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// POST /public/:username/enquiry - Visitor submits the enquiry form on the public card
 router.post('/public/:username/enquiry', async (req, res) => {
     try {
         const { name, email, mobile, message } = req.body;
@@ -135,7 +178,6 @@ router.post('/public/:username/enquiry', async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// GET /enquiries - Card owner views submitted enquiries (newest first)
 router.get('/enquiries', auth, async (req, res) => {
     try {
         const card = await vCard.findOne({ userId: req.user.userId });
@@ -145,7 +187,6 @@ router.get('/enquiries', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// DELETE /enquiries/:id - Card owner deletes an enquiry
 router.delete('/enquiries/:id', auth, async (req, res) => {
     try {
         const card = await vCard.findOne({ userId: req.user.userId });
@@ -155,20 +196,12 @@ router.delete('/enquiries/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// POST /upload-image - Upload one image to Cloudinary, returns URL
-router.post('/upload-image', [auth, upload.single('image')], async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
-        res.json({ url: req.file.path });
-    } catch (err) { res.status(500).send('Upload failed'); }
-});
-
-// PUT /custom-theme - Save custom theme settings (JSON body)
 router.put('/custom-theme', auth, async (req, res) => {
     try {
-        const fields = ['layout','bg','bgImage','bannerColor','bannerImage','nameColor','designationColor','contactBg','contactText','sectionBg','border','accent'];
+        const fields = ['layout','bg','bgImage','bannerColor','bannerImage','nameColor','designationColor','contactBg','contactText','sectionBg','border','accent','subTextColor','linkBg','cardBg','text'];
         const update = {};
         fields.forEach(f => { if (req.body[f] !== undefined) update[`customTheme.${f}`] = req.body[f]; });
+        
         const card = await vCard.findOneAndUpdate(
             { userId: req.user.userId },
             { $set: update },
@@ -179,7 +212,6 @@ router.put('/custom-theme', auth, async (req, res) => {
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
 
-// GET /:username - Same as public (for backward compat)
 router.get('/:username', async (req, res) => {
     try {
         const card = await vCard.findOne({ username: req.params.username });

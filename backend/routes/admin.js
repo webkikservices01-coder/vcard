@@ -10,7 +10,6 @@ const Product = require('../models/Product');
 const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
-const AiPersona = require('../models/AiPersona');
 const AiUsageLog = require('../models/AiUsageLog');
 
 // GET /api/admin/stats — platform overview

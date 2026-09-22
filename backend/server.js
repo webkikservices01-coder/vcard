@@ -1,15 +1,31 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
-app.use(express.json({
-    verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
-}));
+
+// Fix: Only apply express.json() when Content-Type is application/json so multipart/form-data uploads work perfectly
+app.use((req, res, next) => {
+    if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+        return next();
+    }
+    express.json({
+        verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
+    })(req, res, next);
+});
+
+// Uploads directory ensure karein aur static serve karein
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadDir));
 
 // On serverless (Vercel), mongoose.connect() is fire-and-forget across cold
 // starts, so a request can arrive before the connection is ready and throw.
