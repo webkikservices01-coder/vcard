@@ -35,13 +35,36 @@ const getCardId = async (userId) => {
 };
 
 // ─── Format a contact link as clickable markdown ──────────────────────────────
+// Field types are free-form ("Phone", "Mobile / Phone", "Call me"...), so detect
+// the platform the same loose way PublicVcard.jsx does instead of exact matching.
+const LINK_TYPE_RULES = [
+  ['WhatsApp', /whatsapp|wa\.me/],
+  ['Email', /e-?mail|mailto:/],
+  ['Mobile / Phone', /phone|mobile|\bcall\b|tel:/],
+  ['LinkedIn', /linkedin/],
+  ['Instagram', /instagram/],
+  ['Facebook', /facebook/],
+  ['YouTube', /youtube|youtu\.be/],
+  ['Twitter', /twitter|\bx\.com/],
+  ['Snapchat', /snapchat/],
+  ['Location', /location|address|\bmap/],
+  ['Website', /website|\bweb\b|site/],
+];
+const linkType = (l) => {
+  const label = `${l.fieldType || ''} ${l.title || ''}`.toLowerCase();
+  for (const [type, re] of LINK_TYPE_RULES) if (re.test(label)) return type;
+  return l.fieldType;
+};
+
 const fmtLink = (l) => {
   const raw = (l.url || '').trim();
   const label = l.title || l.fieldType;
   const num = raw.replace(/[^0-9+]/g, '');
-  switch (l.fieldType) {
+  // wa.me needs the country code; bare 10-digit numbers are Indian mobiles.
+  const waNum = /^\d{10}$/.test(num) ? `91${num}` : num.replace('+', '');
+  switch (linkType(l)) {
     case 'Mobile / Phone': return `📞 [${raw}](tel:${num})`;
-    case 'WhatsApp':       return `💬 [WhatsApp](https://wa.me/${num})`;
+    case 'WhatsApp':       return `💬 [WhatsApp](${/^https?:\/\//i.test(raw) ? raw : 'https://wa.me/' + waNum})`;
     case 'Email':          return `📧 [${raw}](mailto:${raw})`;
     case 'Website':        return `🌐 [${label || raw}](${raw.startsWith('http') ? raw : 'https://' + raw})`;
     case 'LinkedIn':       return `🔗 [LinkedIn Profile](${raw.startsWith('http') ? raw : 'https://' + raw})`;

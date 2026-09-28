@@ -138,7 +138,12 @@ const getHref = (link, platform) => {
   if (!val) return '#';
   const clean = val.trim();
   if (platform === 'phone') return `tel:${clean.replace(/[^0-9+]/g, '')}`;
-  if (platform === 'whatsapp') return isUrl(clean) ? clean : `https://wa.me/${clean.replace(/[^0-9]/g, '')}`;
+  if (platform === 'whatsapp') {
+    if (isUrl(clean)) return clean;
+    const digits = clean.replace(/[^0-9]/g, '');
+    // wa.me needs the country code; bare 10-digit numbers are Indian mobiles.
+    return `https://wa.me/${digits.length === 10 ? '91' + digits : digits}`;
+  }
   if (platform === 'email') return clean.startsWith('mailto:') ? clean : `mailto:${clean}`;
   if (platform === 'location' && !isUrl(clean)) {
     return /^[\w.-]+\.[a-z]{2,}\//i.test(clean) ? `https://${clean}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clean)}`;

@@ -8,7 +8,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// CORS_ORIGINS = comma-separated list (e.g. https://yourdomain.com,https://www.yourdomain.com).
+// Unset = allow all origins (same as before).
+const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors(corsOrigins.length ? { origin: corsOrigins } : undefined));
 
 // Fix: Only apply express.json() when Content-Type is application/json so multipart/form-data uploads work perfectly
 app.use((req, res, next) => {
@@ -22,8 +25,11 @@ app.use((req, res, next) => {
 
 // Uploads directory ensure karein aur static serve karein
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+try {
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (err) {
+    // Read-only filesystem on Vercel; uploads go to Cloudinary there (utils/upload.js).
+    console.error('Could not create uploads directory:', err.message);
 }
 app.use('/uploads', express.static(uploadDir));
 

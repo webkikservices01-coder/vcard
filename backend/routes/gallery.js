@@ -1,33 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 
 const auth = require('../middleware/auth');
 const Gallery = require('../models/Gallery');
 const vCard = require('../models/vCard');
 
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
-});
+const { upload, fileUrl } = require('../utils/upload');
 
 const getOrCreateCardId = async (userId) => {
     let card = await vCard.findOne({ userId });
@@ -62,8 +40,8 @@ router.post('/', [auth, upload.single('image')], async (req, res) => {
         let thumbnail = '';
         
         if (type === 'image' && req.file) {
-            url = `/uploads/${req.file.filename}`;
-            thumbnail = `/uploads/${req.file.filename}`;
+            url = fileUrl(req.file);
+            thumbnail = fileUrl(req.file);
         }
         
         const item = new Gallery({ vcardId, type: type || 'image', url, thumbnail, order: count });

@@ -1,8 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 
 const auth = require('../middleware/auth');
 const vCard = require('../models/vCard');
@@ -14,26 +11,7 @@ const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
 
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
-});
+const { upload, fileUrl } = require('../utils/upload');
 
 router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'bannerImage' }])], async (req, res) => {
     try {
@@ -53,7 +31,7 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         }
 
         if (req.files?.['profileImage']?.[0]) {
-            updateFields['personalInfo.profilePic'] = `/uploads/${req.files['profileImage'][0].filename}`;
+            updateFields['personalInfo.profilePic'] = fileUrl(req.files['profileImage'][0]);
         } else if (req.body.profilePic === '') {
             updateFields['personalInfo.profilePic'] = '';
         } else if (req.body.profilePic && typeof req.body.profilePic === 'string' && !req.body.profilePic.startsWith('blob:')) {
@@ -61,7 +39,7 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         }
 
         if (req.files?.['bannerImage']?.[0]) {
-            updateFields['personalInfo.bannerImage'] = `/uploads/${req.files['bannerImage'][0].filename}`;
+            updateFields['personalInfo.bannerImage'] = fileUrl(req.files['bannerImage'][0]);
         } else if (req.body.bannerImage === '') {
             updateFields['personalInfo.bannerImage'] = '';
         } else if (req.body.bannerImage && typeof req.body.bannerImage === 'string' && !req.body.bannerImage.startsWith('blob:')) {
@@ -108,7 +86,7 @@ router.get('/me', auth, async (req, res) => {
 router.post('/upload-image', [auth, upload.single('image')], async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
-        res.json({ url: `/uploads/${req.file.filename}` });
+        res.json({ url: fileUrl(req.file) });
     } catch (err) { 
         console.error('Upload error:', err);
         res.status(500).json({ msg: 'Upload failed', error: err.message }); 
