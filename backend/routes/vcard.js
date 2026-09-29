@@ -10,8 +10,45 @@ const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
+const User = require('../models/User');
+const { sendMail } = require('../utils/mailer');
+const { enquiryLimiter } = require('../middleware/rateLimiter');
 
 const { upload, fileUrl } = require('../utils/upload');
+
+// Keeps only known fields, trims strings, drops empty rows and caps list sizes.
+const str = (v, max = 300) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+const rows = (list, keys, max = 30) =>
+    (Array.isArray(list) ? list : [])
+        .map(r => Object.fromEntries(keys.map(k => [k, str(r && r[k])])))
+        .filter(r => keys.some(k => r[k]))
+        .slice(0, max);
+const words = (list, max = 40) => (Array.isArray(list) ? list : []).map(v => str(v, 80)).filter(Boolean).slice(0, max);
+// Card links live at /<username> (older /c/<username> too): one owner per username, URL-safe,
+// and never the name of a site page, or the page would hide the card.
+const RESERVED_USERNAMES = new Set([
+    'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'onboarding', 'c', 'www', 'support', 'help',
+    'about', 'about-us', 'contact', 'contact-us', 'faqs', 'privacy-policy', 'terms-conditions', 'refund-policy',
+    'cancellation-policy', 'data-processing-addendum', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined',
+]);
+const usernameProblem = (u) => {
+    if (!u) return 'Please choose a username.';
+    if (u.length < 3 || u.length > 30) return 'Username must be 3–30 characters.';
+    if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(u)) return 'Use only lowercase letters, numbers and hyphens (not at the start or end).';
+    if (RESERVED_USERNAMES.has(u)) return 'This username is reserved. Please pick another.';
+    return '';
+};
+
+const sanitizeExtras =(x = {}) => ({
+    followers:  rows(x.followers, ['platform', 'count', 'url'], 10),
+    stats:      rows(x.stats, ['value', 'label'], 6),
+    skills:     words(x.skills),
+    languages:  words(x.languages, 10),
+    brands:     words(x.brands, 20),
+    experience: rows(x.experience, ['years', 'role', 'org'], 15),
+    timings:    rows(x.timings, ['day', 'hours'], 10),
+    reels:      rows(x.reels, ['url', 'title'], 20).filter(r => /^https?:\/\//i.test(r.url)),
+});
 
 router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'bannerImage' }])], async (req, res) => {
     try {
@@ -46,16 +83,28 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
             updateFields['personalInfo.bannerImage'] = req.body.bannerImage;
         }
 
+        if (req.body.extras !== undefined) {
+            const extras = typeof req.body.extras === 'string' ? JSON.parse(req.body.extras) : req.body.extras;
+            updateFields.extras = sanitizeExtras(extras);
+        }
+
         if (req.body.dynamicLinks !== undefined) {
             updateFields.dynamicLinks = typeof req.body.dynamicLinks === 'string'
                 ? JSON.parse(req.body.dynamicLinks)
                 : req.body.dynamicLinks;
         }
 
-        if (updateFields.username) {
-            const existing = await vCard.findOne({ username: updateFields.username, userId: { $ne: req.user.userId } });
-            if (existing) {
-                return res.status(400).json({ msg: 'This vanity URL is already taken.' });
+        if (updateFields.username !== undefined) {
+            const current = await vCard.findOne({ userId: req.user.userId }).select('username');
+            if (updateFields.username === current?.username) {
+                delete updateFields.username; // unchanged: older usernames stay valid even if they predate the rules
+            } else {
+                const problem = usernameProblem(updateFields.username);
+                if (problem) return res.status(400).json({ msg: problem });
+                const existing = await vCard.findOne({ username: updateFields.username, userId: { $ne: req.user.userId } });
+                if (existing) {
+                    return res.status(400).json({ msg: 'This username is already taken. Please choose another.' });
+                }
             }
         }
 
@@ -73,6 +122,19 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         }
         res.status(500).json({ msg: 'Server Error saving profile', error: err.message });
     }
+});
+
+// Live availability check for the username field.
+router.get('/check-username/:username', auth, async (req, res) => {
+    try {
+        const u = String(req.params.username || '').trim().toLowerCase();
+        const mine = await vCard.findOne({ userId: req.user.userId }).select('username');
+        if (mine && mine.username === u) return res.json({ available: true, mine: true });
+        const problem = usernameProblem(u);
+        if (problem) return res.json({ available: false, msg: problem });
+        const taken = await vCard.exists({ username: u, userId: { $ne: req.user.userId } });
+        res.json(taken ? { available: false, msg: 'This username is already taken.' } : { available: true });
+    } catch (err) { res.status(500).json({ msg: 'Server Error' }); }
 });
 
 router.get('/me', auth, async (req, res) => {
@@ -137,23 +199,38 @@ router.post('/public/:username/view', async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-router.post('/public/:username/enquiry', async (req, res) => {
+router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
     try {
-        const { name, email, mobile, message } = req.body;
-        if (!name?.trim() || !message?.trim()) return res.status(400).json({ msg: 'Name and message are required' });
+        const name = str(req.body.name, 100);
+        const email = str(req.body.email, 150);
+        const mobile = str(req.body.mobile, 30);
+        const message = str(req.body.message, 2000);
+        if (!name || !message) return res.status(400).json({ msg: 'Name and message are required' });
+        // DPDP: the visitor must agree to share these details with the card owner.
+        if (req.body.consent !== true) return res.status(400).json({ msg: 'Please agree to share your details with the card owner.' });
+        const cohort = String(req.body.cohort || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) || 'live';
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ msg: 'Please enter a valid email' });
 
         const card = await vCard.findOne({ username: req.params.username });
         if (!card) return res.status(404).json({ msg: 'Card not found' });
 
-        const enquiry = await Enquiry.create({
-            vcardId: card._id,
-            name: name.trim(),
-            email: email?.trim() || '',
-            mobile: mobile?.trim() || '',
-            message: message.trim(),
-        });
+        const enquiry = await Enquiry.create({ vcardId: card._id, name, email, mobile, message, consentAt: new Date(), cohort });
+
+        // Best-effort email to the owner (settings' enquiry email, else their account email).
+        const [settings, owner] = await Promise.all([
+            VcardSettings.findOne({ vcardId: card._id }).select('enquiryEmail'),
+            User.findById(card.userId).select('email'),
+        ]);
+        const to = settings?.enquiryEmail || owner?.email;
+        if (to) {
+            sendMail({
+                to,
+                subject: `New enquiry on your Aicardly card from ${name}`,
+                text: `Name: ${name}\nEmail: ${email || '—'}\nPhone: ${mobile || '—'}\n\nMessage:\n${message}\n\nSee all enquiries in your dashboard → Enquiries.`,
+            });
+        }
         res.json({ msg: 'Enquiry submitted', enquiry });
-    } catch (err) { res.status(500).send('Server Error'); }
+    } catch (err) { res.status(500).json({ msg: 'Could not send your message. Please try again.' }); }
 });
 
 router.get('/enquiries', auth, async (req, res) => {
@@ -162,6 +239,20 @@ router.get('/enquiries', auth, async (req, res) => {
         if (!card) return res.json([]);
         const enquiries = await Enquiry.find({ vcardId: card._id }).sort({ createdAt: -1 });
         res.json(enquiries);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+router.patch('/enquiries/:id', auth, async (req, res) => {
+    try {
+        const card = await vCard.findOne({ userId: req.user.userId });
+        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        const enquiry = await Enquiry.findOneAndUpdate(
+            { _id: req.params.id, vcardId: card._id },
+            { $set: { read: req.body.read !== false } },
+            { new: true }
+        );
+        if (!enquiry) return res.status(404).json({ msg: 'Enquiry not found' });
+        res.json(enquiry);
     } catch (err) { res.status(500).send('Server Error'); }
 });
 

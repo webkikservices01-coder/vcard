@@ -14,7 +14,8 @@ import { usePlan, hasVoiceFill } from '../../utils/plan';
 import MeshBackground from '../../components/ui/MeshBackground';
 import DynamicCyberCard3D from '../../components/ui/DynamicCyberCard3D';
 import { useTheme } from '../../context/ThemeContext';
-import { allThemes, buildCustomTheme } from './Theme';
+import { templatePalette } from '../../webcard/templates/TemplatePicker';
+import { useUsernameCheck, toUsername } from '../../utils/username';
 
 const MAX_BIO_WORDS = 50;
 
@@ -61,7 +62,7 @@ const VcardProfile = () => {
   });
 
   const [cardThemeData, setCardThemeData] = useState({
-    theme: 'midnight-tech',
+    theme: '',
     customTheme: null
   });
 
@@ -90,7 +91,7 @@ const VcardProfile = () => {
           });
 
           setCardThemeData({
-            theme: res.data.theme || 'midnight-tech',
+            theme: res.data.theme || '',
             customTheme: res.data.customTheme || null
           });
         }
@@ -148,20 +149,26 @@ const VcardProfile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const slugCheck = useUsernameCheck(formData.slug.replace(/-+$/, ''));
+
   const handleCopyUrl = () => {
     if (!formData.slug) return;
-    navigator.clipboard.writeText(`${window.location.origin}/c/${formData.slug}`);
+    navigator.clipboard.writeText(`${window.location.origin}/${formData.slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (slugCheck.state === 'bad') {
+      toast.error(slugCheck.msg || 'This username is not available.');
+      return;
+    }
     setSaving(true);
     const token = localStorage.getItem('token');
 
     const data = new FormData();
-    data.append('username', formData.slug);
+    data.append('username', formData.slug.replace(/-+$/, ''));
     data.append('title', formData.title);
     data.append('designation', formData.subTitle);
     data.append('bio', formData.description);
@@ -208,7 +215,7 @@ const VcardProfile = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (formData.slug) {
-      window.open(`/c/${formData.slug}`, '_blank');
+      window.open(`/${formData.slug}`, '_blank');
     } else {
       toast.error("Pehle profile save karein!");
     }
@@ -239,16 +246,13 @@ const VcardProfile = () => {
     });
   };
 
-  const activeThemeObj = cardThemeData.theme === 'custom' && cardThemeData.customTheme
-    ? buildCustomTheme(cardThemeData.customTheme)
-    : (allThemes.find(t => t.id === cardThemeData.theme) || allThemes[0]);
-
-  const activeStyles = activeThemeObj.styles || {};
-  const laserColor = cardThemeData.theme === 'custom' && cardThemeData.customTheme?.accent ? cardThemeData.customTheme.accent : (activeThemeObj.laserColor || activeStyles.accent || '#3B82F6');
-  const cardBg = cardThemeData.theme === 'custom' && cardThemeData.customTheme?.cardBg ? cardThemeData.customTheme.cardBg : (activeStyles.cardBg || '#1E293B');
-  const surfaceBg = cardThemeData.theme === 'custom' && cardThemeData.customTheme?.bg ? cardThemeData.customTheme.bg : (activeStyles.bg || '#0F172A');
-  const linkBg = cardThemeData.theme === 'custom' && cardThemeData.customTheme?.linkBg ? cardThemeData.customTheme.linkBg : (activeStyles.contactBg || '#3B82F6');
-  const subText = cardThemeData.theme === 'custom' && cardThemeData.customTheme?.subTextColor ? cardThemeData.customTheme.subTextColor : '#FFFFFF';
+  // The 3D card takes the colours of the card's WebCard template.
+  const palette = templatePalette(cardThemeData.theme);
+  const laserColor = palette.accent;
+  const cardBg = palette.card;
+  const surfaceBg = palette.surface;
+  const linkBg = palette.link;
+  const subText = palette.sub;
 
   const hasAvatar = Boolean(formData.profileImage && formData.profileImage.trim() !== '');
   const hasBg = Boolean(formData.bannerImage && formData.bannerImage.trim() !== '');
@@ -453,18 +457,23 @@ const VcardProfile = () => {
                     <span className={`inline-flex items-center px-4 text-xs font-bold shrink-0 border-r ${
                       isDark ? 'bg-white/[0.05] border-white/10 text-slate-400' : 'bg-pink-100/60 border-pink-200 text-slate-700'
                     }`}>
-                      mycardlink.site/
+                      {window.location.host}/
                     </span>
                     <input
                       type="text" 
                       name="slug" 
                       value={formData.slug} 
-                      onChange={handleChange}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, slug: toUsername(e.target.value) }))}
                       className="cyber-input flex-1 min-w-0 px-4 py-2.5 text-xs sm:text-sm outline-none font-medium"
                       placeholder="your-name"
                       required
                     />
                   </div>
+                  {slugCheck.state !== 'idle' && (
+                    <p className={`text-[11px] mt-1 font-semibold ${slugCheck.state === 'ok' ? 'text-emerald-500' : slugCheck.state === 'bad' ? 'text-red-500' : isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {slugCheck.state === 'checking' ? 'Checking…' : slugCheck.msg}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

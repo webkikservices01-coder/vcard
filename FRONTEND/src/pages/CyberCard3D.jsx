@@ -19,7 +19,7 @@ export default function DynamicCyberCard3D({
   const displayTitle = "WEBKIK SERVICES";
   const displayRole = "FOUNDER & CEO";
   const displaySubName = name ? name : "Shubham Khurana";
-  const displayUrl = slug ? `mycardlink.site/${slug}` : "mycardlink.site/shubham";
+  const displayUrl = slug ? `aicardly.com/${slug}` : "aicardly.com/shubham";
   const initials = getInitials(name);
 
   const avatarSrc = photoUrl || "/profile.png";
@@ -96,7 +96,7 @@ export default function DynamicCyberCard3D({
               className="px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white shadow-md backdrop-blur-md border border-white/20"
               style={{ background: themeColor }}
             >
-              Webcard.ai
+              Aicardly
             </div>
           </div>
 

@@ -9,12 +9,12 @@ const RefundPolicy = () => (
   <LegalLayout title="Refund Policy" updated="18 July 2026">
     <p>
       This Refund Policy applies to all paid plans (Digital Card, Smart AI Card, AI Agent Pro)
-      purchased on Webcard.ai, operated by <strong>{COMPANY.name}</strong>.
+      purchased on Aicardly, operated by <strong>{COMPANY.name}</strong>.
     </p>
 
     <H2>1. Digital Subscription Service</H2>
     <p>
-      Webcard.ai is a digital subscription service — your plan is activated instantly upon successful
+      Aicardly is a digital subscription service — your plan is activated instantly upon successful
       payment, giving you immediate access to the features included in that plan. Because access is
       granted immediately, refunds are limited as described below.
     </p>

@@ -1,0 +1,61 @@
+{
+  "_about": "Title, description and indexing for every public page. Read by the React app (src/components/Seo.jsx) and by og.php for search and link-preview bots. Canonical = https://aicardly.com + the path. Card pages (/<username>) get theirs from the backend.",
+  "site": "https://aicardly.com",
+  "pages": {
+    "/": {
+      "title": "Aicardly – AI Digital Business Card & Metal NFC Cards in India",
+      "description": "Create an AI-powered digital business card with QR, NFC & WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds."
+    },
+    "/about-us": {
+      "title": "About Us | Aicardly",
+      "description": "Aicardly is an AI digital business card platform by Webkik Services, Delhi. Learn why we build smarter cards for modern professionals."
+    },
+    "/contact-us": {
+      "title": "Contact Us | Aicardly",
+      "description": "Talk to the Aicardly team for help with your digital business card, metal NFC cards or partnerships. Call, WhatsApp or email us."
+    },
+    "/faqs": {
+      "title": "FAQs – Digital Business Card Questions | Aicardly",
+      "description": "Answers to common questions about Aicardly digital business cards, QR and NFC sharing, the AI assistant, privacy and your card link."
+    },
+    "/privacy-policy": {
+      "title": "Privacy Policy | Aicardly",
+      "description": "How Aicardly collects, uses and protects personal data under India's Digital Personal Data Protection Act, 2023, and the rights you have."
+    },
+    "/terms-conditions": {
+      "title": "Terms & Conditions | Aicardly",
+      "description": "The terms for using Aicardly digital business cards, the AI assistant and related services by Webkik Services."
+    },
+    "/refund-policy": {
+      "title": "Refund Policy | Aicardly",
+      "description": "Aicardly's refund policy for digital card plans and metal NFC card orders."
+    },
+    "/cancellation-policy": {
+      "title": "Cancellation Policy | Aicardly",
+      "description": "How to cancel an Aicardly plan or NFC card order, and what happens after you cancel."
+    },
+    "/data-processing-addendum": {
+      "title": "Data Processing Addendum | Aicardly",
+      "description": "The DPDP Act data processing terms between Aicardly (Webkik Services) and card owners for visitor enquiries and AI chats."
+    },
+    "/ai-data-privacy": {
+      "title": "How Our AI Uses Data | Aicardly",
+      "description": "Which AI model powers Aicardly card assistants, what it sees, what we store (no chat text) and the guardrails that keep visitors safe."
+    },
+    "/register": {
+      "title": "Create Your Free Digital Business Card | Aicardly",
+      "description": "Sign up free and make your AI digital business card with QR, NFC and WhatsApp sharing in 60 seconds."
+    },
+    "/login": {
+      "title": "Sign In | Aicardly",
+      "description": "Sign in to your Aicardly dashboard to edit your digital business card.",
+      "noindex": true
+    },
+    "/forgot-password": {
+      "title": "Reset Password | Aicardly",
+      "description": "Reset the password for your Aicardly account.",
+      "noindex": true
+    }
+  },
+  "privatePrefixes": ["/dashboard", "/admin", "/onboarding"]
+}

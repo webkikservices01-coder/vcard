@@ -5,7 +5,7 @@ import {
   Home, UserCircle, LifeBuoy, CreditCard, Receipt, LogOut,
   ChevronDown, Bot, X
 } from 'lucide-react';
-import { hasChatFill } from '../utils/plan';
+import { hasChatFill, PRICING_ENABLED } from '../utils/plan';
 import Logo from './ui/Logo';
 import IconButton from './ui/IconButton';
 
@@ -14,8 +14,11 @@ const aiSubItems = [
 ];
 
 const mainItems = [
-  { name: 'Plans',        icon: CreditCard, path: '/dashboard/plans' },
-  { name: 'Transactions', icon: Receipt,    path: '/dashboard/transactions' },
+  // Plans & Transactions stay hidden while pricing is switched off.
+  ...(PRICING_ENABLED ? [
+    { name: 'Plans',        icon: CreditCard, path: '/dashboard/plans' },
+    { name: 'Transactions', icon: Receipt,    path: '/dashboard/transactions' },
+  ] : []),
   { name: 'Support',      icon: LifeBuoy,   path: '/dashboard/support' },
 ];
 
@@ -204,7 +207,7 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
           className="p-4 shrink-0 space-y-3 mt-auto" 
           style={{ borderTop: '1px solid var(--surface-border)' }}
         >
-          {userPlan && (
+          {PRICING_ENABLED && userPlan && (
             <div className="px-4 py-3 rounded-xl flex items-center justify-between" style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-border)' }}>
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold opacity-70" style={{ color: 'var(--surface-text-2)' }}>Current Plan</p>

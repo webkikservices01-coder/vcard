@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const vCardSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     username: { type: String, required: true, unique: true }, // Jaise: mycardlink.site/marketer-esskay
-    theme: { type: String, default: 'theme-one' },
+    theme: { type: String, default: 'webkik-signature' }, // WebCard template id (see FRONTEND/src/webcard)
     personalInfo: {
         name: String,
         designation: String,
@@ -21,6 +21,18 @@ const vCardSchema = new mongoose.Schema({
     }],
 
     services: [{ title: String, description: String, price: String }],
+
+    // Extra content the WebCard templates can show (followers row, stats, reels, timeline, ...).
+    extras: {
+        followers:  [{ platform: String, count: String, url: String }],
+        stats:      [{ value: String, label: String }],
+        skills:     [String],
+        languages:  [String],
+        brands:     [String],
+        experience: [{ years: String, role: String, org: String }],
+        timings:    [{ day: String, hours: String }],
+        reels:      [{ url: String, title: String }],
+    },
 
     viewCount: { type: Number, default: 0 },
     scanCount:  { type: Number, default: 0 },

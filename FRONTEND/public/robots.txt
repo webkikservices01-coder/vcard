@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /login
+Disallow: /forgot-password
+
+Sitemap: https://aicardly.com/sitemap.xml

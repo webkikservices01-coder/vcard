@@ -96,7 +96,7 @@ const Gallery = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/c/${slug}`, '_blank');
+      window.open(`/${slug}`, '_blank');
     } else {
       toast.error('Profile not found! Please create a profile first.');
     }

@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles } from 'lucide-react';
+import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles, Clapperboard, Inbox, BarChart3 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
 import ThemeToggle from './ui/ThemeToggle';
 import MeshBackground from './ui/MeshBackground';
 import IconButton from './ui/IconButton';
 import axios from 'axios';
-import { hasChatFill } from '../utils/plan';
+import { hasChatFill, PRICING_ENABLED } from '../utils/plan';
 
 const breadcrumbMap = {
   '/dashboard': 'Dashboard',
@@ -19,12 +19,15 @@ const breadcrumbMap = {
   '/dashboard/vcard/products': 'Products & Services',
   '/dashboard/vcard/portfolio': 'Portfolio',
   '/dashboard/vcard/gallery': 'Gallery',
+  '/dashboard/vcard/highlights': 'Highlights & Reels',
+  '/dashboard/vcard/enquiries': 'Enquiries',
   '/dashboard/vcard/testimonials': 'Testimonials',
   '/dashboard/vcard/qr': 'QR Code',
   '/dashboard/vcard/custom': 'Custom Sections',
   '/dashboard/vcard/reorder': 'Reorder Sections',
   '/dashboard/vcard/advanced': 'Advanced Settings',
   '/dashboard/vcard/ai-persona': 'AI Persona Setup',
+  '/dashboard/vcard/ai-insights': 'AI Insights',
   '/dashboard/plans': 'Plans',
   '/dashboard/transactions': 'Transactions',
   '/dashboard/support': 'Support',  
@@ -39,6 +42,9 @@ const primaryVcardTabs = [
   { name: 'Products & Services', icon: ShoppingBag, path: '/dashboard/vcard/products' },
   { name: 'Portfolio',       icon: Briefcase,   path: '/dashboard/vcard/portfolio' },
   { name: 'Gallery',         icon: ImageIcon,   path: '/dashboard/vcard/gallery' },
+  { name: 'Highlights & Reels', icon: Clapperboard, path: '/dashboard/vcard/highlights' },
+  { name: 'Enquiries',       icon: Inbox,       path: '/dashboard/vcard/enquiries' },
+  { name: 'AI Insights',     icon: BarChart3,   path: '/dashboard/vcard/ai-insights' },
   { name: 'Testimonials',    icon: Star,        path: '/dashboard/vcard/testimonials' },
   { name: 'QR Code',         icon: QrCode,      path: '/dashboard/vcard/qr' },
 ];
@@ -112,10 +118,12 @@ const DashboardLayout = () => {
             transform: translateX(50px);
             filter: brightness(1.4);
           }
+          /* End on "none": a leftover transform/filter would trap every page's fixed popups
+             inside <main>, underneath the sticky vCard tab bar. */
           100% {
             opacity: 1;
-            transform: translateX(0);
-            filter: brightness(1);
+            transform: none;
+            filter: none;
           }
         }
         .animate-lighting-right-to-left {
@@ -186,7 +194,7 @@ const DashboardLayout = () => {
                 </div>
                 <div className="hidden sm:block text-left">
                   <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--surface-text)' }}>{user.name}</p>
-                  <p className="text-[10px]" style={{ color: 'var(--surface-text-2)' }}>{user.plan}</p>
+                  {PRICING_ENABLED && <p className="text-[10px]" style={{ color: 'var(--surface-text-2)' }}>{user.plan}</p>}
                 </div>
                 <motion.span animate={{ rotate: dropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="hidden sm:block">
                   <ChevronDown className="w-3.5 h-3.5" style={{ color: 'var(--surface-text-2)' }} />
@@ -211,6 +219,7 @@ const DashboardLayout = () => {
                       <User className="w-4 h-4" />
                       <span>My Profile</span>
                     </Link>
+                    {PRICING_ENABLED && (
                     <Link
                       to="/dashboard/plans"
                       onClick={() => setDropdownOpen(false)}
@@ -220,6 +229,7 @@ const DashboardLayout = () => {
                       <Settings className="w-4 h-4" />
                       <span>Plans</span>
                     </Link>
+                    )}
                     {user.isAdmin && (
                       <>
                         <div style={{ borderTop: '1px solid var(--surface-border)' }} className="my-1" />

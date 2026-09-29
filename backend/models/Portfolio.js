@@ -6,6 +6,8 @@ const portfolioSchema = new mongoose.Schema({
     description: { type: String, default: '' },
     coverImage:  { type: String, default: '' },
     url:         { type: String, default: '' },
+    file:        { type: String, default: '' }, // uploaded PDF
+    fileName:    { type: String, default: '' },
     order:       { type: Number, default: 0 }
 }, { timestamps: true });
 

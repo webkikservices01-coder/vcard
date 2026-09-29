@@ -32,7 +32,7 @@ const QrCode = () => {
     fetch();
   }, []);
 
-  const cardUrl = `${window.location.origin}/c/${slug}`;
+  const cardUrl = `${window.location.origin}/${slug}`;
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector('svg');

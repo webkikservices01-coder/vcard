@@ -59,7 +59,7 @@ const AdminCards = () => {
                 </div>
                 {c.username && (
                   <a
-                    href={`/c/${c.username}`} target="_blank" rel="noopener noreferrer"
+                    href={`/${c.username}`} target="_blank" rel="noopener noreferrer"
                     className="hover:text-brand-500 fast-transition" style={{ color: 'var(--surface-text-2)' }}
                   >
                     <ExternalLink className="w-4 h-4" />

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-// Webcard.ai wordmark: animated gradient card-glyph + "Webcard" + gradient ".ai".
+// Aicardly wordmark: animated gradient card-glyph + gradient "Ai" + "cardly".
 const Logo = ({ size = 36, to = '/', className = '', light = false, showWordmark = true }) => (
   <Link to={to} className={`flex items-center gap-2.5 ${className}`}>
     <motion.svg
@@ -34,7 +34,7 @@ const Logo = ({ size = 36, to = '/', className = '', light = false, showWordmark
     </motion.svg>
     {showWordmark && (
       <span className={`text-lg font-bold tracking-tight ${light ? 'text-white' : ''}`} style={light ? undefined : { color: 'var(--surface-text)' }}>
-        Webcard<span className="text-gradient-crimson">.ai</span>
+        <span className="text-gradient-crimson">Ai</span>cardly
       </span>
     )}
   </Link>

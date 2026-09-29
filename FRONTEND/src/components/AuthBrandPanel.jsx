@@ -58,7 +58,7 @@ const AuthBrandPanel = () => (
         </div>
         <div>
           <p className="text-xs font-bold text-white">Scan to connect</p>
-          <p className="text-[10px] text-slate-400 font-mono">webcard.ai/ava</p>
+          <p className="text-[10px] text-slate-400 font-mono">aicardly.com/ava</p>
         </div>
       </div>
     </motion.div>
@@ -107,7 +107,7 @@ const AuthBrandPanel = () => (
 
       <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
         <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-        <p>© {new Date().getFullYear()} Webcard.ai — crafted for the discerning.</p>
+        <p>© {new Date().getFullYear()} Aicardly — crafted for the discerning.</p>
       </div>
     </div>
   </div>

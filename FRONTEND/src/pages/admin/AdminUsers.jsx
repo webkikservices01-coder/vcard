@@ -128,11 +128,11 @@ const AdminUsers = () => {
                     <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{u.email}</p>
                     {u.card?.username && (
                       <a
-                        href={`/c/${u.card.username}`} target="_blank" rel="noopener noreferrer"
+                        href={`/${u.card.username}`} target="_blank" rel="noopener noreferrer"
                         className="text-[10px] hover:text-brand-500 flex items-center space-x-1 mt-0.5 fast-transition"
                         style={{ color: 'var(--surface-text-2)' }}
                       >
-                        <ExternalLink className="w-3 h-3" /><span>/c/{u.card.username}</span>
+                        <ExternalLink className="w-3 h-3" /><span>/{u.card.username}</span>
                       </a>
                     )}
                   </td>

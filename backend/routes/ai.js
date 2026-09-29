@@ -9,15 +9,18 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
-const { CHAT_FILL_PLANS, VOICE_FILL_PLANS } = require('../constants/plans');
+const { hasChatFill, hasVoiceFill } = require('../constants/plans');
 const { logUsage } = require('../utils/usageLogger');
 const { buildCardySystemPrompt, COMPANY } = require('../constants/chatbotKnowledge');
-const { platformChatLimiter, platformLeadLimiter, themeLimiter } = require('../middleware/rateLimiter');
+const { platformChatLimiter, platformLeadLimiter, themeLimiter, cardChatLimiter, feedbackLimiter } = require('../middleware/rateLimiter');
+const ChatSession = require('../models/ChatSession');
+const Enquiry = require('../models/Enquiry');
+const { NICHES, nicheOf, cleanMessages, checkInput, checkOutput, safetyBlock } = require('../utils/aiGuard');
+const { DPA_VERSION, CHAT_CONSENT_VERSION } = require('../constants/legal');
 const { normHex, fixTheme, THEME_KEYS } = require('../utils/themeAi');
 const { sendMail } = require('../utils/mailer');
 const PlatformLead = require('../models/PlatformLead');
 
-const AI_PLANS = CHAT_FILL_PLANS;
 const CLAUDE_MODEL = 'claude-sonnet-5';
 // Separate, cheaper/faster model for the public marketing-site chatbot — it
 // handles high-volume anonymous FAQ traffic, unlike the per-card/Jarvis routes.
@@ -78,6 +81,14 @@ const fmtLink = (l) => {
   }
 };
 
+// The final offering shown at the end of a chat: the owner's own, else the niche default.
+const offerOf = (persona) => {
+  const own = persona.offer || {};
+  if (own.title) return { title: own.title, url: own.url || '', cta: own.cta || own.title };
+  const n = nicheOf(persona.niche).offer || {};
+  return { title: n.title || '', url: '', cta: n.cta || n.title || '' };
+};
+
 // ─── Build rich system prompt from ALL vCard data ─────────────────────────────
 const buildSystemPrompt = (persona, card, products, portfolio, testimonials, gallery, customSections) => {
   const p = card.personalInfo || {};
@@ -120,6 +131,7 @@ IMPORTANT: When sharing contact info, ALWAYS use the exact markdown format above
       let block = `${i + 1}. **${item.title}**`;
       if (item.description) block += `\n   ${item.description}`;
       if (item.url) block += `\n   🔗 [View Project](${item.url})`;
+      if (item.file && /^https?:\/\//.test(item.file)) block += `\n   📄 [View PDF](${item.file})`;
       if (item.coverImage) block += `\n   ![${item.title}](${item.coverImage})`;
       return block;
     }).join('\n\n');
@@ -141,6 +153,19 @@ IMPORTANT: When sharing contact info, ALWAYS use the exact markdown format above
     sections.push(`=== CLIENT REVIEWS ===\n${reviews}`);
   }
 
+  // Highlights the owner added for the card templates
+  const x = card.extras || {};
+  const extra = [];
+  if (x.stats?.length) extra.push(`Key numbers: ${x.stats.map(s => `${s.value} ${s.label}`).join(', ')}`);
+  if (x.skills?.length) extra.push(`Skills: ${x.skills.join(', ')}`);
+  if (x.languages?.length) extra.push(`Languages spoken: ${x.languages.join(', ')}`);
+  if (x.followers?.length) extra.push(`Social following: ${x.followers.map(f => `${f.count} on ${f.platform}`).join(', ')}`);
+  if (x.brands?.length) extra.push(`Brands worked with: ${x.brands.join(', ')}`);
+  if (x.experience?.length) extra.push(`Experience:\n${x.experience.map(e => `- ${[e.years, e.role, e.org].filter(Boolean).join(' · ')}`).join('\n')}`);
+  if (x.timings?.length) extra.push(`Working hours:\n${x.timings.map(t => `- ${t.day}: ${t.hours}`).join('\n')}`);
+  if (x.reels?.length) extra.push(`Reels / videos:\n${x.reels.map(r => `▶️ [${r.title || 'Watch'}](${r.url})`).join('\n')}`);
+  if (extra.length) sections.push(`=== HIGHLIGHTS ===\n${extra.join('\n')}`);
+
   // Custom sections
   if (customSections.length > 0) {
     sections.push(`=== ADDITIONAL INFO ===\n${customSections.map(c => `**${c.title}**\n${c.content}`).join('\n\n')}`);
@@ -151,7 +176,26 @@ IMPORTANT: When sharing contact info, ALWAYS use the exact markdown format above
     sections.push(`=== FAQs ===\n${persona.faqs.map(f => `Q: ${f.question}\nA: ${f.answer}`).join('\n\n')}`);
   }
 
+  // Knowledge base notes
+  if (persona.knowledge?.length > 0) {
+    sections.push(`=== KNOWLEDGE BASE ===\n${persona.knowledge.map(k => `**${k.title}**\n${k.content}`).join('\n\n')}`);
+  }
+
+  const niche = nicheOf(persona.niche);
+  const offer = offerOf(persona);
+  const guard = { niche: persona.niche, ownerBlocked: persona.blockedTopics || [] };
+  const consulting = persona.consultingMode
+    ? `
+
+=== CONSULTING MODE ===
+- Act like a skilled first-call consultant for ${p.name || 'the owner'}. First understand the visitor: ask at most 2 short questions about their goal, situation or budget (one per reply), unless they already told you.
+- Then recommend the ONE most relevant listed service or product and say in one line why it fits their need.
+- Close by inviting them to the next step${offer.title ? `: "${offer.title}"` : ''}. Do not push; if they are not ready, answer their question and leave the door open.
+- Never invent services, prices or results that are not listed above.`
+    : '';
+
   return `You are ${persona.aiName || 'an AI assistant'} for ${p.name || 'this professional'}'s digital card.
+Profession: ${niche.label}. ${niche.prompt}
 
 ${sections.join('\n\n')}
 
@@ -169,8 +213,10 @@ Tone: ${toneDesc[persona.tone] || 'warm and friendly'}
   - Match their language on every turn — if they switch language mid-conversation, switch with them.
 - When sharing a link, use markdown format: [label](url). Never write a bare URL.
 - When showing an image use: ![title](imageUrl)
-- If you don't have the answer, say so simply (in the visitor's language). Do not add calls to action or redirect suggestions.
-- Never make up facts, prices, or contact details not listed above.`;
+- If you don't have the answer, say so simply (in the visitor's language).${persona.consultingMode ? '' : ' Do not add calls to action or redirect suggestions.'}
+- Never make up facts, prices, or contact details not listed above.${consulting}
+
+${safetyBlock(guard)}`;
 };
 
 // ─── GET /api/ai/persona ──────────────────────────────────────────────────────
@@ -187,35 +233,72 @@ router.get('/persona', auth, async (req, res) => {
 router.post('/persona', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!AI_PLANS.includes(user.plan)) {
+    if (!hasChatFill(user.plan)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use AI features.' });
     }
     const vcardId = await getCardId(req.user.userId);
     if (!vcardId) return res.status(404).json({ msg: 'Create a vCard profile first.' });
 
-    const { enabled, aiName, tone, greeting, aboutText, faqs } = req.body;
-    const persona = await AiPersona.findOneAndUpdate(
-      { vcardId },
-      { $set: { enabled, aiName, tone, greeting, aboutText, faqs } },
-      { new: true, upsert: true }
-    );
+    const { enabled, aiName, tone, greeting, aboutText, faqs, knowledge, niche, consultingMode, blockedTopics, offer, npsEnabled, acceptDpa } = req.body;
+    const existing = await AiPersona.findOne({ vcardId }).select('dpaAcceptedAt');
+    const dpaOk = existing?.dpaAcceptedAt || acceptDpa === true;
+    if (enabled !== false && !dpaOk) {
+      return res.status(400).json({ msg: 'Please accept the Data Processing Addendum to turn on the AI assistant.' });
+    }
+    const clip = (v, n) => String(v || '').trim().slice(0, n);
+    const set = {
+      enabled, aiName, tone, greeting, aboutText, faqs,
+      knowledge: (Array.isArray(knowledge) ? knowledge : [])
+        .map(k => ({ title: clip(k?.title, 120), content: clip(k?.content, 4000) }))
+        .filter(k => k.title || k.content)
+        .slice(0, 20),
+      niche: NICHES[niche] ? niche : 'general',
+      consultingMode: !!consultingMode,
+      blockedTopics: (Array.isArray(blockedTopics) ? blockedTopics : [])
+        .map(w => clip(w, 60).toLowerCase())
+        .filter(w => w.length >= 3)
+        .slice(0, 30),
+      offer: {
+        title: clip(offer?.title, 80),
+        url: /^(https?:\/\/|tel:|mailto:)/i.test(clip(offer?.url, 500)) ? clip(offer?.url, 500) : '',
+        cta: clip(offer?.cta, 40),
+      },
+      npsEnabled: npsEnabled !== false,
+    };
+    if (!existing?.dpaAcceptedAt && acceptDpa === true) {
+      set.dpaAcceptedAt = new Date();
+      set.dpaVersion = DPA_VERSION;
+    }
+    const persona = await AiPersona.findOneAndUpdate({ vcardId }, { $set: set }, { new: true, upsert: true });
     res.json({ msg: 'AI persona saved!', persona });
   } catch (err) { res.status(500).send('Server Error'); }
 });
 
+// ─── GET /api/ai/niches ───────────────────────────────────────────────────────
+router.get('/niches', (req, res) => {
+  res.json(Object.entries(NICHES).map(([id, n]) => ({
+    id, label: n.label, sensitive: n.sensitive, disclaimer: n.disclaimer,
+    blocked: n.blocked.map(b => b.topic), chips: n.chips, offer: n.offer,
+  })));
+});
+
+// Used when an owner never opened the AI Persona page: the assistant is on by default.
+const DEFAULT_PERSONA = { enabled: true, aiName: 'AI Assistant', tone: 'friendly', greeting: 'Hi! How can I help you today?', aboutText: '', faqs: [] };
+
 // ─── POST /api/ai/chat/:username ──────────────────────────────────────────────
-router.post('/chat/:username', async (req, res) => {
+router.post('/chat/:username', cardChatLimiter, async (req, res) => {
   try {
     const card = await vCard.findOne({ username: req.params.username });
     if (!card) return res.status(404).json({ msg: 'Card not found' });
 
     const owner = await User.findById(card.userId);
-    if (!AI_PLANS.includes(owner?.plan)) {
+    if (!hasChatFill(owner?.plan)) {
       return res.status(403).json({ msg: 'AI chat is not enabled for this card.' });
     }
 
-    const persona = await AiPersona.findOne({ vcardId: card._id });
-    if (!persona || !persona.enabled) {
+    // Cards without a saved persona still get the assistant, with default settings.
+    const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
+    if (!persona.enabled) {
       return res.status(403).json({ msg: 'AI chat is disabled for this card.' });
     }
 
@@ -224,9 +307,35 @@ router.post('/chat/:username', async (req, res) => {
       return res.status(503).json({ msg: 'AI service not configured yet.' });
     }
 
-    const { messages } = req.body;
-    if (!Array.isArray(messages) || messages.length === 0) {
+    // DPDP: the visitor must accept the chat notice before their messages are processed.
+    if (req.body.consent !== true) {
+      return res.status(428).json({ msg: 'Please accept the chat notice to continue.', needConsent: true });
+    }
+    const messages = cleanMessages(req.body.messages);
+    if (messages.length === 0) {
       return res.status(400).json({ msg: 'Messages required' });
+    }
+    const sessionId = String(req.body.sessionId || '').replace(/[^\w-]/g, '').slice(0, 64);
+    const cohort = cohortOf(req.body.cohort);
+    const track = (inc, extra = {}) => sessionId && ChatSession.updateOne(
+      { vcardId: card._id, sessionId },
+      {
+        $inc: inc,
+        $set: { lastAt: new Date(), ...extra },
+        $setOnInsert: { cohort, consentAt: new Date(), consentVersion: CHAT_CONSENT_VERSION },
+      },
+      { upsert: true }
+    ).catch(err => console.error('Chat session log failed:', err.message));
+    const guard = { niche: persona.niche, ownerBlocked: persona.blockedTopics || [] };
+    const userTurns = messages.filter(m => m.role === 'user').length;
+    const offer = offerOf(persona);
+    // Offer the final CTA once the visitor has asked a couple of questions.
+    const showOffer = !!offer.title && userTurns >= 2;
+
+    const stop = checkInput(messages[messages.length - 1].content, guard);
+    if (stop) {
+      await track({ messages: 1, blocked: 1 });
+      return res.json({ reply: stop.reply, guarded: stop.reason });
     }
 
     // Fetch ALL vCard data in parallel
@@ -244,13 +353,16 @@ router.post('/chat/:username', async (req, res) => {
       model: CLAUDE_MODEL,
       max_tokens: 300,
       system: systemPrompt,
-      messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+      messages,
     });
 
     logUsage({ route: 'chat', vcardId: card._id, userId: owner._id, model: CLAUDE_MODEL, usage: completion.usage });
 
-    const reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
-    res.json({ reply });
+    let reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+    const bad = checkOutput(reply, guard);
+    if (bad) reply = bad.reply;
+    await track({ messages: 1, blocked: bad ? 1 : 0 }, showOffer ? { offerShown: true } : {});
+    res.json({ reply, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
   } catch (err) {
     console.error('AI chat error:', err.message);
     res.status(500).json({ msg: 'AI response failed. Please try again.' });
@@ -320,7 +432,7 @@ Respond with ONLY a raw JSON object, no markdown, no code fences, in this exact 
 router.post('/voice-fill', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!VOICE_FILL_PLANS.includes(user.plan)) {
+    if (!hasVoiceFill(user.plan)) {
       return res.status(403).json({ msg: 'Upgrade to AI Agent Pro to use the voice assistant.' });
     }
 
@@ -363,7 +475,7 @@ const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PAGE_ROUTES = {
   all: '/dashboard/vcard/all', theme: '/dashboard/vcard/theme', profile: '/dashboard/vcard/profile',
   contact: '/dashboard/vcard/contact', products: '/dashboard/vcard/products', portfolio: '/dashboard/vcard/portfolio',
-  gallery: '/dashboard/vcard/gallery', testimonials: '/dashboard/vcard/testimonials', qr: '/dashboard/vcard/qr',
+  gallery: '/dashboard/vcard/gallery', highlights: '/dashboard/vcard/highlights', testimonials: '/dashboard/vcard/testimonials', qr: '/dashboard/vcard/qr',
   custom: '/dashboard/vcard/custom', reorder: '/dashboard/vcard/reorder', advanced: '/dashboard/vcard/advanced',
   'ai-persona': '/dashboard/vcard/ai-persona', plans: '/dashboard/plans', transactions: '/dashboard/transactions',
   support: '/dashboard/support', 'my-profile': '/dashboard/profile', dashboard: '/dashboard',
@@ -506,7 +618,7 @@ const executeJarvisTool = async (name, input, vcardId) => {
   }
 };
 
-const JARVIS_SYSTEM_PROMPT = `You are Cardy, the same Webcard.ai assistant the visitor sees on the public site, now embedded in a user's own vCard dashboard (mycardlink.site). The user talks to you in natural Hinglish (Hindi + English mix, Roman script). You have tools to directly view, create, update, delete card content, and to navigate the dashboard — use them instead of just describing what to do.
+const JARVIS_SYSTEM_PROMPT = `You are Cardy, the same Aicardly assistant the visitor sees on the public site, now embedded in a user's own vCard dashboard (aicardly.com). The user talks to you in natural Hinglish (Hindi + English mix, Roman script). You have tools to directly view, create, update, delete card content, and to navigate the dashboard — use them instead of just describing what to do.
 
 Rules:
 - SCOPE: You only handle tasks about managing this user's vCard dashboard (profile, contact links, products, portfolio, navigation). Politely decline (one short Hinglish sentence) anything unrelated — general knowledge questions, coding help, requests about other topics — and do not call any tool for those.
@@ -524,7 +636,7 @@ router.post('/jarvis', auth, async (req, res) => {
     if (!message || !message.trim()) return res.status(400).json({ msg: 'No speech detected' });
 
     const user = await User.findById(req.user.userId);
-    if (!CHAT_FILL_PLANS.includes(user.plan)) {
+    if (!hasChatFill(user.plan)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Assistant.' });
     }
 
@@ -598,14 +710,125 @@ router.get('/public/:username', async (req, res) => {
     if (!card) return res.json({ enabled: false });
 
     const owner = await User.findById(card.userId);
-    if (!AI_PLANS.includes(owner?.plan)) return res.json({ enabled: false });
+    if (!hasChatFill(owner?.plan)) return res.json({ enabled: false });
 
-    const persona = await AiPersona.findOne({ vcardId: card._id });
-    if (!persona || !persona.enabled) return res.json({ enabled: false });
+    const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
+    if (!persona.enabled) return res.json({ enabled: false });
 
-    res.json({ enabled: true, aiName: persona.aiName, greeting: persona.greeting });
+    const niche = nicheOf(persona.niche);
+    res.json({
+      enabled: true,
+      aiName: persona.aiName,
+      greeting: persona.greeting,
+      niche: NICHES[persona.niche] ? persona.niche : 'general',
+      sensitive: niche.sensitive,
+      disclaimer: niche.disclaimer,
+      chips: niche.chips,
+      offer: offerOf(persona),
+      npsEnabled: persona.npsEnabled !== false,
+      consentVersion: CHAT_CONSENT_VERSION,
+    });
   } catch {
     res.json({ enabled: false });
+  }
+});
+
+// Visitor cohort: 'live', or the dipstick test-group name from the card link (?dipstick=<name>).
+const cohortOf = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) || 'live';
+
+// ─── POST /api/ai/feedback/:username  { sessionId, score 0-10, comment } ─────
+router.post('/feedback/:username', feedbackLimiter, async (req, res) => {
+  try {
+    const card = await vCard.findOne({ username: req.params.username }).select('_id');
+    if (!card) return res.status(404).json({ msg: 'Card not found' });
+    const score = Number(req.body.score);
+    const sessionId = String(req.body.sessionId || '').replace(/[^\w-]/g, '').slice(0, 64);
+    if (!sessionId || !Number.isInteger(score) || score < 0 || score > 10) {
+      return res.status(400).json({ msg: 'A rating from 0 to 10 is required.' });
+    }
+    const updated = await ChatSession.updateOne(
+      { vcardId: card._id, sessionId },
+      { $set: { nps: score, feedback: String(req.body.comment || '').trim().slice(0, 500), lastAt: new Date() } }
+    );
+    if (!updated.matchedCount) return res.status(404).json({ msg: 'Chat not found' });
+    res.json({ msg: 'Thanks for your feedback!' });
+  } catch (err) {
+    console.error('Feedback error:', err.message);
+    res.status(500).json({ msg: 'Could not save feedback.' });
+  }
+});
+
+// ─── POST /api/ai/offer-click/:username  { sessionId } ─────────────────────────
+router.post('/offer-click/:username', feedbackLimiter, async (req, res) => {
+  try {
+    const card = await vCard.findOne({ username: req.params.username }).select('_id');
+    const sessionId = String(req.body.sessionId || '').replace(/[^\w-]/g, '').slice(0, 64);
+    if (card && sessionId) {
+      await ChatSession.updateOne({ vcardId: card._id, sessionId }, { $set: { offerClicked: true, offerShown: true } });
+    }
+    res.json({ ok: true });
+  } catch {
+    res.json({ ok: false });
+  }
+});
+
+// NPS = % promoters (9-10) minus % detractors (0-6), from -100 to 100.
+const npsOf = (scores) => {
+  if (!scores.length) return null;
+  const pro = scores.filter(s => s >= 9).length;
+  const det = scores.filter(s => s <= 6).length;
+  return Math.round(((pro - det) / scores.length) * 100);
+};
+
+// ─── GET /api/ai/insights: chat funnel + NPS per cohort, recent feedback ────
+router.get('/insights', auth, async (req, res) => {
+  try {
+    const vcardId = await getCardId(req.user.userId);
+    if (!vcardId) return res.status(404).json({ msg: 'vCard not found' });
+    const since = new Date(Date.now() - Math.min(365, Math.max(1, Number(req.query.days) || 90)) * 864e5);
+    const [sessions, enquiries] = await Promise.all([
+      ChatSession.find({ vcardId, createdAt: { $gte: since } })
+        .select('cohort messages blocked offerShown offerClicked nps feedback createdAt')
+        .sort('-createdAt')
+        .lean(),
+      Enquiry.aggregate([
+        { $match: { vcardId, createdAt: { $gte: since } } },
+        { $group: { _id: { $ifNull: ['$cohort', 'live'] }, n: { $sum: 1 } } },
+      ]),
+    ]);
+    const cohorts = {};
+    for (const s of sessions) {
+      const c = (cohorts[s.cohort] ||= { cohort: s.cohort, chats: 0, engaged: 0, offerShown: 0, offerClicked: 0, rated: 0, blocked: 0, scores: [] });
+      c.chats += 1;
+      if (s.messages >= 2) c.engaged += 1;
+      if (s.offerShown) c.offerShown += 1;
+      if (s.offerClicked) c.offerClicked += 1;
+      if (s.blocked) c.blocked += s.blocked;
+      if (s.nps != null) { c.rated += 1; c.scores.push(s.nps); }
+    }
+    for (const e of enquiries) (cohorts[e._id] ||= { cohort: e._id, chats: 0, engaged: 0, offerShown: 0, offerClicked: 0, rated: 0, blocked: 0, scores: [] }).enquiries = e.n;
+    const list = Object.values(cohorts).map(({ scores, ...c }) => ({
+      ...c,
+      enquiries: c.enquiries || 0,
+      nps: npsOf(scores),
+      promoters: scores.filter(s => s >= 9).length,
+      passives: scores.filter(s => s >= 7 && s <= 8).length,
+      detractors: scores.filter(s => s <= 6).length,
+      avgScore: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null,
+    }));
+    const all = sessions.filter(s => s.nps != null).map(s => s.nps);
+    res.json({
+      days: Math.round((Date.now() - since) / 864e5),
+      nps: npsOf(all),
+      cohorts: list.sort((a, b) => (a.cohort === 'live' ? -1 : b.cohort === 'live' ? 1 : b.chats - a.chats)),
+      feedback: sessions
+        .filter(s => s.nps != null)
+        .slice(0, 30)
+        .map(s => ({ score: s.nps, comment: s.feedback, cohort: s.cohort, at: s.createdAt })),
+    });
+  } catch (err) {
+    console.error('Insights error:', err.message);
+    res.status(500).json({ msg: 'Could not load insights.' });
   }
 });
 
@@ -633,7 +856,7 @@ Reply with ONLY one raw JSON object, no markdown, in exactly this shape:
 router.post('/theme', auth, themeLimiter, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!CHAT_FILL_PLANS.includes(user.plan)) {
+    if (!hasChatFill(user.plan)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Theme Designer.' });
     }
     const anthropic = getAnthropic();
@@ -750,7 +973,7 @@ router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
 
     sendMail({
       to: process.env.LEAD_NOTIFY_EMAIL || COMPANY.email,
-      subject: `New Webcard.ai lead: ${lead.name}`,
+      subject: `New Aicardly lead: ${lead.name}`,
       text: `Name: ${lead.name}\nEmail: ${lead.email}\nPhone: ${lead.phone}\nBusiness: ${lead.businessName}\nNeed: ${lead.need}\nBudget: ${lead.budget}\nTimeline: ${lead.timeline}\n\nMessage:\n${lead.message}`,
     });
 

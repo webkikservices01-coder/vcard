@@ -7,6 +7,7 @@ import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
+import PasswordEye from '../components/PasswordEye';
 
 // Sequential container orchestration
 const containerVariants = {
@@ -61,6 +62,7 @@ export const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -174,7 +176,7 @@ export const Login = () => {
             <motion.h1 variants={slideFromBottom} className={`mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight transition-colors ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              Sign in to Webcard.ai
+              Sign in to Aicardly
             </motion.h1>
 
             <motion.p variants={slideFromBottom} className={`mt-1.5 text-xs sm:text-sm transition-colors ${
@@ -221,16 +223,17 @@ export const Login = () => {
                   }`} />
                   <input
                     required
-                    type="password"
+                    type={showPwd ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="••••••••"
-                    className={`w-full rounded-xl border py-2.5 pl-10 pr-3.5 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
+                    className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
                       isDark 
                         ? 'border-white/10 bg-white/[0.04] text-white placeholder-slate-500 focus:border-[#E70C65] focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(231,12,101,0.3)]' 
                         : 'border-slate-200 bg-slate-50/70 text-slate-900 placeholder-slate-400 focus:border-[#E70C65] focus:bg-white focus:shadow-[0_0_15px_rgba(231,12,101,0.15)]'
                     }`}
                   />
+                    <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className={isDark ? 'text-slate-300' : 'text-slate-500'} />
                 </div>
 
                 {/* Clean Forgot Password Placement */}

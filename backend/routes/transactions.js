@@ -87,7 +87,7 @@ router.post('/create-order', auth, async (req, res) => {
                 customer_details: {
                     customer_id: String(user._id),
                     customer_name: user.name || 'Customer',
-                    customer_email: user.email || 'customer@mycardlink.site',
+                    customer_email: user.email || 'customer@aicardly.com',
                     customer_phone: user.phone || '9999999999',
                 },
                 order_meta: {

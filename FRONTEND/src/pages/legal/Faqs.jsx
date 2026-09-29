@@ -8,49 +8,59 @@ import GlassCard from '../../components/ui/GlassCard';
 import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../../components/PublicFooter';
 import { COMPANY } from '../../components/PublicFooter';
+import { PRICING_ENABLED } from '../../utils/plan';
 
 const faqs = [
   {
-    q: 'What is Webcard.ai?',
-    a: 'Webcard.ai is a digital business card platform — you build a card once (profile, contact links, products, portfolio) and share it via a QR code or a single link, instead of handing out paper cards.',
+    q: 'What is Aicardly?',
+    a: 'Aicardly is a digital business card platform — you build a card once (profile, contact links, products, portfolio) and share it via a QR code or a single link, instead of handing out paper cards.',
   },
   {
     q: 'Do I need to download an app?',
-    a: 'No. Your card lives at a public web link (mycardlink.site/c/yourname). Anyone can view it in a browser on any device — no app install required, for you or for visitors.',
+    a: 'No. Your card lives at a public web link (aicardly.com/yourname). Anyone can view it in a browser on any device — no app install required, for you or for visitors.',
   },
   {
+    pricingOnly: true,
     q: 'What plans are available?',
     a: 'Three plans: Digital Card (the essentials — QR code, themes, analytics), Smart AI Card (adds the AI chat widget and AI persona), and AI Agent Pro (adds the voice assistant and multi-card support). See the Plans page for full pricing and feature comparison.',
   },
   {
     q: 'How does the AI chat widget work?',
+    aFree: "You can enable an AI assistant on your public card. It's trained on your profile, products, portfolio, and FAQs, and answers visitor questions automatically, 24/7.",
     a: "On Smart AI Card and AI Agent Pro, you can enable an AI assistant on your public card. It's trained on your profile, products, portfolio, and FAQs, and answers visitor questions automatically, 24/7.",
   },
   {
     q: 'Can visitors talk to my AI assistant by voice?',
+    aFree: 'Yes, the assistant supports voice input in the chat widget in addition to typed messages.',
     a: 'Yes, on the AI Agent Pro plan the assistant supports voice input in the chat widget in addition to typed messages.',
   },
   {
+    pricingOnly: true,
     q: 'Can I change my plan later?',
     a: 'Yes. You can upgrade at any time from Dashboard → Plans, and the new features activate immediately. See our Cancellation Policy for how downgrades and cancellations work.',
   },
   {
+    pricingOnly: true,
     q: 'Is my payment information safe?',
     a: 'Yes. Payments are handled by Cashfree, a licensed payment gateway. We never see or store your full card details.',
   },
   {
+    pricingOnly: true,
     q: 'Can I get a refund?',
     a: 'Refunds are available in specific cases (duplicate charges, failed activation, or unused plans within 24 hours). Full details are in our Refund Policy.',
   },
   {
     q: 'Can I use my own custom domain?',
-    a: "Every card gets a free public link on mycardlink.site. If you'd like a fully custom domain, reach out to our support team to discuss availability.",
+    a: "Every card gets a free public link on aicardly.com. If you'd like a fully custom domain, reach out to our support team to discuss availability.",
   },
   {
     q: 'How do I get support?',
     a: `You can raise a ticket from Dashboard → Support, or reach us directly at ${COMPANY.email} / ${COMPANY.phone}.`,
   },
 ];
+
+// While pricing is switched off, plan / billing questions are hidden and answers drop plan names.
+const visibleFaqs = PRICING_ENABLED ? faqs : faqs.filter(f => !f.pricingOnly).map(f => ({ ...f, a: f.aFree || f.a }));
 
 const FaqItem = ({ item, isOpen, onToggle }) => (
   <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-1)' }}>
@@ -86,10 +96,10 @@ const Faqs = () => {
       <PublicNav />
 
       <section className="relative z-10 mx-auto max-w-3xl px-6 pt-12 pb-24">
-        <SectionHeading eyebrow="Support" title="Frequently Asked Questions" subtitle="Everything you need to know about Webcard.ai — plans, AI features, billing, and support." />
+        <SectionHeading eyebrow="Support" title="Frequently Asked Questions" subtitle={PRICING_ENABLED ? 'Everything you need to know about Aicardly — plans, AI features, billing, and support.' : 'Everything you need to know about Aicardly — your card, AI features, and support.'} />
 
         <div className="mt-12 space-y-3">
-          {faqs.map((item, i) => (
+          {visibleFaqs.map((item, i) => (
             <FaqItem key={item.q} item={item} isOpen={openIdx === i} onToggle={() => setOpenIdx(openIdx === i ? -1 : i)} />
           ))}
         </div>

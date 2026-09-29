@@ -11,7 +11,10 @@ const UserSchema = new mongoose.Schema({
     planExpiry:{ type: Date, default: null },
     status:    { type: String, enum: ['active', 'inactive'], default: 'active' },
     cardLimit: { type: Number, default: 1 },
-    isAdmin:   { type: Boolean, default: false }
+    isAdmin:   { type: Boolean, default: false },
+    // Terms + Privacy Policy accepted at sign-up (DPDP consent record).
+    consentAt:      { type: Date, default: null },
+    consentVersion: { type: String, default: '' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

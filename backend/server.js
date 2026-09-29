@@ -54,8 +54,12 @@ app.use((req, res, next) => {
     });
 });
 
+// Warm-up ping: the site calls this on page load so a cold serverless function and its
+// DB connection are ready before the user submits the login form.
+app.get('/api/ping', (req, res) => res.set('Cache-Control', 'no-store').json({ ok: true }));
+
 // Routes
-app.use('/api/auth',            require('./routes/auth'));
+app.use('/api/auth',           require('./routes/auth'));
 app.use('/api/vcard',           require('./routes/vcard'));
 app.use('/api/products',        require('./routes/products'));
 app.use('/api/portfolio',       require('./routes/portfolio'));
@@ -68,8 +72,9 @@ app.use('/api/settings',        require('./routes/settings'));
 app.use('/api/transactions',    require('./routes/transactions'));
 app.use('/api/ai',              require('./routes/ai'));
 app.use('/api/admin',           require('./routes/admin'));
+app.use('/api/og',              require('./routes/og'));
 
-app.get('/', (req, res) => res.send('MYcardLINK API running!'));
+app.get('/', (req, res) => res.send('Aicardly API running!'));
 
 if (require.main === module) {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

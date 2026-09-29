@@ -11,7 +11,9 @@ import IconButton from '../components/ui/IconButton';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import MeshBackground from '../components/ui/MeshBackground';
 import Logo from '../components/ui/Logo';
-import { allThemes } from './vCard/Theme';
+import { PRICING_ENABLED } from '../utils/plan';
+import { useUsernameCheck, toUsername } from '../utils/username';
+import { TEMPLATE_META, TemplateThumb, templateMeta, DEFAULT_TEMPLATE_ID } from '../webcard/templates/TemplatePicker';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -24,31 +26,20 @@ const slugify = (s) => s
 
 const springy = { type: 'spring', stiffness: 380, damping: 28 };
 
-const ThemeSwatch = ({ theme, selected, onClick, index }) => (
+const TemplateSwatch = ({ template, name, selected, onClick, index }) => (
   <motion.button
     type="button"
     onClick={onClick}
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay: index * 0.04 }}
-    whileHover={{ y: -3, scale: 1.02 }}
+    transition={{ duration: 0.3, delay: index * 0.03 }}
+    whileHover={{ y: -3 }}
     whileTap={{ scale: 0.96 }}
-    className="relative rounded-xl overflow-hidden text-left transition-shadow"
-    style={{ border: selected ? '2px solid var(--color-brand-600, #9f1c44)' : '2px solid var(--surface-border)' }}
+    className="relative text-left"
+    title={template.name}
   >
-    <div className="h-14 w-full relative" style={{ background: theme.gradient || theme.styles.bg }}>
-      <div
-        className="absolute bottom-1.5 left-2 w-4 h-4 rounded-full border"
-        style={{ background: theme.styles.accent, borderColor: theme.styles.border }}
-      />
-      <div className="absolute bottom-2 left-7 right-2 space-y-1">
-        <div className="h-1.5 rounded-full w-2/3" style={{ background: theme.styles.nameColor, opacity: 0.85 }} />
-        <div className="h-1 rounded-full w-1/3" style={{ background: theme.styles.designationColor, opacity: 0.7 }} />
-      </div>
-    </div>
-    <div className="px-2 py-1.5" style={{ background: 'var(--surface-1)' }}>
-      <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--surface-text)' }}>{theme.text}</p>
-    </div>
+    <TemplateThumb t={{ ...template, badge: null }} name={name || 'Your Name'} selected={selected} />
+    <p className="mt-1 px-0.5 text-[10px] font-semibold truncate" style={{ color: 'var(--surface-text)' }}>{template.name}</p>
     <AnimatePresence>
       {selected && (
         <motion.span
@@ -63,35 +54,19 @@ const ThemeSwatch = ({ theme, selected, onClick, index }) => (
   </motion.button>
 );
 
-const LivePreview = ({ name, designation, photoPreview, theme }) => (
+const SelectedTemplate = ({ template }) => (
   <AnimatePresence mode="wait">
     <motion.div
-      key={theme.id}
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.25 }}
-      className="rounded-2xl p-5 shadow-lg border"
-      style={{ background: theme.gradient || theme.styles.bg, borderColor: theme.styles.border }}
+      key={template.id}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2 }}
+      className="rounded-2xl px-4 py-3 border"
+      style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black shrink-0 overflow-hidden border-2"
-          style={{ borderColor: theme.styles.accent, color: theme.styles.nameColor, background: theme.styles.contactBg }}
-        >
-          {photoPreview
-            ? <img src={photoPreview} alt="" className="w-full h-full object-cover" />
-            : (name?.[0]?.toUpperCase() || 'A')}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold truncate" style={{ color: theme.styles.nameColor }}>{name || 'Your Name'}</p>
-          <p className="text-xs truncate" style={{ color: theme.styles.designationColor }}>{designation || 'Your Designation'}</p>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="h-8 rounded-lg" style={{ background: theme.styles.sectionBg, border: `1px solid ${theme.styles.border}` }} />
-        <div className="h-8 rounded-lg" style={{ background: theme.styles.sectionBg, border: `1px solid ${theme.styles.border}` }} />
-      </div>
+      <p className="text-sm font-bold" style={{ color: 'var(--surface-text)' }}>{template.name}</p>
+      <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>{template.mood} · Best for {template.for.charAt(0).toLowerCase() + template.for.slice(1)}</p>
     </motion.div>
   </AnimatePresence>
 );
@@ -109,8 +84,9 @@ const Onboarding = () => {
 
   const [form, setForm] = useState({ name: '', designation: '', phone: '', slug: '' });
   const [slugTouched, setSlugTouched] = useState(false);
-  const [themeId, setThemeId] = useState('theme-one');
-  const selectedTheme = allThemes.find(t => t.id === themeId) || allThemes[0];
+  const slugCheck = useUsernameCheck(form.slug.replace(/-+$/, ''));
+  const [themeId, setThemeId] = useState(DEFAULT_TEMPLATE_ID);
+  const selectedTemplate = templateMeta(themeId);
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -154,6 +130,10 @@ const Onboarding = () => {
       toast.error('Naam, designation aur username zaroori hai');
       return;
     }
+    if (slugCheck.state === 'bad') {
+      toast.error(slugCheck.msg || 'Yeh username available nahi hai');
+      return;
+    }
     setStep(2);
   };
 
@@ -161,7 +141,7 @@ const Onboarding = () => {
     setSaving(true);
     try {
       const data = new FormData();
-      data.append('username', form.slug);
+      data.append('username', form.slug.replace(/-+$/, ''));
       data.append('title', form.name);
       data.append('designation', form.designation);
       data.append('theme', themeId);
@@ -178,11 +158,12 @@ const Onboarding = () => {
       }
 
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard/plans', { replace: true, state: { justOnboarded: true } }), 1100);
+      // With pricing switched off, new users go straight to their dashboard.
+      setTimeout(() => navigate(PRICING_ENABLED ? '/dashboard/plans' : '/dashboard', { replace: true, state: { justOnboarded: true } }), 1100);
     } catch (err) {
       const msg = err.response?.data?.msg || '';
-      if (err.response?.status === 500 && /duplicate|E11000/i.test(msg)) {
-        toast.error('Yeh username already liya gaya hai, koi aur try karein');
+      if (/username|duplicate|E11000/i.test(msg)) {
+        toast.error(/duplicate|E11000/i.test(msg) ? 'Yeh username already liya gaya hai, koi aur try karein' : msg);
         setStep(1);
       } else {
         toast.error(msg || 'Kuch gadbad hui, dobara try karein');
@@ -228,7 +209,7 @@ const Onboarding = () => {
                     <CheckCircle2 className="w-8 h-8 text-white" />
                   </motion.div>
                   <h2 className="font-display text-xl font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Card ready!</h2>
-                  <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Ab plan choose karte hain...</p>
+                  <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>{PRICING_ENABLED ? 'Ab plan choose karte hain...' : 'Dashboard khul raha hai...'}</p>
                 </motion.div>
               ) : (
                 <motion.div key={`step-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -327,13 +308,18 @@ const Onboarding = () => {
                             <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--surface-text-2)' }} />
                             <input
                               type="text" required value={form.slug}
-                              onChange={(e) => { setSlugTouched(true); setForm(f => ({ ...f, slug: slugify(e.target.value) })); }}
+                              onChange={(e) => { setSlugTouched(true); setForm(f => ({ ...f, slug: toUsername(e.target.value) })); }}
                               placeholder="shubham-khurana"
                               className="w-full pl-10 pr-4 py-2.5 rounded-lg outline-none transition text-sm focus:ring-2 focus:ring-brand-400 fast-transition"
                               style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
                             />
                           </div>
-                          <p className="text-[11px] mt-1" style={{ color: 'var(--surface-text-2)' }}>mycardlink.site/c/{form.slug || 'your-name'}</p>
+                          <p className="text-[11px] mt-1" style={{ color: 'var(--surface-text-2)' }}>{window.location.host}/{form.slug || 'your-name'}</p>
+                          {slugCheck.state !== 'idle' && (
+                            <p className={`text-[11px] mt-0.5 font-semibold ${slugCheck.state === 'ok' ? 'text-emerald-600' : slugCheck.state === 'bad' ? 'text-red-500' : ''}`} style={slugCheck.state === 'checking' ? { color: 'var(--surface-text-2)' } : undefined}>
+                              {slugCheck.state === 'checking' ? 'Checking…' : slugCheck.msg}
+                            </p>
+                          )}
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }} className="pt-2">
@@ -351,11 +337,11 @@ const Onboarding = () => {
                         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                         className="space-y-5"
                       >
-                        <LivePreview name={form.name} designation={form.designation} photoPreview={photoPreview} theme={selectedTheme} />
+                        <SelectedTemplate template={selectedTemplate} />
 
-                        <div className="grid grid-cols-4 gap-2">
-                          {allThemes.map((t, i) => (
-                            <ThemeSwatch key={t.id} theme={t} index={i} selected={themeId === t.id} onClick={() => setThemeId(t.id)} />
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                          {TEMPLATE_META.map((t, i) => (
+                            <TemplateSwatch key={t.id} template={t} name={form.name} index={i} selected={themeId === t.id} onClick={() => setThemeId(t.id)} />
                           ))}
                         </div>
 
@@ -374,7 +360,7 @@ const Onboarding = () => {
                               type="button" onClick={handleSubmit} loading={saving}
                               rightIcon={<ArrowRight className="w-4 h-4" />}
                             >
-                              {saving ? 'Saving...' : 'Continue to Pricing'}
+                              {saving ? 'Saving...' : PRICING_ENABLED ? 'Continue to Pricing' : 'Create my card'}
                             </Button>
                           </div>
                         </div>

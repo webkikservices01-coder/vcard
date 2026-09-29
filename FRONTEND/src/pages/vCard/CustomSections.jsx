@@ -117,7 +117,7 @@ const CustomSections = () => {
 
   const handlePreview = () => {
     setShowPopup(false);
-    if (slug) window.open(`/c/${slug}`, '_blank');
+    if (slug) window.open(`/${slug}`, '_blank');
   };
 
   const handleNext = () => {

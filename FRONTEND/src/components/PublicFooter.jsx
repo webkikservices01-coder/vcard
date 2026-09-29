@@ -22,6 +22,8 @@ export const COMPANY = {
   phoneHref: "tel:+919868698698",
   whatsapp: "919868698698",
   email: "webkikservices01@gmail.com",
+  // Privacy requests and grievances (the address on webkik.co.in's own policy).
+  privacyEmail: "hello@webkik.co.in",
   gstin: "07CXYPK0037Q2ZN",
   gst: "07CXYPK0037Q2ZN",
 };
@@ -38,6 +40,8 @@ const quickLinks = [
   { label: "Terms & Conditions", to: "/terms-conditions" },
   { label: "Refund Policy", to: "/refund-policy" },
   { label: "Cancellation Policy", to: "/cancellation-policy" },
+  { label: "Data Processing Addendum", to: "/data-processing-addendum" },
+  { label: "How our AI uses data", to: "/ai-data-privacy" },
 ];
 
 const socials = [
@@ -58,7 +62,7 @@ function FooterLogo() {
       <span className={`text-xl font-bold tracking-tight transition-colors ${
         isDark ? "text-white" : "text-slate-900"
       }`}>
-        Webcard<span className="text-[#E70C65]">.ai</span>
+        <span className="text-[#E70C65]">Ai</span>cardly
       </span>
     </Link>
   );
@@ -263,7 +267,7 @@ export function PublicFooter() {
         }`}>
           <p>© {new Date().getFullYear()} {COMPANY.name}. All rights reserved.</p>
           <p className="font-semibold text-[#E70C65] z-10">
-            Webcard.ai is a platform by{" "}
+            Aicardly is a platform by{" "}
             <a href="https://webkik.co.in/" target="_blank" rel="noreferrer" className="underline hover:text-slate-900 dark:hover:text-white transition-colors">
               {COMPANY.name}
             </a>

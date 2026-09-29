@@ -10,7 +10,8 @@ import {
 import axios from 'axios';
 import DynamicCyberCard3D from '../components/ui/DynamicCyberCard3D';
 import { useTheme } from '../context/ThemeContext';
-import { allThemes, buildCustomTheme } from './vCard/Theme';
+import { templatePalette } from '../webcard/templates/TemplatePicker';
+import { PRICING_ENABLED } from '../utils/plan';
 
 const PLAN_COLORS = {
   'Free Trial':    { badge: 'border-[#E70C65]/30 bg-[#E70C65]/10 text-[#ff6b9d]', bar: 'bg-gradient-to-r from-[#ff6b9d] to-[#E70C65]' },
@@ -99,23 +100,21 @@ const Dashboard = () => {
   const firstName  = stats?.user?.name?.split(' ')[0] || 'Executive';
   const daysBar    = daysLeft != null ? Math.min(100, Math.round((daysLeft / 365) * 100)) : 0;
 
-  const themeId    = cardData?.theme || 'midnight-tech';
-  const activeThemeObj = themeId === 'custom' && cardData?.customTheme
-    ? buildCustomTheme(cardData.customTheme)
-    : (allThemes.find(t => t.id === themeId) || allThemes[0]);
-
-  const activeStyles = activeThemeObj.styles || {};
-  const laserColor = themeId === 'custom' && cardData?.customTheme?.accent ? cardData.customTheme.accent : (activeThemeObj.laserColor || activeStyles.accent || '#3B82F6');
-  const cardBg = themeId === 'custom' && cardData?.customTheme?.cardBg ? cardData.customTheme.cardBg : (activeStyles.cardBg || '#1E293B');
-  const surfaceBg = themeId === 'custom' && cardData?.customTheme?.bg ? cardData.customTheme.bg : (activeStyles.bg || '#0F172A');
-  const linkBg = themeId === 'custom' && cardData?.customTheme?.linkBg ? cardData.customTheme.linkBg : (activeStyles.contactBg || '#3B82F6');
-  const subText = themeId === 'custom' && cardData?.customTheme?.subTextColor ? cardData.customTheme.subTextColor : '#FFFFFF';
+  // The 3D card takes the colours of the card's WebCard template.
+  const palette    = templatePalette(cardData?.theme);
+  const laserColor = palette.accent;
+  const cardBg     = palette.card;
+  const surfaceBg  = palette.surface;
+  const linkBg     = palette.link;
+  const subText    = palette.sub;
 
   const quickActions = [
     { label: 'Edit Profile', desc: 'Identity, visuals & bio', path: '/dashboard/vcard/profile', icon: Pencil },
     { label: 'Add Offerings', desc: 'Products, services & links', path: '/dashboard/vcard/products', icon: Package },
     { label: 'Branded QR', desc: 'Download smart matrix', path: '/dashboard/vcard/qr', icon: QrCode },
-    { label: 'Upgrade Tier', desc: 'Unlock voice & AI agents', path: '/dashboard/plans', icon: Zap },
+    PRICING_ENABLED
+      ? { label: 'Upgrade Tier', desc: 'Unlock voice & AI agents', path: '/dashboard/plans', icon: Zap }
+      : { label: 'Reels & Highlights', desc: 'Reels, followers & stats', path: '/dashboard/vcard/highlights', icon: Zap },
   ];
 
   const getProfilePicUrl = () => {
@@ -200,7 +199,7 @@ const Dashboard = () => {
 
             <div className="flex items-center gap-2 shrink-0">
               <a
-                href={`/c/${cardSlug}`} 
+                href={`/${cardSlug}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-white text-[#9F1C44] text-xs font-bold px-4 py-2 rounded-xl shadow-md hover:bg-slate-50 transition-all hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
@@ -346,7 +345,7 @@ const Dashboard = () => {
                     Get QR
                   </Link>
                 </div>
-                <a href={`/c/${cardSlug}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#E70C65] hover:underline flex items-center gap-1">
+                <a href={`/${cardSlug}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-[#E70C65] hover:underline flex items-center gap-1">
                   <span>Visit Live</span>
                   <ArrowUpRight className="w-3 h-3" />
                 </a>
@@ -354,6 +353,8 @@ const Dashboard = () => {
             </div>
           </motion.div>
 
+          {/* Membership card hidden while pricing is switched off */}
+          {PRICING_ENABLED && (
           <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }} className="clean-glass rounded-2xl p-4 shadow-md">
             <div className="flex items-center justify-between mb-2">
               <span className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Membership Status</span>
@@ -393,6 +394,7 @@ const Dashboard = () => {
               </div>
             </div>
           </motion.div>
+          )}
         </div>
       </div>
     </div>

@@ -38,6 +38,7 @@ import PublicFooter from "../components/PublicFooter";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import CyberCard3D from "./CyberCard3D";
 import { plans as realPlans } from "../data/plans";
+import { PRICING_ENABLED } from "../utils/plan";
 import { useTheme } from "../context/ThemeContext";
 
 /* -------- Premium AI Cyber-Rose Mesh Background -------- */
@@ -127,7 +128,7 @@ function Logo() {
       <span className={`text-lg font-semibold tracking-tight transition-colors ${
         isDark ? "text-white" : "text-slate-900"
       }`}>
-        Webcard<span className="text-[#E70C65]">.ai</span>
+        <span className="text-[#E70C65]">Ai</span>cardly
       </span>
     </Link>
   );
@@ -204,7 +205,7 @@ const features = [
   { icon: QrCode, title: "Smart QR Codes", desc: "Generate Elegant QR Codes That Route Straight To Your Card. Print, Share, Scan." },
   { icon: BarChart3, title: "Visit Analytics", desc: "Track Profile Views, Link Taps, And Engagement With A Refined, Executive Dashboard." },
   { icon: MessageCircle, title: "WhatsApp Quick Connect", desc: "Let Visitors Reach You On WhatsApp In One Tap, Straight From Your Card." },
-  { icon: Globe, title: "Custom Public Link", desc: "Your Own /C/Yourname Link — Polished, Memorable, And Ready To Share Anywhere." },
+  { icon: Globe, title: "Custom Public Link", desc: "Your Own Aicardly.com/Yourname Link — Polished, Memorable, And Ready To Share Anywhere." },
 ];
 
 const PLAN_ICONS = {
@@ -214,7 +215,7 @@ const PLAN_ICONS = {
 };
 
 const testimonials = [
-  { name: "Aarav Sharma", role: "Founder, Studio Nine", quote: "Webcard.ai Replaced The Paper Cards I Kept Forgetting At Home. Clients Scan The QR And My Whole Profile Is Right There." },
+  { name: "Aarav Sharma", role: "Founder, Studio Nine", quote: "Aicardly Replaced The Paper Cards I Kept Forgetting At Home. Clients Scan The QR And My Whole Profile Is Right There." },
   { name: "Meera Iyer", role: "Real Estate Consultant", quote: "The AI Chat Widget Answers Basic Questions For Leads Even When I Am With Another Client. It Genunely Saves Me Calls." },
   { name: "Rohan Verma", role: "Freelance Designer", quote: "The Themes Feel Premium — It Is The First Digital Card I Have Used That Actually Looks The Way I Wanted My Brand To Feel." },
   { name: "Ananya Deshmukh", role: "Creative Director, Aura Studio", quote: "Clients Are Blown Away By The Live Interaction. My Lead Conversions Jumped 40% In Just Two Weeks." },
@@ -409,7 +410,7 @@ function ShareMock() {
           }`}
         >
           <Globe className="h-3.5 w-3.5 text-[#E70C65]" />
-          <span>mycardlink.site/shubham</span>
+          <span>aicardly.com/shubham</span>
           {copied ? <CheckCheck className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-[#ff6b9d]" />}
         </button>
       </div>
@@ -865,14 +866,14 @@ export function LandingPage() {
               >
                 Features
               </a>
-              <a
+              {PRICING_ENABLED && (<a
                 href="#pricing"
                 className={`nav-link-glow anim-nav-pricing rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
                   isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                 }`}
               >
                 Pricing
-              </a>
+              </a>)}
               <a
                 href="#stories"
                 className={`nav-link-glow anim-nav-stories rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
@@ -932,15 +933,19 @@ export function LandingPage() {
               }`}>
                 <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> The AI-Powered Digital Card Platform
               </span>
-              <h1 className={`mt-5 text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl ${
+              <h1 className={`mt-5 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl ${
                 isDark ? "text-white" : "text-slate-900"
               }`}>
-                Your Network,
-                <br />
                 <span className="bg-gradient-to-r from-[#E70C65] via-[#ff6b9d] to-[#9F1C44] bg-clip-text text-transparent">
-                  Elevated.
-                </span>
+                  AI Digital Business Card
+                </span>{" "}
+                for Modern Professionals
               </h1>
+              <p className={`mt-3 text-xl font-semibold tracking-tight sm:text-2xl ${
+                isDark ? "text-slate-300" : "text-slate-600"
+              }`}>
+                Your Network, Elevated.
+              </p>
 
               <TypewriterText 
                 text="Design A Breathtaking Digital Business Card, Share It With A Single Link Or QR, And Let An AI Assistant Handle The Follow-Ups. Built For Professionals Who Care About First Impressions." 
@@ -982,6 +987,17 @@ export function LandingPage() {
                   <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>Loved By Early Professionals</p>
                 </div>
               </div>
+              <p className={`mt-6 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                A product by{' '}
+                <a
+                  href="https://webkik.co.in/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`font-semibold underline-offset-4 hover:underline ${isDark ? 'text-white' : 'text-slate-900'}`}
+                >
+                  Webkik Services
+                </a>
+              </p>
             </div>
           </div>
 
@@ -1253,6 +1269,7 @@ export function LandingPage() {
       </section>
 
       {/* ── 6. Pricing Section ──────────────────────────────── */}
+      {PRICING_ENABLED && (
       <section id="pricing" className="relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/20 via-[#6366f1]/15 to-[#9F1C44]/20 blur-[140px] opacity-80" />
 
@@ -1380,6 +1397,7 @@ export function LandingPage() {
           })}
         </div>
       </section>
+      )}
 
       {/* ── 7. Stories Section ──────────────────────────────── */}
       <section id="stories" className="relative py-24 overflow-hidden">

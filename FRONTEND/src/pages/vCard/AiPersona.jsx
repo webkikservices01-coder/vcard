@@ -2,7 +2,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink } from 'lucide-react';
+import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink, ShieldCheck, BookOpen, Briefcase, Target, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { hasChatFill } from '../../utils/plan';
 import { getVideoRoomUrl } from '../../utils/videoRoom';
 import GlassCard from '../../components/ui/GlassCard';
@@ -35,7 +36,17 @@ const AiPersona = () => {
     greeting: 'Hi! How can I help you today?',
     aboutText: '',
     faqs: [],
+    knowledge: [],
+    niche: 'general',
+    consultingMode: false,
+    blockedTopics: [],
+    offer: { title: '', cta: '', url: '' },
+    npsEnabled: true,
   });
+  const [niches, setNiches] = useState([]);
+  const [dpaAcceptedAt, setDpaAcceptedAt] = useState(null);
+  const [acceptDpa, setAcceptDpa] = useState(false);
+  const [topicDraft, setTopicDraft] = useState('');
 
   useEffect(() => {
   const load = async () => {
@@ -51,7 +62,9 @@ const AiPersona = () => {
         return null; // Agar persona nahi hai, toh fail hone dein bina poora function roke
       });
 
-      const [statsRes, personaRes] = await Promise.all([fetchStats, fetchPersona]);
+      const fetchNiches = axios.get(`${API}/ai/niches`).catch(() => null);
+      const [statsRes, personaRes, nichesRes] = await Promise.all([fetchStats, fetchPersona, fetchNiches]);
+      if (nichesRes?.data) setNiches(nichesRes.data);
 
       // 1. Set Plan (agar statsRes success hua)
       if (statsRes && statsRes.data) {
@@ -72,7 +85,14 @@ const AiPersona = () => {
             greeting:  personaRes.data.greeting || 'Hi! How can I help you today?',
             aboutText: personaRes.data.aboutText || '',
             faqs:      personaRes.data.faqs     || [],
+            knowledge: personaRes.data.knowledge || [],
+            niche:     personaRes.data.niche || 'general',
+            consultingMode: !!personaRes.data.consultingMode,
+            blockedTopics:  personaRes.data.blockedTopics || [],
+            offer:     { title: '', cta: '', url: '', ...(personaRes.data.offer || {}) },
+            npsEnabled: personaRes.data.npsEnabled !== false,
           });
+          setDpaAcceptedAt(personaRes.data.dpaAcceptedAt || null);
         }
       }
 
@@ -94,6 +114,22 @@ const AiPersona = () => {
     return { ...f, faqs };
   });
 
+  const addKnowledge = () => setForm(f => ({ ...f, knowledge: [...f.knowledge, { title: '', content: '' }] }));
+  const removeKnowledge = (i) => setForm(f => ({ ...f, knowledge: f.knowledge.filter((_, idx) => idx !== i) }));
+  const updateKnowledge = (i, field, val) => setForm(f => {
+    const knowledge = [...f.knowledge];
+    knowledge[i] = { ...knowledge[i], [field]: val };
+    return { ...f, knowledge };
+  });
+  const addTopics = () => {
+    const words = topicDraft.split(',').map(w => w.trim().toLowerCase()).filter(w => w.length >= 3);
+    if (!words.length) return;
+    setForm(f => ({ ...f, blockedTopics: [...new Set([...f.blockedTopics, ...words])].slice(0, 30) }));
+    setTopicDraft('');
+  };
+  const setOffer = (k, v) => setForm(f => ({ ...f, offer: { ...f.offer, [k]: v } }));
+  const niche = niches.find(n => n.id === form.niche) || niches[0];
+
   const videoRoomUrl = cardId ? getVideoRoomUrl(cardId) : null;
   const handleCopyRoomLink = () => {
     if (!videoRoomUrl) return;
@@ -105,7 +141,8 @@ const AiPersona = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.post(`${API}/ai/persona`, form, { headers: headers() });
+      const res = await axios.post(`${API}/ai/persona`, { ...form, acceptDpa }, { headers: headers() });
+      if (res.data?.persona?.dpaAcceptedAt) setDpaAcceptedAt(res.data.persona.dpaAcceptedAt);
       toast.success('AI Persona saved!');
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to save');
@@ -254,6 +291,38 @@ const AiPersona = () => {
         </div>
       </GlassCard>
 
+      {/* Profession preset (constants/niches.json on the server) */}
+      <GlassCard {...fadeUp(0.09)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Briefcase className="w-4 h-4 text-brand-600" />Your profession</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>Tunes how the AI talks, what it must never do, the suggested questions and the default final offer.</p>
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {niches.map(n => (
+            <button
+              key={n.id}
+              type="button"
+              onClick={() => setForm(f => ({ ...f, niche: n.id }))}
+              className={`rounded-xl border-2 px-3 py-2 text-left text-xs font-semibold fast-transition ${form.niche === n.id ? 'border-brand-600 bg-brand-600 text-white' : 'hover:border-brand-400'}`}
+              style={form.niche !== n.id ? { borderColor: 'var(--surface-border)', color: 'var(--surface-text)' } : undefined}
+            >
+              {n.label}
+            </button>
+          ))}
+        </div>
+        {niche && (niche.disclaimer || niche.blocked.length > 0) && (
+          <div className="mt-3 rounded-lg px-3 py-2.5 text-xs space-y-1" style={{ background: 'var(--surface-2)', color: 'var(--surface-text-2)' }}>
+            {niche.disclaimer && <p><strong style={{ color: 'var(--surface-text)' }}>Shown to visitors:</strong> {niche.disclaimer}</p>}
+            {niche.blocked.length > 0 && <p><strong style={{ color: 'var(--surface-text)' }}>AI will refuse:</strong> {niche.blocked.join(' · ')}</p>}
+          </div>
+        )}
+        <div className="mt-4 flex items-center justify-between gap-4 rounded-xl px-3 py-3" style={{ background: 'var(--surface-2)' }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Consulting mode</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>The AI asks 1–2 questions to understand the visitor's need, recommends your best-fit service, then invites them to your final offer.</p>
+          </div>
+          <Toggle checked={form.consultingMode} onChange={(val) => setForm(f => ({ ...f, consultingMode: val }))} aria-label="Consulting mode" />
+        </div>
+      </GlassCard>
+
       <GlassCard {...fadeUp(0.1)}>
         {/* AI Name */}
         <div className="p-5" style={{ borderBottom: '1px solid var(--surface-border)' }}>
@@ -378,6 +447,150 @@ const AiPersona = () => {
             ))}
           </AnimatePresence>
         </div>
+      </GlassCard>
+
+      {/* Knowledge base */}
+      <GlassCard {...fadeUp(0.16)} className="overflow-hidden">
+        <div className="px-5 py-4 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-2)' }}>
+          <div>
+            <p className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><BookOpen className="w-4 h-4 text-brand-600" />Knowledge base</p>
+            <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Longer notes the AI answers from: packages, process, policies, fees, areas served.</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={addKnowledge} leftIcon={<Plus className="w-3.5 h-3.5" />}>Add note</Button>
+        </div>
+        {form.knowledge.length === 0 && (
+          <p className="text-xs text-center py-6" style={{ color: 'var(--surface-text-2)' }}>No notes yet. Add up to 20.</p>
+        )}
+        {form.knowledge.map((k, i) => (
+          <div key={i} className="p-5 space-y-3" style={{ borderTop: i === 0 ? 'none' : '1px solid var(--surface-border)' }}>
+            <div className="flex items-center gap-2">
+              <input
+                value={k.title}
+                onChange={e => updateKnowledge(i, 'title', e.target.value)}
+                maxLength={120}
+                placeholder="Title (e.g. Consultation process)"
+                className="flex-1 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+                style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+              />
+              <IconButton variant="danger" title="Remove note" onClick={() => removeKnowledge(i)}><Trash2 className="w-4 h-4" /></IconButton>
+            </div>
+            <textarea
+              value={k.content}
+              onChange={e => updateKnowledge(i, 'content', e.target.value)}
+              maxLength={4000}
+              rows={4}
+              placeholder="Write what the AI should know. Plain sentences work best."
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-y focus:ring-2 focus:ring-brand-400 fast-transition"
+              style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+            />
+          </div>
+        ))}
+      </GlassCard>
+
+      {/* Guardrails */}
+      <GlassCard {...fadeUp(0.17)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><ShieldCheck className="w-4 h-4 text-brand-600" />Guardrails</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>Always on, for every card:</p>
+        <div className="mt-2 grid sm:grid-cols-2 gap-2 text-xs" style={{ color: 'var(--surface-text-2)' }}>
+          {[
+            'Answers only about you and your card',
+            'Ignores "ignore your instructions" tricks',
+            'Never reveals its hidden instructions',
+            'Stops visitors sharing Aadhaar, PAN or card numbers',
+            'Self-harm messages get helpline numbers (Tele-MANAS 14416)',
+            'No medical, legal or money advice for a visitor\'s own case',
+            'Visitors must accept a notice before chatting',
+            'Message limits per visitor to stop abuse',
+          ].map(item => <div key={item} className="flex gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--surface-2)' }}><Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />{item}</div>)}
+        </div>
+        <label className="block text-xs font-semibold mt-4 mb-2 uppercase tracking-wide" style={{ color: 'var(--surface-text)' }}>Your blocked topics</label>
+        <div className="flex gap-2">
+          <input
+            value={topicDraft}
+            onChange={e => setTopicDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTopics(); } }}
+            placeholder="e.g. discount, competitor name, politics"
+            className="flex-1 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+            style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+          />
+          <Button variant="secondary" size="sm" onClick={addTopics} leftIcon={<Plus className="w-3.5 h-3.5" />}>Add</Button>
+        </div>
+        <p className="text-xs mt-1.5" style={{ color: 'var(--surface-text-2)' }}>If a visitor's message (or the AI's reply) contains one of these words, the AI politely refuses. Separate with commas.</p>
+        {form.blockedTopics.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {form.blockedTopics.map(w => (
+              <span key={w} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: 'var(--surface-2)', color: 'var(--surface-text)' }}>
+                {w}
+                <button type="button" aria-label={`Remove ${w}`} onClick={() => setForm(f => ({ ...f, blockedTopics: f.blockedTopics.filter(x => x !== w) }))} className="opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
+              </span>
+            ))}
+          </div>
+        )}
+      </GlassCard>
+
+      {/* Funnel end: final offer + NPS */}
+      <GlassCard {...fadeUp(0.18)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Target className="w-4 h-4 text-brand-600" />Final offer & feedback</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>After a couple of questions, the chat shows your offer as a button. Then it asks the visitor for a 0–10 rating (NPS). Results are on the AI Insights page.</p>
+        <div className="mt-3 grid sm:grid-cols-2 gap-3">
+          <input
+            value={form.offer.title}
+            onChange={e => setOffer('title', e.target.value)}
+            maxLength={80}
+            placeholder={niche?.offer?.title ? `Offer (default: ${niche.offer.title})` : 'Offer, e.g. Free 15-min consultation'}
+            className="rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+            style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+          />
+          <input
+            value={form.offer.cta}
+            onChange={e => setOffer('cta', e.target.value)}
+            maxLength={40}
+            placeholder="Button text, e.g. Book now"
+            className="rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+            style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+          />
+          <input
+            value={form.offer.url}
+            onChange={e => setOffer('url', e.target.value)}
+            maxLength={500}
+            placeholder="Link (booking page, Calendly, payment link). Empty = your WhatsApp"
+            className="sm:col-span-2 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+            style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+          />
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-4 rounded-xl px-3 py-3" style={{ background: 'var(--surface-2)' }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Ask for a rating (NPS)</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>"How likely are you to recommend me?" 0–10, with an optional comment.</p>
+          </div>
+          <Toggle checked={form.npsEnabled} onChange={(val) => setForm(f => ({ ...f, npsEnabled: val }))} aria-label="Ask for NPS rating" />
+        </div>
+      </GlassCard>
+
+      {/* Data privacy + Data Processing Addendum */}
+      <GlassCard {...fadeUp(0.19)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Lock className="w-4 h-4 text-brand-600" />Data privacy (DPDP Act)</p>
+        <ul className="mt-2 space-y-1.5 text-xs list-disc pl-4" style={{ color: 'var(--surface-text-2)' }}>
+          <li>Replies come from Anthropic's Claude model through its business API. Under Anthropic's commercial terms, API conversations are not used to train its models.</li>
+          <li>The AI only sees your published card, the notes above and the current chat. It has no access to your dashboard, enquiries or other visitors.</li>
+          <li>We don't store chat text. We keep only counts, the offer click and the rating, for your insights.</li>
+          <li>Visitors accept a notice before their first message, and a consent tick before sending an enquiry.</li>
+        </ul>
+        <p className="text-xs mt-2" style={{ color: 'var(--surface-text-2)' }}>
+          Details: <Link to="/ai-data-privacy" target="_blank" className="underline">How the AI uses data</Link> · <Link to="/privacy-policy" target="_blank" className="underline">Privacy Policy</Link>
+        </p>
+        {dpaAcceptedAt ? (
+          <p className="mt-3 text-xs font-semibold text-emerald-500 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" /> Data Processing Addendum accepted on {new Date(dpaAcceptedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </p>
+        ) : (
+          <label className="mt-3 flex items-start gap-2.5 text-xs cursor-pointer rounded-xl px-3 py-3" style={{ background: 'var(--surface-2)', color: 'var(--surface-text)' }}>
+            <input type="checkbox" checked={acceptDpa} onChange={e => setAcceptDpa(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#E70C65] cursor-pointer" />
+            <span>
+              I accept the <Link to="/data-processing-addendum" target="_blank" className="font-semibold underline">Data Processing Addendum</Link>. I am responsible for the visitor data my card collects, and Aicardly processes it on my behalf. Required to turn the AI on.
+            </span>
+          </label>
+        )}
       </GlassCard>
 
       {/* How it works */}

@@ -16,15 +16,18 @@ export const GREETING_SESSION_KEY = 'webcard_platform_chat_greeting_shown';
 // Single source of truth for Cardy's opening line — used for BOTH the outside
 // greeting bubble and the welcome message inside the opened panel, so they
 // read the same instead of two different messages.
-export const WELCOME_TEXT = "Hi, I'm Cardy from Webcard.ai 👋 We help you build a digital business card with AI chat, voice, and WhatsApp features built in. How can I help you today?";
+export const WELCOME_TEXT = "Hi, I'm Cardy from Aicardly 👋 We help you build a digital business card with AI chat, voice, and WhatsApp features built in. How can I help you today?";
 
-export const WHATSAPP_HREF = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent("Hi Webcard.ai team, I'd like to know more about Webcard.ai.")}`;
+export const WHATSAPP_HREF = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent("Hi Aicardly team, I'd like to know more about Aicardly.")}`;
 // Calendly booking page for demo calls. Override with VITE_BOOKING_URL; set it empty to hide the button.
 export const BOOKING_HREF = import.meta.env.VITE_BOOKING_URL ?? 'https://calendly.com/webkikservices';
 export const PRICING_HREF = '/#pricing';
 
+// Hidden from the chat while pricing is switched off.
+export const PLAN_CHIP = "What's included in each plan?";
+
 export const FAQ_CHIPS = [
-  'What services does Webcard.ai offer?',
+  'What services does Aicardly offer?',
   "What's included in each plan?",
   'How do I create my card?',
   'What does the AI chat widget do?',

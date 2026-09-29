@@ -8,7 +8,7 @@ const H2 = ({ children }) => (
 const CancellationPolicy = () => (
   <LegalLayout title="Cancellation Policy" updated="18 July 2026">
     <p>
-      This Cancellation Policy explains how you can cancel your Webcard.ai subscription, operated by{' '}
+      This Cancellation Policy explains how you can cancel your Aicardly subscription, operated by{' '}
       <strong>{COMPANY.name}</strong>.
     </p>
 

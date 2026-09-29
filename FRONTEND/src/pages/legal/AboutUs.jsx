@@ -29,7 +29,7 @@ const AboutUs = () => (
     <section className="relative z-10 mx-auto max-w-5xl px-6 pt-12 pb-20 text-center">
       <motion.span initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="badge-glass text-crimson-700">
         <span className="h-1.5 w-1.5 rounded-full bg-magenta-500 animate-pulse-glow" />
-        About Webcard.ai
+        About Aicardly
       </motion.span>
       <motion.h1
         initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
@@ -43,7 +43,7 @@ const AboutUs = () => (
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.16 }}
         className="mt-6 max-w-2xl mx-auto text-lg leading-relaxed" style={{ color: 'var(--surface-text-2)' }}
       >
-        Webcard.ai is a digital business card platform built by <strong>{COMPANY.name}</strong> — designed for
+        Aicardly is a digital business card platform built by <strong>{COMPANY.name}</strong> — designed for
         professionals who want their first impression to feel as sharp online as it does in person.
       </motion.p>
 
@@ -63,7 +63,7 @@ const AboutUs = () => (
           <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--surface-text)' }}>Our story</h2>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--surface-text-2)' }}>
             Paper business cards get lost, forgotten, and thrown away — but the exchange that matters,
-            the actual introduction, still happens face to face every day. We built Webcard.ai to keep
+            the actual introduction, still happens face to face every day. We built Aicardly to keep
             that human moment while fixing everything about it that's inconvenient: your card is now a
             link and a QR code, always up to date, and can answer questions for you when you're not
             around, through an AI assistant trained on your own profile.

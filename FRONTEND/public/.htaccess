@@ -7,7 +7,15 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Serve real files/folders as-is; send every other route to index.html
+# Every page of the React app (homepage included) is served through og.php, which puts that
+# page's own canonical, title, description and Open Graph / Twitter tags into the HTML.
+RewriteRule ^$ og.php [L,QSA]
+RewriteRule ^index\.html$ og.php [L,QSA]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !\.[A-Za-z0-9]{2,5}$
+RewriteRule ^ og.php [L,QSA]
+
+# Serve real files/folders as-is; anything else falls back to index.html
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]

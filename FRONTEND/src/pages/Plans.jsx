@@ -333,7 +333,7 @@ const Plans = () => {
         <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--surface-text-2)' }} />
         <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>
           Secure payments powered by <strong>Cashfree</strong>. Cancel anytime.
-          For enterprise or agency pricing, <a href="mailto:support@mycardlink.site" className="font-semibold text-brand-500 hover:underline">contact us</a>.
+          For enterprise or agency pricing, <a href="mailto:support@aicardly.com" className="font-semibold text-brand-500 hover:underline">contact us</a>.
         </p>
       </div>
 

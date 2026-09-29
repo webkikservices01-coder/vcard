@@ -7,6 +7,7 @@ import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
+import PasswordEye from '../components/PasswordEye';
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.94, y: 15 },
@@ -57,9 +58,10 @@ export const Register = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '', accept: false });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -73,10 +75,14 @@ export const Register = () => {
       setError('Password must be at least 6 characters.'); 
       return; 
     }
+    if (!form.accept) {
+      setError('Please accept the Terms & Conditions and Privacy Policy.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-        name: form.name, email: form.email, phone: form.phone, password: form.password
+        name: form.name, email: form.email, phone: form.phone, password: form.password, acceptTerms: true
       });
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
@@ -273,16 +279,17 @@ export const Register = () => {
                     }`} />
                     <input
                       required
-                      type="password"
+                      type={showPwd ? 'text' : 'password'}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       placeholder="Min. 6 chars"
-                      className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
+                      className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
                         isDark 
                           ? 'border-white/10 bg-white/[0.04] text-white placeholder-slate-500 focus:border-[#E70C65] focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(231,12,101,0.3)]' 
                           : 'border-slate-200 bg-slate-50/70 text-slate-900 placeholder-slate-400 focus:border-[#E70C65] focus:bg-white focus:shadow-[0_0_15px_rgba(231,12,101,0.15)]'
                       }`}
                     />
+                    <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className={isDark ? 'text-slate-300' : 'text-slate-500'} />
                   </div>
                 </motion.div>
 
@@ -297,19 +304,37 @@ export const Register = () => {
                     }`} />
                     <input
                       required
-                      type="password"
+                      type={showPwd ? 'text' : 'password'}
                       value={form.confirm}
                       onChange={(e) => setForm({ ...form, confirm: e.target.value })}
                       placeholder="••••••••"
-                      className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
+                      className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
                         isDark 
                           ? 'border-white/10 bg-white/[0.04] text-white placeholder-slate-500 focus:border-[#E70C65] focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(231,12,101,0.3)]' 
                           : 'border-slate-200 bg-slate-50/70 text-slate-900 placeholder-slate-400 focus:border-[#E70C65] focus:bg-white focus:shadow-[0_0_15px_rgba(231,12,101,0.15)]'
                       }`}
                     />
+                    <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className={isDark ? 'text-slate-300' : 'text-slate-500'} />
                   </div>
                 </motion.div>
               </div>
+
+              {/* DPDP consent */}
+              <label className={`flex items-start gap-2.5 text-[11px] sm:text-xs leading-relaxed cursor-pointer ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                <input
+                  type="checkbox"
+                  checked={form.accept}
+                  onChange={(e) => setForm({ ...form, accept: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#E70C65] cursor-pointer"
+                />
+                <span>
+                  I agree to the{' '}
+                  <Link to="/terms-conditions" target="_blank" className="font-semibold text-[#E70C65] hover:underline">Terms &amp; Conditions</Link>
+                  {' '}and{' '}
+                  <Link to="/privacy-policy" target="_blank" className="font-semibold text-[#E70C65] hover:underline">Privacy Policy</Link>
+                  , and consent to Aicardly processing my details to create and run my card.
+                </span>
+              </label>
 
               {/* Error Notification */}
               <AnimatePresence>

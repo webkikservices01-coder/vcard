@@ -230,7 +230,7 @@ const ContactDetails = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/c/${slug}`, '_blank');
+      window.open(`/${slug}`, '_blank');
     } else {
       alert('Profile URL not found! Please create a profile first.');
     }

@@ -140,7 +140,7 @@ const ReorderSections = () => {
 
   const handlePreview = () => {
     setShowPopup(false);
-    if (slug) window.open(`/c/${slug}`, '_blank');
+    if (slug) window.open(`/${slug}`, '_blank');
     else toast.error('Profile not found!');
   };
 

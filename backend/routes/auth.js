@@ -2,12 +2,15 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { POLICY_VERSION } = require('../constants/legal');
 const router = express.Router();
 
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, phone, password } = req.body;
+        const { name, email, phone, password, acceptTerms } = req.body;
+        // DPDP: record that the user agreed to the Terms and Privacy Policy.
+        if (acceptTerms !== true) return res.status(400).json({ msg: 'Please accept the Terms & Conditions and Privacy Policy.' });
 
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'User already exists with this email' });
@@ -20,7 +23,9 @@ router.post('/register', async (req, res) => {
             lastName: nameParts.slice(1).join(' ') || '',
             email,
             phone: phone || '',
-            password: hashed
+            password: hashed,
+            consentAt: new Date(),
+            consentVersion: POLICY_VERSION
         });
         await user.save();
 

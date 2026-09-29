@@ -112,7 +112,7 @@ const AdminDashboard = () => {
                   <span className="text-xs font-bold w-4" style={{ color: 'var(--surface-text-2)' }}>#{i+1}</span>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>{c.personalInfo?.name || 'Unnamed'}</p>
-                    <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>/c/{c.username} · {c.userId?.plan || '—'}</p>
+                    <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>/{c.username} · {c.userId?.plan || '—'}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-1" style={{ color: 'var(--surface-text-2)' }}>

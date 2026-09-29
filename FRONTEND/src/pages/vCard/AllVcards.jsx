@@ -9,7 +9,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import MeshBackground from '../../components/ui/MeshBackground';
-import { allThemes, buildCustomTheme } from './Theme';
+import { templatePalette } from '../../webcard/templates/TemplatePicker';
 import { fadeUp, staggerContainer, staggerItem } from '../../utils/motion';
 
 function getInitials(fullName) {
@@ -150,21 +150,10 @@ const LiveCardTile2D = ({ card, onDelete }) => {
   const slug = card.username || "user";
   const viewCount = card.viewCount || 0;
 
-  const themeId = card.theme || 'midnight-tech';
-  const theme = themeId === 'custom' && card.customTheme
-    ? buildCustomTheme(card.customTheme)
-    : (allThemes.find(t => t.id === themeId) || allThemes[0]);
-  
-  const s = theme.styles;
-  const themeColor = themeId === 'custom' && card.customTheme?.accent ? card.customTheme.accent : (theme.laserColor || s.accent || '#E70C65');
-  
-  const linkBgColor = themeId === 'custom' && card.customTheme?.linkBg 
-    ? card.customTheme.linkBg 
-    : (s.contactBg || themeColor);
-
-  const subText = themeId === 'custom' && card.customTheme?.subTextColor 
-    ? card.customTheme.subTextColor 
-    : (s.subTextColor || '#ff80ab');
+  // This card face is always dark, so it takes only the template's accent colour.
+  const themeColor = templatePalette(card.theme).accent;
+  const linkBgColor = themeColor;
+  const subText = '#E2E8F0';
 
   let photoUrl = personalInfo.profilePic || null;
   if (photoUrl && !photoUrl.startsWith('http') && !photoUrl.startsWith('blob:') && !photoUrl.startsWith('data:')) {
@@ -179,7 +168,7 @@ const LiveCardTile2D = ({ card, onDelete }) => {
   }
 
   const initials = getInitials(name);
-  const cardUrl = `${window.location.origin}/c/${slug}`;
+  const cardUrl = `${window.location.origin}/${slug}`;
 
   return (
     <motion.div
@@ -229,7 +218,7 @@ const LiveCardTile2D = ({ card, onDelete }) => {
             className="px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow-md backdrop-blur-md border border-white/30"
             style={{ background: linkBgColor }}
           >
-            Webcard.ai
+            Aicardly
           </div>
         </div>
 
@@ -241,7 +230,7 @@ const LiveCardTile2D = ({ card, onDelete }) => {
             {designation.toUpperCase()}
           </p>
           <p className="text-[11px] font-medium tracking-tight truncate opacity-90" style={{ color: subText }}>
-            mycardlink.site/{slug}
+            aicardly.com/{slug}
           </p>
         </div>
 
@@ -266,7 +255,7 @@ const LiveCardTile2D = ({ card, onDelete }) => {
 
         <div className="flex items-center space-x-2">
           <a
-            href={`/c/${slug}`}
+            href={`/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-all shadow-md cursor-pointer"

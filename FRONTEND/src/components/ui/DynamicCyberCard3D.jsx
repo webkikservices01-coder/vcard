@@ -25,7 +25,7 @@ export default function DynamicCyberCard3D({
   const displayTitle = name ? name : "SHAHID";
   const displayRole = designation ? designation : "webkik";
   const displaySubName = name ? name : "SHAHID";
-  const cardUrl = slug ? `${window.location.origin}/c/${slug}` : window.location.href;
+  const cardUrl = slug ? `${window.location.origin}/${slug}` : window.location.href;
   const initials = getInitials(name);
 
   const avatarSrc = photoUrl || "/profile.png";
@@ -116,7 +116,7 @@ export default function DynamicCyberCard3D({
                 className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider text-white shadow-md backdrop-blur-md border border-white/20"
                 style={{ background: linkBgColor }}
               >
-                Webcard.ai
+                Aicardly
               </div>
             </div>
 
@@ -128,7 +128,7 @@ export default function DynamicCyberCard3D({
                 {displayRole}
               </p>
               <p className="text-[8px] font-semibold tracking-tight truncate drop-shadow-xs" style={{ color: subTextColor }}>
-                {displaySubName} • mycardlink.site/{slug}
+                {displaySubName} • aicardly.com/{slug}
               </p>
             </div>
 

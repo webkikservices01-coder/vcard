@@ -26,3 +26,9 @@ export const describeMedia = (item) => {
   if (isDirectVideo(item.url)) return { kind: 'file', src: getImageUrl(item.url), thumb: item.thumbnail ? getImageUrl(item.thumbnail) : null };
   return { kind: 'external', href: item.url, thumb: item.thumbnail ? getImageUrl(item.thumbnail) : null };
 };
+
+// Screenshot of a project's website (WordPress mShots), used when no cover image was uploaded.
+export const siteShot = (url = '') => {
+  if (!/^https?:\/\//i.test(url) || /\.pdf($|[?#])/i.test(url) || getYoutubeId(url)) return null;
+  return `https://s0.wp.com/mshots/v1/${encodeURIComponent(url)}?w=800&h=600`;
+};

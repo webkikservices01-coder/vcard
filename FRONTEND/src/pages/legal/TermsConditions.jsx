@@ -8,7 +8,7 @@ const H2 = ({ children }) => (
 const TermsConditions = () => (
   <LegalLayout title="Terms & Conditions" updated="18 July 2026">
     <p>
-      These Terms & Conditions ("Terms") govern your access to and use of Webcard.ai, the digital
+      These Terms & Conditions ("Terms") govern your access to and use of Aicardly, the digital
       business card platform operated by <strong>{COMPANY.name}</strong> ("Company", "We", "Us", "Our").
       By creating an account, subscribing to a plan, or using any part of the Service, you agree to
       be bound by these Terms.
@@ -16,7 +16,7 @@ const TermsConditions = () => (
 
     <H2>1. The Service</H2>
     <p>
-      Webcard.ai lets you create, customize, and share a digital business card (a "vCard"), along with
+      Aicardly lets you create, customize, and share a digital business card (a "vCard"), along with
       optional AI features such as an AI chat widget and voice assistant on plans that include them.
       Features available to your account depend on the plan you are subscribed to.
     </p>

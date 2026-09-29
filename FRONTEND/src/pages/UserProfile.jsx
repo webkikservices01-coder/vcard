@@ -7,6 +7,7 @@ import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
+import PasswordEye from '../components/PasswordEye';
 
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
@@ -17,6 +18,7 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -159,25 +161,31 @@ const UserProfile = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>New Password</label>
-            <input
-              type="password"
+            <div className="relative">
+              <input
+              type={showPwd ? 'text' : 'password'}
               value={passwords.password}
               onChange={e => setPasswords({...passwords, password: e.target.value})}
-              className="w-full px-4 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+              className="w-full pl-4 pr-11 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
               style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
               placeholder="Min. 6 characters"
             />
+              <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className="text-[color:var(--surface-text)]" />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Confirm New Password</label>
-            <input
-              type="password"
+            <div className="relative">
+              <input
+              type={showPwd ? 'text' : 'password'}
               value={passwords.confirm}
               onChange={e => setPasswords({...passwords, confirm: e.target.value})}
-              className="w-full px-4 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+              className="w-full pl-4 pr-11 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
               style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
               placeholder="••••••••"
             />
+              <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className="text-[color:var(--surface-text)]" />
+            </div>
           </div>
         </div>
         <div className="flex justify-end mt-5">

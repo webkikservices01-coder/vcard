@@ -26,11 +26,15 @@ if (useCloudinary) {
 
     storage = new CloudinaryStorage({
         cloudinary,
-        params: async (req, file) => ({
-            folder: process.env.CLOUDINARY_FOLDER || 'webcard',
-            resource_type: 'auto',
-            public_id: `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1E9)}`,
-        }),
+        params: async (req, file) => {
+            // PDFs go up as "raw": Cloudinary blocks PDF delivery from the image pipeline by default.
+            const isPdf = file.mimetype === 'application/pdf';
+            return {
+                folder: process.env.CLOUDINARY_FOLDER || 'webcard',
+                resource_type: isPdf ? 'raw' : 'auto',
+                public_id: `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1E9)}${isPdf ? '.pdf' : ''}`,
+            };
+        },
     });
 } else {
     if (process.env.VERCEL) {
@@ -58,7 +62,16 @@ if (useCloudinary) {
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
+    limits: { fileSize: 10 * 1024 * 1024 },
+    // The "file" field (portfolio attachments) only takes PDFs; reject others before they are stored.
+    fileFilter: (req, file, cb) => {
+        if (file.fieldname === 'file' && file.mimetype !== 'application/pdf') {
+            const err = new Error('Only PDF files can be attached.');
+            err.status = 400;
+            return cb(err);
+        }
+        cb(null, true);
+    },
 });
 
 // Cloudinary gives a full https URL in file.path; disk uploads are served from /uploads.

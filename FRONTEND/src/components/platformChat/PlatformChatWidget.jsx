@@ -13,8 +13,9 @@ import LeadForm from './LeadForm';
 import {
   ALLOWED_PATHS, GREETING_DELAY_MS, GREETING_SESSION_KEY, WELCOME_TEXT,
   WHATSAPP_HREF, BOOKING_HREF, PRICING_HREF, FAQ_CHIPS, FLOW_TRIGGER_CHIP, FLOW_STEPS,
-  recommendFromAnswers, getKeyHighlights,
+  recommendFromAnswers, getKeyHighlights, PLAN_CHIP,
 } from './config';
+import { PRICING_ENABLED } from '../../utils/plan';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const PULSE_SEEN_KEY = 'webcard_platform_chat_pulsed';
@@ -221,7 +222,7 @@ const PlatformChatWidget = () => {
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Webcard.ai assistant chat"
+            aria-label="Aicardly assistant chat"
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.95 }}
@@ -245,7 +246,7 @@ const PlatformChatWidget = () => {
                     <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-bold leading-none text-white">Cardy · Webcard.ai Assistant</p>
+                    <p className="text-[13px] font-bold leading-none text-white">Cardy · Aicardly Assistant</p>
                     <p className="mt-1 text-[11px] text-white/75">{isBusy ? 'Typing…' : 'Online'}</p>
                   </div>
                 </div>
@@ -334,6 +335,7 @@ const PlatformChatWidget = () => {
                       <Sparkles className="h-3 w-3 text-crimson-500" /> Quick questions
                     </p>
                     <div className="flex flex-col gap-2">
+                      {PRICING_ENABLED && (
                       <motion.button
                         initial={reducedMotion ? false : { opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -347,8 +349,9 @@ const PlatformChatWidget = () => {
                         <span className="flex-1 leading-snug">Help me pick the right plan</span>
                         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </motion.button>
-                      {FAQ_CHIPS.filter(c => c !== FLOW_TRIGGER_CHIP).map((chip, i) => {
-                        const Icon = CHIP_ICONS[i] || Sparkles;
+                      )}
+                      {FAQ_CHIPS.filter(c => c !== FLOW_TRIGGER_CHIP && (PRICING_ENABLED || c !== PLAN_CHIP)).map((chip, i) => {
+                        const Icon = CHIP_ICONS[FAQ_CHIPS.indexOf(chip)] || Sparkles;
                         return (
                           <motion.button
                             key={chip}
@@ -445,7 +448,7 @@ const PlatformChatWidget = () => {
           variant="bare"
           size="lg"
           onClick={() => { setIsOpen(o => !o); setShowGreeting(false); }}
-          title={isOpen ? 'Close Webcard.ai assistant' : 'Open Webcard.ai assistant'}
+          title={isOpen ? 'Close Aicardly assistant' : 'Open Aicardly assistant'}
           className="relative !h-14 !w-14 text-white shadow-lg"
           style={{ backgroundImage: 'var(--background-image-gradient-crimson)', boxShadow: 'var(--shadow-glow-crimson-lg)' }}
           animate={shouldPulse && !isOpen && !reducedMotion ? { scale: [1, 1.08, 1] } : { scale: 1 }}

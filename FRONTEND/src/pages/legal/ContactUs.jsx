@@ -21,13 +21,13 @@ const ContactUs = () => {
     // No dedicated public "contact us" backend endpoint exists yet — send via the
     // visitor's own email client, pre-filled, so the message reaches us reliably.
     const body = `Name: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\n\n${form.message}`;
-    const mailto = `mailto:${COMPANY.email}?subject=${encodeURIComponent(form.subject || 'Contact from Webcard.ai')}&body=${encodeURIComponent(body)}`;
+    const mailto = `mailto:${COMPANY.email}?subject=${encodeURIComponent(form.subject || 'Contact from Aicardly')}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     setSent(true);
     setTimeout(() => setSent(false), 4000);
   };
 
-  const waLink = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent('Hi! I have a question about Webcard.ai.')}`;
+  const waLink = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent('Hi! I have a question about Aicardly.')}`;
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(COMPANY.addressLines.join(' '))}&output=embed`;
 
   return (
