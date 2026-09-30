@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -30,7 +31,67 @@ function homeSchema() {
   }
 }
 
+// The homepage is a lazy chunk, so normally the browser only asks for it after the main bundle
+// has run. On "/" this starts downloading it (and the chunks it imports) together with the main
+// bundle, which brings the first paint of the hero forward on phones.
+function preloadHomeChunk() {
+  return {
+    name: 'aicardly-preload-home',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.bundle) return html
+        const chunks = Object.values(ctx.bundle).filter((c) => c.type === 'chunk')
+        const home = chunks.find((c) => c.facadeModuleId && /src[\\/]pages[\\/]LandingPage\.jsx$/.test(c.facadeModuleId))
+        if (!home) return html
+        const entry = chunks.find((c) => c.isEntry)
+        const skip = new Set([entry?.fileName, ...(entry?.imports || [])])
+        const files = []
+        const walk = (name) => {
+          if (skip.has(name) || files.includes(name)) return
+          files.push(name)
+          ;(ctx.bundle[name]?.imports || []).forEach(walk)
+        }
+        walk(home.fileName)
+        const script = `<script>if(location.pathname==='/'){${JSON.stringify(files.map((f) => '/' + f))}.forEach(function(h){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=h;document.head.appendChild(l);});}</script>`
+        // The two self-hosted latin font files (src/index.css) start downloading with the HTML
+        // instead of after the CSS has been parsed.
+        const fonts = Object.values(ctx.bundle)
+          .filter((a) => a.type === 'asset' && /(inter|plus-jakarta-sans)-latin-wght-normal/.test((a.names || [a.name]).join(' ')))
+          .map((a) => `<link rel="preload" as="font" type="font/woff2" crossorigin href="/${a.fileName}" />`)
+        return html.replace('</head>', `    ${[...fonts, script].join('\n    ')}\n  </head>`)
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), homeSchema()],
-})
+export default defineConfig(({ command }) => ({
+  plugins: [react(), tailwindcss(), homeSchema(), preloadHomeChunk()],
+  // react-router's package points bundlers at its development build by default (~95 KB bigger,
+  // with dev-only checks); production builds use its production files instead.
+  resolve: {
+    alias:
+      command === 'build'
+        ? [
+            { find: /^react-router$/, replacement: fileURLToPath(new URL('./node_modules/react-router/dist/production/index.mjs', import.meta.url)) },
+            { find: /^react-router\/dom$/, replacement: fileURLToPath(new URL('./node_modules/react-router/dist/production/dom-export.mjs', import.meta.url)) },
+          ]
+        : [],
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Without these groups every icon became its own tiny file, so a page needed ~50 requests;
+        // on a phone each one costs a round trip before the page can show.
+        codeSplitting: {
+          groups: [
+            { name: 'icons', test: /node_modules[\\/](lucide-react|react-icons)[\\/]/ },
+            { name: 'motion', test: /node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
+}))

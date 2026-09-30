@@ -4,6 +4,8 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
+    // 'dark' when prerendering the homepage at build time (no browser storage there).
+    if (typeof window === 'undefined') return 'dark';
     return localStorage.getItem('app-theme') || 'dark';
   });
 

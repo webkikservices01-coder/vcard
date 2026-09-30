@@ -33,7 +33,8 @@ const breadcrumbMap = {
   '/dashboard/vcard/ai-insights': 'AI Insights',
   '/dashboard/plans': 'Plans',
   '/dashboard/transactions': 'Transactions',
-  '/dashboard/support': 'Support',  
+  '/dashboard/support': 'Support',
+  '/dashboard/get-card': 'Get my card',  
   '/dashboard/profile': 'My Profile',
 };
 
@@ -166,7 +167,7 @@ const DashboardLayout = () => {
       <div className="flex-1 flex flex-col h-screen min-w-0 relative overflow-y-auto">
         {/* Header */}
         <header className="sticky top-0 h-16 flex items-center justify-between px-4 md:px-6 shrink-0 z-40 border-b shadow-sm backdrop-blur-xl" style={{ background: 'color-mix(in srgb, var(--surface-bg) 94%, transparent)', borderColor: 'var(--surface-border)' }}>
-          <div className="flex items-center space-x-3">
+          <div className="flex min-w-0 items-center space-x-3">
             <IconButton
               onClick={() => setSidebarOpen(true)}
               title="Open menu"
@@ -185,7 +186,7 @@ const DashboardLayout = () => {
                 <ArrowLeft className="w-5 h-5" />
               </IconButton>
             )}
-            <div>
+            <div className="min-w-0">
               <AnimatePresence mode="wait">
                 <motion.h2
                   key={pageTitle}
@@ -193,7 +194,7 @@ const DashboardLayout = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18 }}
-                  className="text-base font-semibold"
+                  className="truncate text-base font-semibold"
                   style={{ color: 'var(--surface-text)' }}
                 >
                   {pageTitle}

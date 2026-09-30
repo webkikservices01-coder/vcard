@@ -269,7 +269,7 @@ export function PublicFooter() {
           isDark ? "border-white/10 text-slate-400" : "border-pink-100 text-slate-500"
         }`}>
           <p>© {new Date().getFullYear()} {COMPANY.name}. All rights reserved.</p>
-          <p className="font-semibold text-[#E70C65] z-10">
+          <p className={`font-semibold z-10 ${isDark ? "text-[#ff6b9d]" : "text-[#C00A55]"}`}>
             Aicardly is a platform by{" "}
             <a href="https://webkik.co.in/" target="_blank" rel="noreferrer" className="underline hover:text-slate-900 dark:hover:text-white transition-colors">
               {COMPANY.name}
@@ -287,16 +287,17 @@ export function PublicFooter() {
 
       {/* ── Compact & Centered Background Watermark Text (Optimized Size & Balanced Opacity) ── */}
       <div 
+        aria-hidden="true"
         className="pointer-events-none absolute bottom-2 left-0 right-0 w-full flex justify-center items-center overflow-hidden z-0 select-none"
       >
+        {/* Drawn as CSS content: it's decoration, so contrast checkers and screen readers skip it. */}
         <span 
-          className="text-[6vw] sm:text-[4.5vw] font-black tracking-widest uppercase text-center whitespace-nowrap"
+          data-text="WEBKIK SERVICES"
+          className="text-[6vw] sm:text-[4.5vw] font-black tracking-widest uppercase text-center whitespace-nowrap before:content-[attr(data-text)]"
           style={{
             color: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(231, 12, 101, 0.07)"
           }}
-        >
-          WEBKIK SERVICES
-        </span>
+        />
       </div>
 
       <style>{`

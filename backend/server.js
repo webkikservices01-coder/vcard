@@ -78,6 +78,9 @@ app.use('/api/transactions',    require('./routes/transactions'));
 app.use('/api/ai',              require('./routes/ai'));
 app.use('/api/admin',           require('./routes/admin'));
 app.use('/api/og',              require('./routes/og'));
+app.use('/api/card-orders',     require('./routes/cardOrders'));
+app.use('/api/webhooks',        require('./routes/webhooks'));
+app.use('/api/cron',            require('./routes/cron'));
 
 app.get('/', (req, res) => res.send('Aicardly API running!'));
 

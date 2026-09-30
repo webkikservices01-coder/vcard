@@ -18,7 +18,7 @@ const isMailConfigured = () => !!getTransporter();
 // Best-effort — never throws, so the caller's work (a sign-up, a saved lead) always completes.
 // Returns true when the email was handed to the SMTP server. Every attempt is logged
 // (mail.sent / mail.failed / mail.skipped) for the admin Logs page.
-const sendMail = async ({ to, subject, text, html }) => {
+const sendMail = async ({ to, subject, text, html, attachments }) => {
   // Required here, not at the top: logger → AppLog model, loaded after mongoose is set up.
   const { logEvent } = require('./logger');
   const t = getTransporter();
@@ -28,7 +28,7 @@ const sendMail = async ({ to, subject, text, html }) => {
   }
   try {
     const from = process.env.SMTP_FROM || `Aicardly <${process.env.SMTP_USER}>`;
-    const info = await t.sendMail({ from, to, subject, text, html });
+    const info = await t.sendMail({ from, to, subject, text, html, attachments });
     logEvent(null, 'mail.sent', `Email sent: "${subject}"`, { email: to, meta: { messageId: info.messageId } });
     return true;
   } catch (err) {

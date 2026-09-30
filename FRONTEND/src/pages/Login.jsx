@@ -9,6 +9,8 @@ import BackButton from '../components/BackButton';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
 import PasswordEye from '../components/PasswordEye';
+import AuthTabs from '../components/AuthTabs';
+import VerifyEmailNotice from '../components/VerifyEmailNotice';
 
 // Sequential container orchestration
 const containerVariants = {
@@ -64,6 +66,8 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+  // Set when the account exists but the email isn't verified yet: shows the "check your inbox" step.
+  const [verifyEmail, setVerifyEmail] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -75,6 +79,10 @@ export const Login = () => {
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
+      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        setVerifyEmail(err.response.data.email || form.email.trim().toLowerCase());
+        return;
+      }
       setError(err.response?.data?.msg || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
@@ -127,7 +135,7 @@ export const Login = () => {
       <AuthBrandPanel />
 
       {/* Right Form Container */}
-      <div className="relative flex flex-1 min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-8">
+      <div className="relative flex flex-1 min-h-screen items-center justify-center overflow-hidden px-4 pt-20 pb-10 sm:px-8">
         
         {/* Dot Matrix Grid */}
         <div 
@@ -162,6 +170,12 @@ export const Login = () => {
             <motion.div variants={slideFromBottom} className="lg:hidden mb-5 flex justify-center">
               <Logo size={32} />
             </motion.div>
+
+            {verifyEmail ? (
+              <VerifyEmailNotice email={verifyEmail} isDark={isDark} sent={false} onBack={() => setVerifyEmail('')} />
+            ) : (
+            <>
+            <AuthTabs active="login" isDark={isDark} />
 
             {/* 2. Badge & Headers */}
             <motion.div variants={slideFromBottom} className="flex items-center gap-2">
@@ -294,6 +308,8 @@ export const Login = () => {
                 </Link>
               </p>
             </motion.div>
+            </>
+            )}
           </motion.div>
         </div>
       </div>

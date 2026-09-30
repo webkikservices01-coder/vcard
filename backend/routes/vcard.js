@@ -29,7 +29,7 @@ const words = (list, max = 40) => (Array.isArray(list) ? list : []).map(v => str
 // Card links live at /<username> (older /c/<username> too): one owner per username, URL-safe,
 // and never the name of a site page, or the page would hide the card.
 const RESERVED_USERNAMES = new Set([
-    'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'reset-password', 'onboarding', 'c', 'www', 'support', 'help',
+    'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'onboarding', 'c', 'www', 'support', 'help',
     'about', 'about-us', 'contact', 'contact-us', 'faqs', 'privacy-policy', 'terms-conditions', 'refund-policy',
     'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined',
 ]);

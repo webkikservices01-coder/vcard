@@ -9,6 +9,9 @@ import BackButton from '../components/BackButton';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
 import PasswordEye from '../components/PasswordEye';
+import AuthTabs from '../components/AuthTabs';
+import VerifyEmailNotice from '../components/VerifyEmailNotice';
+import { toE164 } from '../utils/phone';
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.94, y: 15 },
@@ -71,6 +74,8 @@ export const Register = () => {
   });
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  // After sign-up, when the email has to be verified first: { email, sent }.
+  const [verify, setVerify] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
@@ -93,12 +98,21 @@ export const Register = () => {
       setError('Please accept the Terms & Conditions and Privacy Policy.');
       return;
     }
+    const phone = toE164(form.phone);
+    if (!phone) {
+      setError('Please enter a valid WhatsApp number, e.g. +91 98123 45678.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-        name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(),
+        name: form.name.trim(), email: form.email.trim().toLowerCase(), phone,
         password: form.password, confirm: form.confirm, acceptTerms: true
       });
+      if (res.data.verify) {
+        setVerify({ email: res.data.email, sent: res.data.sent !== false });
+        return;
+      }
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -155,7 +169,7 @@ export const Register = () => {
       <AuthBrandPanel />
 
       {/* Right Form Area */}
-      <div className="relative flex flex-1 min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-8">
+      <div className="relative flex flex-1 min-h-screen items-center justify-center overflow-hidden px-4 pt-20 pb-8 sm:px-8">
         
         {/* Dot Matrix Grid */}
         <div 
@@ -190,6 +204,12 @@ export const Register = () => {
             <motion.div variants={slideFromBottom} className="lg:hidden mb-5 flex justify-center">
               <Logo size={32} />
             </motion.div>
+
+            {verify ? (
+              <VerifyEmailNotice email={verify.email} isDark={isDark} sent={verify.sent} onBack={() => navigate('/login')} />
+            ) : (
+            <>
+            <AuthTabs active="register" isDark={isDark} />
 
             {/* 2. Informational Eyebrow Label (No Button Border/False Affordance) */}
             <motion.div variants={slideFromBottom} className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[#ff6b9d]">
@@ -240,13 +260,16 @@ export const Register = () => {
                 <motion.div variants={slideFromRight}>
                   <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>Phone number</label>
+                  }`}>WhatsApp number</label>
                   <div className="relative group">
                     <Phone className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                       isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                     }`} />
                     <input
+                      required
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder="+91 98765 43210"
@@ -419,6 +442,8 @@ export const Register = () => {
                 </Link>
               </p>
             </motion.div>
+            </>
+            )}
           </motion.div>
         </div>
       </div>

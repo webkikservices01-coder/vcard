@@ -9,6 +9,18 @@ import { faviconHref, setPageFavicon } from '../utils/favicon';
 const API = import.meta.env.VITE_API_URL;
 const _viewedSlugs = new Set();
 
+// First load of a card uses the request index.html already started (window.__cardPrefetch),
+// so the data arrives while the app code is still loading. Later loads go to the API as usual.
+const takePrefetch = (slug, key) => {
+  const pre = window.__cardPrefetch;
+  if (!pre || pre.slug !== slug || pre['used_' + key]) return null;
+  pre['used_' + key] = true;
+  return pre[key].then(
+    (d) => ({ data: d }),
+    (status) => Promise.reject({ response: typeof status === 'number' ? { status } : undefined })
+  );
+};
+
 const PublicVcard = () => {
   // Usernames are lowercase; /Shubham-Khurana opens the same card as /shubham-khurana.
   const slug = (useParams().slug || '').toLowerCase();
@@ -33,7 +45,7 @@ const PublicVcard = () => {
   const lastJson = useRef('');
   const load = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/api/vcard/public/${slug}`);
+      const res = await (takePrefetch(slug, 'data') || axios.get(`${API}/api/vcard/public/${slug}`));
       const json = JSON.stringify(res.data);
       if (json !== lastJson.current) {
         lastJson.current = json;
@@ -54,8 +66,7 @@ const PublicVcard = () => {
     // load() is async: its setState calls run after the request, not during the effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-    axios
-      .get(`${API}/api/ai/public/${slug}`)
+    (takePrefetch(slug, 'ai') || axios.get(`${API}/api/ai/public/${slug}`))
       .then((res) => setAiPersona(res.data))
       .catch(() => setAiPersona(null));
   }, [slug, load]);

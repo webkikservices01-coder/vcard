@@ -104,5 +104,5 @@
       "noindex": true
     }
   },
-  "privatePrefixes": ["/dashboard", "/admin", "/onboarding"]
+  "privatePrefixes": ["/dashboard", "/admin", "/onboarding", "/verify-email"]
 }

@@ -18,13 +18,24 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} !\.[A-Za-z0-9]{2,5}$
 RewriteRule ^ og.php [L,QSA]
 
-# Serve real files/folders as-is; anything else falls back to index.html
+# Serve real files/folders as-is. A missing file with an extension (an old hashed asset,
+# /.well-known/ai-catalog.json, ...) is a real 404, not the app's HTML, which browsers and
+# crawlers would otherwise try to read as JS/JSON. Anything else falls back to index.html.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+RewriteRule \.[A-Za-z0-9]{2,5}$ - [R=404,L]
 RewriteRule ^ index.html [L]
 
 <IfModule mod_headers.c>
+  # Security headers (HTTPS-only for a year, no framing by other sites, isolated window;
+  # popups such as the payment window keep working).
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
   # Hashed JS/CSS can be cached forever; public/ media for a week; index.html always fresh
   <FilesMatch "\.(js|css|woff2?)$">
     Header set Cache-Control "public, max-age=31536000, immutable"

@@ -31,7 +31,9 @@ export default function DynamicCyberCard3D({
   const displaySubName = name || "Your Name";
   const backTitle = company || name || "Your Name";
   const hasBg = !!(bgImageUrl && bgImageUrl.trim());
-  const cardUrl = slug ? `${window.location.origin}/${slug}` : window.location.href;
+  // No window while the homepage is prerendered at build time; the homepage address stands in.
+  const origin = typeof window === 'undefined' ? 'https://aicardly.com' : window.location.origin;
+  const cardUrl = slug ? `${origin}/${slug}` : typeof window === 'undefined' ? `${origin}/` : window.location.href;
   const initials = getInitials(name);
 
   const avatarSrc = photoUrl || "";
@@ -140,7 +142,7 @@ export default function DynamicCyberCard3D({
 
             <div className="absolute bottom-3 right-3 z-20 p-1 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-white/40 flex flex-col items-center">
               <div className="relative p-1 bg-white rounded-lg overflow-hidden">
-                <QRCodeSVG value={cardUrl} size={38} bgColor="#ffffff" fgColor="#000000" level="M" />
+                <QRCodeSVG value={cardUrl} size={38} bgColor="#ffffff" fgColor="#000000" level="M" title="QR code for the card link" />
                 <div className="absolute left-0 right-0 h-0.5 shadow-[0_0_6px] pointer-events-none animate-scan-card z-30" style={{ background: themeColor, boxShadow: `0 0 6px ${themeColor}` }} />
               </div>
             </div>

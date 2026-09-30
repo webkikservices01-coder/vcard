@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { PRICING_ENABLED } from './utils/plan';
 import { Toaster } from 'react-hot-toast';
@@ -18,6 +18,7 @@ const PricingPage = lazy(() => import('./pages/PricingPage'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Dashboard
@@ -27,6 +28,7 @@ const UserProfile = lazy(() => import('./pages/UserProfile'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Transactions = lazy(() => import('./pages/Transactions'));
 const Support = lazy(() => import('./pages/Support'));
+const GetCard = lazy(() => import('./pages/GetCard'));
 
 // vCard
 const AllVcards = lazy(() => import('./pages/vCard/AllVcards'));
@@ -53,6 +55,7 @@ const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
 const AdminSupport = lazy(() => import('./pages/admin/AdminSupport'));
 const AdminCards = lazy(() => import('./pages/admin/AdminCards'));
 const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
+const AdminCardOrders = lazy(() => import('./pages/admin/AdminCardOrders'));
 
 // Public
 const PublicVcard = lazy(() => import('./pages/PublicVcard'));
@@ -67,6 +70,27 @@ const RefundPolicy = lazy(() => import('./pages/legal/RefundPolicy'));
 const CancellationPolicy = lazy(() => import('./pages/legal/CancellationPolicy'));
 const DataProcessingAddendum = lazy(() => import('./pages/legal/DataProcessingAddendum'));
 const AiDataPrivacy = lazy(() => import('./pages/legal/AiDataPrivacy'));
+
+// Cardy's chat bubble is mounted a moment after the page has loaded, so its code doesn't
+// compete with the page itself for the first paint.
+function DeferredChatWidget() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let timer;
+    const go = () => { timer = setTimeout(() => setReady(true), 1500); };
+    if (document.readyState === 'complete') go();
+    else window.addEventListener('load', go, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('load', go);
+    };
+  }, []);
+  return ready ? (
+    <Suspense fallback={null}>
+      <PlatformChatWidget />
+    </Suspense>
+  ) : null;
+}
 
 // Each page loads as its own chunk; this shows while one is fetched.
 const PageLoader = () => (
@@ -87,9 +111,12 @@ const PREFETCH = [
 ];
 // Signed-in owners also get the card templates + Template Studio (the heaviest dashboard page)
 // ahead of time; visitors of the homepage don't download them.
+const SITE_PAGES = ['/', '/login', '/register', '/forgot-password', '/features', '/pricing', '/metal-nfc-card', '/about-us', '/contact-us', '/faqs'];
 const PREFETCH_OWNER = [() => import('./webcard/WebCard'), () => import('./pages/vCard/Theme')];
 
-function App() {
+// Everything inside the router. The browser wraps it in <BrowserRouter> (App below); the build's
+// homepage prerender (scripts/prerender.mjs) wraps it in a StaticRouter.
+export function AppRoutes() {
   useEffect(() => {
     // Wake the serverless backend (and its DB connection) before the user logs in.
     fetch(`${import.meta.env.VITE_API_URL}/api/ping`).catch(() => {});
@@ -100,17 +127,28 @@ function App() {
     } catch {
       /* storage blocked */
     }
-    idle(() => [...PREFETCH, ...(signedIn ? PREFETCH_OWNER : [])].forEach((load) => load().catch(() => {})));
+    // Only on the site's own pages: someone opening a card (often on a phone) shouldn't download
+    // the dashboard in the background while the card is still loading.
+    const path = window.location.pathname;
+    const sitePage = SITE_PAGES.includes(path) || /^\/(dashboard|onboarding|admin)(\/|$)/.test(path);
+    if (!sitePage) return;
+    // Wait for the visitor's first touch/scroll/key before prefetching, so the first view on a phone
+    // only downloads what it shows.
+    const EVENTS = ['pointerdown', 'pointermove', 'touchstart', 'keydown', 'scroll', 'wheel'];
+    const start = () => {
+      EVENTS.forEach((e) => window.removeEventListener(e, start));
+      idle(() => [...PREFETCH, ...(signedIn ? PREFETCH_OWNER : [])].forEach((load) => load().catch(() => {})));
+    };
+    EVENTS.forEach((e) => window.addEventListener(e, start, { once: true, passive: true }));
+    return () => EVENTS.forEach((e) => window.removeEventListener(e, start));
   }, []);
 
   return (
-    <Router>
+    <>
       <ScrollToTop />
       <Seo />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
-      <Suspense fallback={null}>
-        <PlatformChatWidget />
-      </Suspense>
+      <DeferredChatWidget />
       <Routes>
         {/* Auth */}
         <Route path="/" element={page(<LandingPage />)} />
@@ -118,6 +156,7 @@ function App() {
         <Route path="/register" element={page(<Register />)} />
         <Route path="/forgot-password" element={page(<ForgotPassword />)} />
         <Route path="/reset-password" element={page(<ForgotPassword />)} />
+        <Route path="/verify-email" element={page(<VerifyEmail />)} />
 
         <Route path="/metal-nfc-card" element={page(<MetalNfcCard />)} />
         <Route path="/features" element={page(<FeaturesPage />)} />
@@ -165,6 +204,7 @@ function App() {
           <Route path="plans"            element={PRICING_ENABLED ? page(<Plans />) : <Navigate to="/dashboard" replace />} />
           <Route path="transactions"     element={PRICING_ENABLED ? page(<Transactions />) : <Navigate to="/dashboard" replace />} />
           <Route path="support"          element={page(<Support />)} />
+          <Route path="get-card"         element={page(<GetCard />)} />
           <Route path="profile"          element={page(<UserProfile />)} />
         </Route>
 
@@ -176,10 +216,19 @@ function App() {
           <Route path="support"      element={page(<AdminSupport />)} />
           <Route path="cards"        element={page(<AdminCards />)} />
           <Route path="logs"         element={page(<AdminLogs />)} />
+          <Route path="card-orders"  element={page(<AdminCardOrders />)} />
         </Route>
 
         <Route path="*" element={page(<NotFound />)} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppRoutes />
     </Router>
   );
 }

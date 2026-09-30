@@ -8,9 +8,8 @@ import {
   ShieldCheck, ArrowUpRight, Radio
 } from 'lucide-react';
 import axios from 'axios';
-import DynamicCyberCard3D from '../components/ui/DynamicCyberCard3D';
+import LiveCardPreview from '../components/LiveCardPreview';
 import { useTheme } from '../context/ThemeContext';
-import { templatePalette } from '../webcard/templates/TemplatePicker';
 import { PRICING_ENABLED } from '../utils/plan';
 
 const PLAN_COLORS = {
@@ -93,20 +92,9 @@ const Dashboard = () => {
   const cardCount  = stats?.vcardCount || 0;
   
   const cardSlug   = cardData?.username || stats?.cardSlug || '';
-  const personal   = cardData?.personalInfo || {};
-  const cardName   = personal.name || stats?.cardName || stats?.user?.name || '';
-  const cardRole   = personal.designation || stats?.cardDesignation || '';
-  
+
   const firstName  = stats?.user?.name?.split(' ')[0] || 'Executive';
   const daysBar    = daysLeft != null ? Math.min(100, Math.round((daysLeft / 365) * 100)) : 0;
-
-  // The 3D card takes the colours of the card's WebCard template.
-  const palette    = templatePalette(cardData?.theme);
-  const laserColor = palette.accent;
-  const cardBg     = palette.card;
-  const surfaceBg  = palette.surface;
-  const linkBg     = palette.link;
-  const subText    = palette.sub;
 
   const quickActions = [
     { label: 'Edit Profile', desc: 'Identity, visuals & bio', path: '/dashboard/vcard/profile', icon: Pencil },
@@ -116,22 +104,6 @@ const Dashboard = () => {
       ? { label: 'Upgrade Tier', desc: 'Unlock voice & AI agents', path: '/dashboard/plans', icon: Zap }
       : { label: 'Reels & Highlights', desc: 'Reels, followers & stats', path: '/dashboard/vcard/highlights', icon: Zap },
   ];
-
-  const getProfilePicUrl = () => {
-    let pic = personal.profilePic || stats?.cardProfilePic;
-    if (!pic) return "/profile.png";
-    if (pic.startsWith('http') || pic.startsWith('blob:')) return pic;
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    return `${apiUrl}${pic.startsWith('/') ? pic : '/' + pic}`;
-  };
-
-  const getBannerUrl = () => {
-    let banner = personal.bannerImage || stats?.cardBannerImage;
-    if (!banner) return null;
-    if (banner.startsWith('http') || banner.startsWith('blob:')) return banner;
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    return `${apiUrl}${banner.startsWith('/') ? banner : '/' + banner}`;
-  };
 
   return (
     <div className={`relative w-full max-w-7xl mx-auto space-y-4 pb-10 transition-colors duration-500 ${
@@ -316,26 +288,12 @@ const Dashboard = () => {
         <div className="lg:col-span-5 space-y-3.5">
           <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }}>
             <div className="mb-1.5 flex items-center justify-between">
-              <h3 className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Active 3D Card</h3>
+              <h3 className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Your Live Card</h3>
               <Link to="/dashboard/vcard/all" className={`text-xs font-bold ${isDark ? 'text-[#ff6b9d]' : 'text-[#E70C65]'} hover:underline transition-colors`}>All Cards →</Link>
             </div>
 
             <div className="clean-glass rounded-2xl p-3 shadow-md">
-              <DynamicCyberCard3D
-                name={cardName}
-                designation={cardRole}
-                company={personal.company || ''}
-                slug={cardSlug}
-                photoUrl={getProfilePicUrl()}
-                bgImageUrl={getBannerUrl()}
-                themeColor={laserColor}
-                cardBgColor={cardBg}
-                surfaceBgColor={surfaceBg}
-                backBgColor={surfaceBg}
-                linkBgColor={linkBg}
-                subTextColor={subText}
-                isDark={isDark}
-              />
+              <LiveCardPreview username={cardData?.username || ''} height={560} />
               
               <div className={`mt-2 pt-2 flex items-center justify-between border-t px-1 ${isDark ? 'border-white/10' : 'border-pink-100'}`}>
                 <div className="flex items-center gap-1.5">

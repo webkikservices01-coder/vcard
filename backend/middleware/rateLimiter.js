@@ -71,4 +71,15 @@ const forgotLimiter = rateLimit({
   message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
 });
 
-module.exports = { authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter };
+// Card orders: new payment link / resend link / resend card (each sends email + WhatsApp).
+const cardOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  // Per signed-in user (runs after auth), so people behind one office IP don't block each other.
+  keyGenerator: (req) => (req.user?.userId ? `user:${req.user.userId}` : req.ip),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
+});
+
+module.exports = { authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter, cardOrderLimiter };

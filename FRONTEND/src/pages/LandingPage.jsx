@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 import {
   Smartphone,
   QrCode,
@@ -33,6 +33,8 @@ import {
   ShieldCheck,
   Cpu,
   Radio,
+  Menu,
+  X,
 } from "lucide-react";
 import PublicFooter, { COMPANY } from "../components/PublicFooter";
 import ThemeToggle from "../components/ui/ThemeToggle";
@@ -74,6 +76,10 @@ function MeshBackground() {
           border-radius: 9999px;
           filter: blur(120px);
           pointer-events: none;
+          will-change: transform;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mesh-blob { animation: none !important; }
         }
         .mesh-top {
           width: 600px;
@@ -146,10 +152,10 @@ function TypewriterText({ text, speed = 45, delay = 700 }) {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   useEffect(() => {
-    let timeout;
+    let interval;
     const startTimeout = setTimeout(() => {
       let index = 0;
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         if (index < text.length) {
           setDisplayedText(text.slice(0, index + 1));
           index++;
@@ -158,12 +164,11 @@ function TypewriterText({ text, speed = 45, delay = 700 }) {
           clearInterval(interval);
         }
       }, speed);
-      return () => clearInterval(interval);
     }, delay);
 
     return () => {
       clearTimeout(startTimeout);
-      clearTimeout(timeout);
+      clearInterval(interval);
     };
   }, [text, speed, delay]);
 
@@ -177,10 +182,17 @@ function TypewriterText({ text, speed = 45, delay = 700 }) {
       <p className={`relative z-10 text-base leading-relaxed sm:text-lg ${
         isDark ? "text-slate-200" : "text-slate-700 font-medium"
       }`}>
-        <span>{displayedText}</span>
-        {!isTypingComplete && (
-          <span className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
-        )}
+        {/* The full text is laid out invisibly so the box has its final height from the first
+            paint; the typed text sits on top. Without this the box grows while typing and pushes
+            the video below it down (layout shift). */}
+        <span className="invisible" aria-hidden="true">{text}</span>
+        <span className="absolute inset-0">
+          <span className="sr-only">{text}</span>
+          <span aria-hidden="true">{displayedText}</span>
+          {!isTypingComplete && (
+            <span className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
+          )}
+        </span>
       </p>
     </div>
   );
@@ -366,6 +378,8 @@ function DesignMock() {
               key={i}
               type="button"
               onClick={() => setSelectedTheme(i)}
+              aria-label={`Card colour ${i + 1}`}
+              aria-pressed={selectedTheme === i}
               className={`h-7 w-7 rounded-full transition-all duration-300 cursor-pointer ${
                 selectedTheme === i ? "ring-2 ring-[#ff6b9d] scale-110 shadow-lg shadow-[#E70C65]/50" : "ring-1 ring-white/20 opacity-70 hover:opacity-100"
               }`}
@@ -592,19 +606,24 @@ function StepsDemo({ isVisible }) {
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2">
+        <div className="mt-4 flex items-center justify-center">
           {steps.map((_, i) => (
+            // 36px tap area around a small dot, so it is easy to hit with a finger.
             <button
               key={i}
               type="button"
               aria-label={`Show Step ${i + 1}`}
               onClick={() => setActiveStep(i)}
-              className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
-                activeStep === i 
-                  ? "w-8 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] shadow-[0_0_8px_#E70C65]" 
-                  : isDark ? "w-1.5 bg-white/20 hover:bg-white/40" : "w-1.5 bg-slate-300 hover:bg-slate-400"
-              }`}
-            />
+              className="grid h-9 min-w-9 place-items-center px-1 cursor-pointer"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-all duration-500 ${
+                  activeStep === i
+                    ? "w-8 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] shadow-[0_0_8px_#E70C65]"
+                    : isDark ? "w-1.5 bg-white/20" : "w-1.5 bg-slate-300"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>
@@ -644,6 +663,7 @@ export function LandingPage() {
   const howItWorksSectionRef = useRef(null);
   
   const [isScrolled, setIsScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const [isCard3DVisible, setIsCard3DVisible] = useState(false);
   const [isAudienceVisible, setIsAudienceVisible] = useState(false);
@@ -667,12 +687,24 @@ export function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // The poster shows straight away; the video itself is fetched only after the page has loaded,
+  // so it doesn't compete with the page's own code and fonts on a phone connection.
   useEffect(() => {
     const video = heroVideoRef.current;
-    if (video) {
+    if (!video) return;
+    const start = () => {
+      video.src = "/hero-demo.mp4";
       video.muted = true;
       video.play().catch(() => {});
-    }
+    };
+    let timer;
+    const onLoad = () => { timer = setTimeout(start, 0); };
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad, { once: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("load", onLoad);
+    };
   }, []);
 
   useEffect(() => {
@@ -901,7 +933,7 @@ export function LandingPage() {
               <a
                 href={COMPANY.phoneHref}
                 aria-label={`Call ${COMPANY.phone}`}
-                className={`inline-flex items-center gap-1.5 rounded-full text-sm font-semibold transition-colors ${
+                className={`hidden sm:inline-flex items-center gap-1.5 rounded-full text-sm font-semibold transition-colors ${
                   isDark ? "text-slate-200 hover:text-white" : "text-slate-800 hover:text-[#9F1C44]"
                 }`}
               >
@@ -911,7 +943,7 @@ export function LandingPage() {
                 <span className="hidden xl:inline">{COMPANY.phone}</span>
               </a>
               
-              <div className="scale-90 sm:scale-100">
+              <div className="hidden sm:block">
                 <ThemeToggle />
               </div>
 
@@ -929,17 +961,74 @@ export function LandingPage() {
               <div className="anim-getstarted-btn">
                 <Link
                   to="/register"
-                  className="group relative inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#E70C65] to-[#9F1C44] px-4 py-2 text-sm font-medium text-white shadow-md shadow-[#E70C65]/30 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#E70C65]/50 active:translate-y-0"
+                  className="group relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-[#E70C65] to-[#9F1C44] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#E70C65]/30 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#E70C65]/50 active:translate-y-0"
                 >
                   <span>Get Started</span>
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
+                  <ArrowRight className="hidden sm:block h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
                 </Link>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                className={`grid h-10 w-10 place-items-center rounded-full border md:hidden ${
+                  isDark ? "border-white/15 bg-white/[0.06] text-white" : "border-pink-100 bg-white text-slate-800"
+                }`}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
           </nav>
+
+          {/* Menu for phones */}
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className={`mt-2 rounded-2xl border p-2 shadow-2xl md:hidden ${
+                  isDark ? "border-white/10 bg-slate-950/95 text-white" : "border-pink-100 bg-white text-slate-900"
+                }`}
+              >
+                {[
+                  ["Metal NFC Card", "/metal-nfc-card"],
+                  ["Features", "/features"],
+                  ["Pricing", "/pricing"],
+                  ["About", "/about-us"],
+                  ["FAQs", "/faqs"],
+                ].map(([label, to]) => (
+                  <Link key={to} to={to} onClick={() => setMenuOpen(false)} className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-semibold">
+                    {label} <ArrowRight className="h-4 w-4 opacity-40" />
+                  </Link>
+                ))}
+                <a href="#stories" onClick={() => setMenuOpen(false)} className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-semibold">
+                  Stories <ArrowRight className="h-4 w-4 opacity-40" />
+                </a>
+                <div className={`mt-1 grid grid-cols-2 gap-2 border-t pt-3 ${isDark ? "border-white/10" : "border-pink-100"}`}>
+                  <Link to="/contact-us" className={`rounded-xl border py-3 text-center text-sm font-semibold ${isDark ? "border-white/15" : "border-slate-200"}`}>
+                    Contact Us
+                  </Link>
+                  <a href={COMPANY.phoneHref} className={`inline-flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-semibold ${isDark ? "border-white/15" : "border-slate-200"}`}>
+                    <Phone className="h-4 w-4 text-[#E70C65]" /> Call us
+                  </a>
+                  <Link to="/login" className={`rounded-xl border py-3 text-center text-sm font-semibold ${isDark ? "border-white/15" : "border-slate-200"}`}>
+                    Sign In
+                  </Link>
+                  <div className={`flex items-center justify-center gap-2 rounded-xl border py-2 text-sm font-semibold ${isDark ? "border-white/15" : "border-slate-200"}`}>
+                    Theme <ThemeToggle />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
+      <main>
       {/* ── 1. Hero Section (Dedicated Live Video Demo) ────── */}
       <section 
         ref={heroSectionRef} 
@@ -1049,12 +1138,13 @@ export function LandingPage() {
 
                   <video
                     ref={heroVideoRef}
-                    src="/1.mp4"
+                    poster="/hero-demo.webp"
+                    preload="none"
                     loop
-                    autoPlay
                     playsInline
                     muted
                     controls
+                    aria-label="Aicardly metal NFC card demo video"
                     className="h-[396px] sm:h-[440px] w-full rounded-[20px] object-cover shadow-inner transition-transform duration-700 ease-out group-hover:scale-[1.008]"
                   />
                 </div>
@@ -1532,9 +1622,10 @@ export function LandingPage() {
           ))}
         </div>
         <p className={`mt-6 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          More questions? See all <Link to="/faqs" className="font-semibold text-[#E70C65] hover:underline">FAQs</Link>.
+          More questions? See all <Link to="/faqs" className={`font-semibold hover:underline ${isDark ? "text-[#ff6b9d]" : "text-[#C00A55]"}`}>FAQs</Link>.
         </p>
       </section>
+      </main>
 
       <PublicFooter />
     </div>

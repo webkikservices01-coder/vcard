@@ -3,12 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Google Tag Manager -->
+    <!-- Loaded right after the page has loaded (not before), so it doesn't slow the first view on phones.
+         Events pushed to dataLayer before that are kept and sent once it loads. -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    new Date().getTime(),event:'gtm.js'});var go=function(){var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);};
+    if(d.readyState==='complete')setTimeout(go,300);else w.addEventListener('load',function(){setTimeout(go,300);});
     })(window,document,'script','dataLayer','GTM-P3FLDR2N');</script>
     <!-- End Google Tag Manager -->
+    <!-- On a card page (/username), start loading the card's data now, in parallel with the app
+         code; PublicVcard picks it up (window.__cardPrefetch). -->
+    <script>(function(){try{
+      var p=location.pathname.toLowerCase().replace(/^\/c\//,'/');var m=/^\/([a-z0-9-]{3,30})$/.exec(p);if(!m)return;
+      var site=['login','register','forgot-password','reset-password','verify-email','features','pricing','metal-nfc-card','about-us','contact-us','faqs','privacy-policy','terms-conditions','refund-policy','cancellation-policy','data-processing-addendum','ai-data-privacy','dashboard','onboarding','admin'];
+      if(site.indexOf(m[1])>=0)return;
+      var api='%VITE_API_URL%',j=function(u){return fetch(u).then(function(r){return r.ok?r.json():Promise.reject(r.status);});};
+      var pre={slug:m[1],data:j(api+'/api/vcard/public/'+m[1]),ai:j(api+'/api/ai/public/'+m[1])};
+      pre.data.catch(function(){});pre.ai.catch(function(){});window.__cardPrefetch=pre;
+    }catch(e){}})();</script>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="theme-color" content="#E70C65" />
@@ -38,9 +51,14 @@
     <!-- schema:home -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- The site's own fonts (Inter, Plus Jakarta Sans) are bundled with the app (src/index.css).
+         The card-template fonts are only needed inside card designs, so they load without
+         holding up the first paint. -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,700..900&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,700..900&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@600;700;800&family=Poppins:wght@500;600;700;800&family=Sora:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
     />
     <script>
       (function () {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe, ScrollText } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe, ScrollText, Send } from 'lucide-react';
 import ThemeToggle from './ui/ThemeToggle';
 import Logo from './ui/Logo';
 import IconButton from './ui/IconButton';
@@ -10,6 +10,7 @@ const navItems = [
   { path: '/admin',              label: 'Overview',      icon: LayoutDashboard },
   { path: '/admin/users',        label: 'Users',         icon: Users },
   { path: '/admin/transactions', label: 'Transactions',  icon: CreditCard },
+  { path: '/admin/card-orders',  label: 'Card orders',   icon: Send },
   { path: '/admin/support',      label: 'Support',       icon: LifeBuoy },
   { path: '/admin/cards',        label: 'Top Cards',     icon: Globe },
   { path: '/admin/logs',         label: 'Logs',          icon: ScrollText },

@@ -57,9 +57,9 @@ export default function HomeExplainer() {
               <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className={`text-3xl font-black ${isDark ? 'text-white/10' : 'text-slate-200'}`}>0{i + 1}</span>
+              <span aria-hidden="true" data-n={`0${i + 1}`} className={`text-3xl font-black before:content-[attr(data-n)] ${isDark ? 'text-white/10' : 'text-slate-200'}`} />
             </div>
-            <p className="mt-5 text-[11px] font-bold uppercase tracking-widest text-[#E70C65]">{tag}</p>
+            <p className={`mt-5 text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-[#ff6b9d]' : 'text-[#C00A55]'}`}>{tag}</p>
             <h3 className={`mt-1 text-lg font-semibold leading-snug ${isDark ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
             <p className={`mt-3 text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{text}</p>
             <ul className="mt-4 space-y-1.5">

@@ -44,6 +44,8 @@ const usePrefersReducedMotion = () => {
   return reduced;
 };
 
+const AUTH_PATHS = ['/login', '/register', '/forgot-password'];
+
 const PlatformChatWidget = () => {
   const location = useLocation();
   const allowed = ALLOWED_PATHS.includes(location.pathname);
@@ -90,6 +92,14 @@ const PlatformChatWidget = () => {
     let shown = false;
     try { shown = sessionStorage.getItem(GREETING_SESSION_KEY) === '1'; } catch { /* ignore */ }
     if (shown) return;
+    // Phones: the open chat fills the screen, so only the small greeting bubble shows.
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      const bubble = setTimeout(() => {
+        try { sessionStorage.setItem(GREETING_SESSION_KEY, '1'); } catch { /* ignore */ }
+        setShowGreeting(true);
+      }, GREETING_DELAY_MS);
+      return () => clearTimeout(bubble);
+    }
     const open = setTimeout(() => {
       try { sessionStorage.setItem(GREETING_SESSION_KEY, '1'); } catch { /* ignore */ }
       autoOpen.current = true;
@@ -237,7 +247,8 @@ const PlatformChatWidget = () => {
   const panelTransition = reducedMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 360 };
 
   return (
-    <div className="fixed bottom-5 right-3 sm:bottom-6 sm:right-6 z-[150]">
+    // On phones the sign-in / sign-up forms fill the screen; the launcher would cover their button.
+    <div className={`fixed bottom-5 right-3 sm:bottom-6 sm:right-6 z-[150] ${AUTH_PATHS.includes(location.pathname) ? 'hidden sm:block' : ''}`}>
       <AnimatePresence>
         {isOpen && (
           <motion.div

@@ -1089,6 +1089,7 @@ export function CardQR({ color = '#111111', bg = 'transparent', style }) {
         bgColor={bg}
         fgColor={color}
         level="M"
+        title="QR code for this card"
         style={{ width: '100%', height: '100%', display: 'block' }}
       />
     </div>

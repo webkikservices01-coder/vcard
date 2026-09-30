@@ -15,6 +15,11 @@ const UserSchema = new mongoose.Schema({
     // Terms + Privacy Policy accepted at sign-up (DPDP consent record).
     consentAt:      { type: Date, default: null },
     consentVersion: { type: String, default: '' },
+    // Email verification. false = signed up but hasn't clicked the emailed link yet (can't sign in).
+    // Accounts from before verification existed have no value and count as verified.
+    emailVerified:     { type: Boolean },
+    verifyTokenHash:   { type: String, default: '' },
+    verifyTokenExpiry: { type: Date, default: null },
     // Password reset: SHA-256 of the emailed token (never the token itself) and when it expires.
     resetTokenHash:   { type: String, default: '' },
     resetTokenExpiry: { type: Date, default: null }

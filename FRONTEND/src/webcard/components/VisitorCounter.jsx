@@ -76,12 +76,13 @@ export default function VisitorCounter({ stats, light, tokens, top = 12 }) {
   return (
     <>
       <div ref={ref} style={{ position: 'absolute', top: `calc(env(safe-area-inset-top, 0px) + ${top}px)`, left: 16, zIndex: 6 }}>
-        <button type="button" aria-expanded={open} aria-label={`${stats.now} ${stats.now === 1 ? 'visitor' : 'visitors'} now. Tap for details`} onClick={() => setOpen((o) => !o)} style={pill}>
-          {dot}<Roll value={fmtCount(stats.now)} /><span>{stats.now === 1 ? 'visitor' : 'visitors'}</span>
+        <button type="button" aria-expanded={open} aria-label={`${stats.total} ${stats.total === 1 ? 'visitor' : 'visitors'} so far. Tap for details`} onClick={() => setOpen((o) => !o)} style={pill}>
+          {/* Everyone who has opened the card so far (grows live); "now" and "today" are in the details. */}
+          {dot}<Roll value={fmtCount(stats.total)} /><span>{stats.total === 1 ? 'visitor' : 'visitors'}</span>
         </button>
         {open && (
           <div role="dialog" style={{ position: 'absolute', top: 36, left: 0, display: 'flex', gap: 14, padding: '10px 14px', borderRadius: 12, background: T.surface, color: T.text, border: `1px solid ${T.border}`, boxShadow: '0 12px 30px -12px rgba(0,0,0,.4)', whiteSpace: 'nowrap', fontFamily: "'Inter',sans-serif" }}>
-            {[['Visitors now', fmtCount(stats.now)], ['Today', fmtCount(stats.today)], ['Total views', fmtCount(stats.total)]].map(([k, v]) => (
+            {[['Online now', fmtCount(stats.now)], ['Today', fmtCount(stats.today)], ['Total visitors', fmtCount(stats.total)]].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}><span style={{ fontSize: 11, color: T.muted }}>{k}</span><span style={{ font: "700 15px 'Inter'" }}>{v}</span></div>
             ))}
           </div>

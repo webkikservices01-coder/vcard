@@ -4,9 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { POLICY_VERSION } = require('../constants/legal');
-const { sendMail, emailHtml } = require('../utils/mailer');
+const { sendMail, emailHtml, isMailConfigured } = require('../utils/mailer');
 const { logEvent } = require('../utils/logger');
 const { authLimiter, forgotLimiter } = require('../middleware/rateLimiter');
+const { toE164 } = require('../utils/phone');
 const router = express.Router();
 
 const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
@@ -16,18 +17,45 @@ const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // Case-insensitive, so accounts saved before emails were lower-cased are still found.
 const findByEmail = (email) => User.findOne({ email: new RegExp(`^${escRe(email)}$`, 'i') });
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const signToken = (user) => jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const VERIFY_HOURS = 24;
+
+// Creates a fresh verification link for the user and emails it. Returns true when sent.
+async function sendVerification(user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    user.verifyTokenHash = sha256(token);
+    user.verifyTokenExpiry = new Date(Date.now() + VERIFY_HOURS * 60 * 60 * 1000);
+    await user.save();
+    const first = user.firstName || user.name;
+    const link = `${SITE}/verify-email?email=${encodeURIComponent(user.email)}&token=${token}`;
+    return sendMail({
+        to: user.email,
+        subject: 'Verify your email for Aicardly',
+        text: `Hi ${first},\n\nPlease verify your email to activate your Aicardly account (link valid for ${VERIFY_HOURS} hours):\n${link}\n\nIf you didn't sign up, ignore this email.\n\n– Team Aicardly`,
+        html: emailHtml({
+            heading: `Verify your email, ${first}`,
+            paragraphs: [
+                'Thanks for signing up to Aicardly! Please confirm this is your email address to activate your account.',
+                `This link works for ${VERIFY_HOURS} hours.`,
+            ],
+            button: { label: 'Verify my email', url: link },
+            footer: "Didn't create this account? Just ignore this email.",
+        }),
+    });
+}
 
 // Register
 router.post('/register', authLimiter, async (req, res) => {
     const email = normEmail(req.body.email);
     try {
         const name = String(req.body.name || '').trim().replace(/\s+/g, ' ');
-        const phone = String(req.body.phone || '').replace(/[^\d+]/g, '');
+        // Stored in E.164 (+919812345678): the card is delivered to this WhatsApp number.
+        const phone = toE164(req.body.phone);
         const { password, confirm, acceptTerms } = req.body;
 
         if (name.length < 2) return res.status(400).json({ msg: 'Please enter your full name.' });
         if (!EMAIL_RE.test(email)) return res.status(400).json({ msg: 'Please enter a valid email address.' });
-        if (phone && !/^\+?\d{10,13}$/.test(phone)) return res.status(400).json({ msg: 'Please enter a valid phone number.' });
+        if (!phone) return res.status(400).json({ msg: 'Please enter a valid mobile number, e.g. +91 98123 45678.' });
         if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
         if (confirm !== undefined && confirm !== password) return res.status(400).json({ msg: 'Passwords do not match.' });
         // DPDP: record that the user agreed to the Terms and Privacy Policy.
@@ -40,6 +68,9 @@ router.post('/register', authLimiter, async (req, res) => {
 
         const hashed = await bcrypt.hash(password, 10);
         const nameParts = name.split(' ');
+        // Email verification needs working email (SMTP). Without it, sign-ups go straight in
+        // (as before) so nobody gets locked out; it switches on by itself once SMTP is set.
+        const mustVerify = isMailConfigured();
         const user = await User.create({
             name,
             firstName: nameParts[0] || '',
@@ -49,8 +80,15 @@ router.post('/register', authLimiter, async (req, res) => {
             password: hashed,
             consentAt: new Date(),
             consentVersion: POLICY_VERSION,
+            emailVerified: !mustVerify,
         });
         logEvent(req, 'auth.register', `New account: ${name}`, { userId: user._id, email });
+
+        if (mustVerify) {
+            const sent = await sendVerification(user);
+            logEvent(req, 'auth.verify.sent', sent ? 'Verification email sent' : 'Verification email could not be sent', { level: sent ? 'info' : 'error', userId: user._id, email });
+            return res.status(201).json({ verify: true, email, sent });
+        }
 
         // Welcome email (best-effort; the account is already saved).
         sendMail({
@@ -68,8 +106,7 @@ router.post('/register', authLimiter, async (req, res) => {
             }),
         });
 
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.status(201).json({ token, user: { name: user.name, email: user.email, plan: user.plan } });
+        res.status(201).json({ token: signToken(user), user: { name: user.name, email: user.email, plan: user.plan } });
     } catch (err) {
         if (err.code === 11000) return res.status(400).json({ msg: 'An account with this email already exists. Please sign in, or reset your password.', code: 'EMAIL_EXISTS' });
         logEvent(req, 'auth.register.error', err.message, { level: 'error', email });
@@ -94,12 +131,73 @@ router.post('/login', authLimiter, async (req, res) => {
             return res.status(403).json({ msg: 'This account is inactive. Please contact support.' });
         }
 
+        if (user.emailVerified === false) {
+            logEvent(req, 'auth.login.unverified', 'Sign-in before verifying the email', { level: 'warn', email, userId: user._id });
+            return res.status(403).json({ msg: 'Please verify your email first. We sent a link to your inbox (check spam too).', code: 'EMAIL_NOT_VERIFIED', email: user.email });
+        }
+
         logEvent(req, 'auth.login', 'Signed in', { userId: user._id, email });
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { name: user.name, email: user.email, plan: user.plan } });
+        res.json({ token: signToken(user), user: { name: user.name, email: user.email, plan: user.plan } });
     } catch (err) {
         logEvent(req, 'auth.login.error', err.message, { level: 'error', email });
         res.status(500).json({ msg: 'Could not sign in. Please try again.' });
+    }
+});
+
+// Verify email with the emailed link. Signs the user in, so they carry on to set up their card.
+router.post('/verify-email', forgotLimiter, async (req, res) => {
+    const email = normEmail(req.body.email);
+    try {
+        const { token } = req.body;
+        const user = await findByEmail(email);
+        if (user && user.emailVerified !== false) {
+            // Already verified (link clicked twice): just sign in.
+            return res.json({ token: signToken(user), already: true });
+        }
+        const valid = user && user.verifyTokenHash && typeof token === 'string' && sha256(token) === user.verifyTokenHash && user.verifyTokenExpiry > new Date();
+        if (!valid) {
+            logEvent(req, 'auth.verify.invalid', 'Invalid or expired verification link', { level: 'warn', email, userId: user?._id });
+            return res.status(400).json({ msg: 'This verification link is invalid or has expired. Please ask for a new one.', code: 'VERIFY_INVALID' });
+        }
+        user.emailVerified = true;
+        user.verifyTokenHash = '';
+        user.verifyTokenExpiry = null;
+        await user.save();
+        logEvent(req, 'auth.verify', 'Email verified', { userId: user._id, email: user.email });
+
+        // Welcome email now that the address is confirmed (best-effort).
+        const first = user.firstName || user.name;
+        sendMail({
+            to: user.email,
+            subject: 'Welcome to Aicardly 🎉',
+            text: `Hi ${first},\n\nYour email is verified and your Aicardly account is ready: ${SITE}/login\n\n– Team Aicardly`,
+            html: emailHtml({
+                heading: `Welcome, ${first}!`,
+                paragraphs: ['Your email is verified and your Aicardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.'],
+                button: { label: 'Open my dashboard', url: `${SITE}/login` },
+            }),
+        });
+        res.json({ token: signToken(user) });
+    } catch (err) {
+        logEvent(req, 'auth.verify.error', err.message, { level: 'error', email });
+        res.status(500).json({ msg: 'Could not verify the email. Please try again.' });
+    }
+});
+
+// Send the verification link again. Same reply for any email, so it can't reveal accounts.
+router.post('/resend-verification', forgotLimiter, async (req, res) => {
+    const email = normEmail(req.body.email);
+    const reply = { msg: 'If this email is waiting for verification, a new link is on its way. Check your inbox and spam folder.' };
+    try {
+        if (!EMAIL_RE.test(email)) return res.status(400).json({ msg: 'Please enter a valid email address.' });
+        const user = await findByEmail(email);
+        if (!user || user.emailVerified !== false) return res.json(reply);
+        const sent = await sendVerification(user);
+        logEvent(req, 'auth.verify.resent', sent ? 'Verification email re-sent' : 'Verification email could not be re-sent', { level: sent ? 'info' : 'error', userId: user._id, email });
+        res.json(reply);
+    } catch (err) {
+        logEvent(req, 'auth.verify.resend.error', err.message, { level: 'error', email });
+        res.status(500).json({ msg: 'Could not send the link. Please try again.' });
     }
 });
 

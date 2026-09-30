@@ -10,6 +10,7 @@ Disallow: /onboarding
 Disallow: /login
 Disallow: /forgot-password
 Disallow: /reset-password
+Disallow: /verify-email
 Disallow: /api/
 Disallow: /*?utm_
 Disallow: /*?ref=
