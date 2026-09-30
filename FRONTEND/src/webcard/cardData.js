@@ -346,6 +346,7 @@ export function applyCard(model) {
   for (const k of Object.keys(CARD)) delete CARD[k];
   Object.assign(CARD, model, helpers);
   loadContactPhoto(model.avatar);
+  loadShareImage(model.slug);
 }
 
 // The profile photo as small base64 JPEG for the .vcf, fetched ahead of time so
@@ -394,68 +395,76 @@ export const DEMO_PAYLOAD = {
   },
 };
 
-export function saveContact(e) {
-  if (e && e.preventDefault) e.preventDefault();
+const vEsc = (v) =>
+  String(v || '')
+    .replace(/([,;\\])/g, '\\$1')
+    .replace(/\n/g, '\\n');
+// Bare 10-digit numbers are Indian mobiles; the country code helps WhatsApp match the contact.
+const vTel = (v) => {
+  const n = String(v || '').replace(/[^0-9+]/g, '');
+  return /^\d{10}$/.test(n) ? '+91' + n : n;
+};
+const last10 = (v) => String(v || '').replace(/\D/g, '').slice(-10);
+
+// Every filled detail the card can save to the phone's contacts, one row each (duplicates merged).
+// Rows: { k, label, value, required?, lines(item) } where lines() returns the vCard lines.
+export function contactDetails() {
   const c = CARD;
-  const [first, ...rest] = (c.fullName || '').split(/\s+/);
-  const esc = (v) =>
-    String(v || '')
-      .replace(/([,;\\])/g, '\\$1')
-      .replace(/\n/g, '\\n');
   const links = c.contactLinks || [];
-  // Bare 10-digit numbers are Indian mobiles; the country code helps WhatsApp match the contact.
-  const tel = (v) => {
-    const n = v.replace(/[^0-9+]/g, '');
-    return /^\d{10}$/.test(n) ? '+91' + n : n;
-  };
-  const key = (v) => v.replace(/\D/g, '').slice(-10);
-  const lines = [
-    'BEGIN:VCARD',
-    'VERSION:3.0',
-    `N:${esc(rest.join(' '))};${esc(first)};;;`,
-    `FN:${esc(c.fullName)}`,
-    c.company && `ORG:${esc(c.company)}`,
-    c.role && `TITLE:${esc(c.role)}`,
-  ];
+  const rows = [];
+  const add = (k, label, value, lines, required) => value && rows.push({ k, label, value, lines, required });
   // Labelled entries (iOS shows X-ABLabel; others fall back to the plain value).
-  let item = 0;
-  const labelled = (prop, value, label) => {
-    item += 1;
-    lines.push(`item${item}.${prop}:${value}`, `item${item}.X-ABLabel:${esc(label)}`);
-  };
+  const labelled = (prop, value, label) => (item) => [`item${item()}.${prop}:${value}`, `item${item.n}.X-ABLabel:${vEsc(label)}`];
+
+  if (c.avatar) add('photo', 'Profile photo', 'Your photo on their contact', () => (photoB64 && photoFor === c.avatar ? [`PHOTO;ENCODING=b;TYPE=JPEG:${photoB64}`] : []));
+  add('name', 'Name', c.fullName, () => [], true);
+  add('role', 'Role', c.role, () => [`TITLE:${vEsc(c.role)}`]);
+  add('company', 'Company', c.company, () => [`ORG:${vEsc(c.company)}`]);
+
   const phones = new Set();
-  for (const l of links) {
-    if (l.kind === 'phone' && key(l.url) && !phones.has(key(l.url))) {
-      phones.add(key(l.url));
-      lines.push(`TEL;TYPE=CELL:${tel(l.url)}`);
-    }
-  }
-  for (const l of links) {
-    if (l.kind !== 'whatsapp') continue;
-    const n = isUrl(l.url) ? (/wa\.me\/(\d+)/i.exec(l.url) || [])[1] || '' : tel(l.url);
-    if (n && !phones.has(key(n))) {
-      phones.add(key(n));
-      labelled('TEL', n, 'WhatsApp');
-    }
-  }
+  links.forEach((l, i) => {
+    if (l.kind !== 'phone' || !last10(l.url) || phones.has(last10(l.url))) return;
+    phones.add(last10(l.url));
+    add('phone' + i, phones.size > 1 ? 'Phone ' + phones.size : 'Mobile', l.url.trim(), () => [`TEL;TYPE=CELL:${vTel(l.url)}`]);
+  });
+  links.forEach((l, i) => {
+    if (l.kind !== 'whatsapp') return;
+    const n = isUrl(l.url) ? (/wa\.me\/(\d+)/i.exec(l.url) || [])[1] || '' : vTel(l.url);
+    if (!n || phones.has(last10(n))) return;
+    phones.add(last10(n));
+    add('wa' + i, 'WhatsApp', n, labelled('TEL', n, 'WhatsApp'));
+  });
   const emails = new Set();
-  for (const l of links) {
+  links.forEach((l, i) => {
     const m = l.kind === 'email' && l.url.replace(/^mailto:/i, '').trim();
-    if (m && !emails.has(m.toLowerCase())) {
-      emails.add(m.toLowerCase());
-      lines.push(`EMAIL;TYPE=INTERNET,WORK:${m}`);
-    }
-  }
-  if (c.website) lines.push(`URL;TYPE=WORK:${c.website}`);
-  if (c.cardUrl) labelled('URL', c.cardUrl, 'Digital Card');
-  for (const s of c.socials || []) {
-    if (s.href && s.href !== c.website) labelled('URL', s.href, s.name || SOCIAL_NAME[s.kind] || 'Link');
-  }
-  if (c.location) lines.push(`ADR;TYPE=WORK:;;${esc(c.location)};;;;`);
-  if (c.href?.Location && isUrl(c.href.Location)) labelled('URL', c.href.Location, 'Location');
-  const note = [c.bio, c.cardUrl && `Digital card: ${c.cardUrl}`].filter(Boolean).join('\n\n');
-  if (note) lines.push(`NOTE:${esc(note)}`);
-  if (photoB64 && photoFor === c.avatar) lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${photoB64}`);
+    if (!m || emails.has(m.toLowerCase())) return;
+    emails.add(m.toLowerCase());
+    add('email' + i, emails.size > 1 ? 'Email ' + emails.size : 'Email', m, () => [`EMAIL;TYPE=INTERNET,WORK:${m}`]);
+  });
+  add('address', 'Address', c.location, () => [`ADR;TYPE=WORK:;;${vEsc(c.location)};;;;`]);
+  if (c.href?.Location && isUrl(c.href.Location)) add('map', 'Map location', c.href.Location, labelled('URL', c.href.Location, 'Location'));
+  add('website', 'Website', c.website, () => [`URL;TYPE=WORK:${c.website}`]);
+  add('cardUrl', 'Digital card link', c.cardUrl, labelled('URL', c.cardUrl, 'Digital Card'));
+  (c.socials || []).forEach((so, i) => {
+    if (so.href && so.href !== c.website) add('social' + i, so.name || SOCIAL_NAME[so.kind] || 'Link', so.href, labelled('URL', so.href, so.name || SOCIAL_NAME[so.kind] || 'Link'));
+  });
+  add('bio', 'Bio', c.bio, () => []);
+  return rows;
+}
+
+// Downloads the vCard with every detail except the row keys in skip.
+export function downloadContact(skip = new Set()) {
+  const c = CARD;
+  const rows = contactDetails().filter((r) => r.required || !skip.has(r.k));
+  const [first, ...rest] = (c.fullName || '').split(/\s+/);
+  let n = 0;
+  const item = () => (item.n = ++n);
+  const lines = ['BEGIN:VCARD', 'VERSION:3.0', `N:${vEsc(rest.join(' '))};${vEsc(first)};;;`, `FN:${vEsc(c.fullName)}`];
+  rows.forEach((r) => lines.push(...r.lines(item)));
+  // Bio plus the card link in NOTE; Android shows NOTE even when it drops labelled URLs.
+  const keep = (k) => rows.some((r) => r.k === k);
+  const note = [keep('bio') && c.bio, keep('cardUrl') && c.cardUrl && `Digital card: ${c.cardUrl}`].filter(Boolean).join('\n\n');
+  if (note) lines.push(`NOTE:${vEsc(note)}`);
   lines.push('END:VCARD');
   // vCard lines fold at 75 chars (continuations start with a space).
   const fold = (line) => {
@@ -472,20 +481,89 @@ export function saveContact(e) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return rows.length;
+}
+
+// Every Save button: open the Save Contact sheet (WebCard listens for wc:save), or save straight
+// away where no sheet is mounted (e.g. template thumbnails).
+export function saveContact(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (window.__wcSaveSheet) window.dispatchEvent(new CustomEvent('wc:save'));
+  else downloadContact();
+}
+
+// The card's share image (photo + name, the same one link previews use), fetched ahead of time
+// so the share sheet can include it straight away (browsers drop shares started after an await).
+let shareFor = '';
+let shareFile = null;
+function loadShareImage(slug) {
+  if (!slug || slug === shareFor) return;
+  shareFor = slug;
+  shareFile = null;
+  const run = async () => {
+    try {
+      const meta = await fetch(`${import.meta.env.VITE_API_URL}/api/og/${slug}`).then((r) => (r.ok ? r.json() : null));
+      if (!meta?.image || shareFor !== slug) return;
+      const blob = await fetch(meta.image).then((r) => (r.ok ? r.blob() : null));
+      if (blob && shareFor === slug) shareFile = new File([blob], `${slug}-aicardly.jpg`, { type: blob.type || 'image/jpeg' });
+    } catch {
+      /* no image: share the link only */
+    }
+  };
+  (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(run);
 }
 
 export async function shareCard(e) {
   if (e && e.preventDefault) e.preventDefault();
   const url = CARD.cardUrl || window.location.href;
   const title = [CARD.fullName, CARD.company].filter(Boolean).join(' · ');
-  try {
-    if (navigator.share) {
-      await navigator.share({ title, url });
-      return;
+  const text = `${title}${CARD.roleLine && !title.includes(CARD.roleLine) ? ` – ${CARD.roleLine}` : ''}\n${url}`;
+  const cancelled = (err) => err && err.name === 'AbortError';
+  if (navigator.share) {
+    // With the card image when the device can share files (WhatsApp, Instagram, etc.).
+    if (shareFile && navigator.canShare?.({ files: [shareFile] })) {
+      try {
+        await navigator.share({ title, text, url, files: [shareFile] });
+        return;
+      } catch (err) {
+        if (cancelled(err)) return;
+        /* image share refused: fall back to the link */
+      }
     }
-    await navigator.clipboard.writeText(url);
-    alert('Card link copied');
-  } catch {
-    /* user cancelled */
+    try {
+      await navigator.share({ title, text, url });
+      return;
+    } catch (err) {
+      if (cancelled(err)) return;
+      /* no share sheet: copy the link instead */
+    }
   }
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(url);
+    copied = true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      copied = document.execCommand('copy');
+      ta.remove();
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+  shareNotice(copied ? 'Card link copied – paste it anywhere to share' : url);
+}
+
+function shareNotice(msg) {
+  document.querySelectorAll('.wc-sharenote').forEach((n) => n.remove());
+  const n = document.createElement('div');
+  n.className = 'wc-sharenote';
+  n.setAttribute('role', 'status');
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => n.remove(), 2600);
 }

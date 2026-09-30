@@ -92,10 +92,10 @@ const Dashboard = () => {
   const cardLimit  = stats?.user?.cardLimit || 1;
   const cardCount  = stats?.vcardCount || 0;
   
-  const cardSlug   = cardData?.username || stats?.cardSlug || 'shubham';
+  const cardSlug   = cardData?.username || stats?.cardSlug || '';
   const personal   = cardData?.personalInfo || {};
-  const cardName   = personal.name || stats?.cardName || stats?.user?.name || 'MD SHAHID';
-  const cardRole   = personal.designation || stats?.cardDesignation || 'FULL STACK DEVELOPER';
+  const cardName   = personal.name || stats?.cardName || stats?.user?.name || '';
+  const cardRole   = personal.designation || stats?.cardDesignation || '';
   
   const firstName  = stats?.user?.name?.split(' ')[0] || 'Executive';
   const daysBar    = daysLeft != null ? Math.min(100, Math.round((daysLeft / 365) * 100)) : 0;
@@ -324,6 +324,7 @@ const Dashboard = () => {
               <DynamicCyberCard3D
                 name={cardName}
                 designation={cardRole}
+                company={personal.company || ''}
                 slug={cardSlug}
                 photoUrl={getProfilePicUrl()}
                 bgImageUrl={getBannerUrl()}

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, X, LifeBuoy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +9,7 @@ import GradientButton from '../components/ui/GradientButton';
 import Button from '../components/ui/Button';
 import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
+import SupportChat from '../components/SupportChat';
 import { fadeUp } from '../utils/motion';
 
 const API = `${import.meta.env.VITE_API_URL}/api/support`;
@@ -98,6 +100,10 @@ const Support = () => {
         </motion.div>
       </div>
 
+      <motion.div {...fadeUp(0.04)}>
+        <SupportChat onNeedTicket={() => setModalOpen(true)} />
+      </motion.div>
+
       <GlassCard {...fadeUp(0.08)} className="overflow-hidden">
         {loading ? <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>
         : filtered.length === 0 ? (
@@ -150,7 +156,8 @@ const Support = () => {
         )}
       </GlassCard>
 
-      <AnimatePresence>
+      {createPortal(
+<AnimatePresence>
         {modalOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -215,7 +222,8 @@ const Support = () => {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+ document.body)}
     </div>
   );
 };

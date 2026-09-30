@@ -13,6 +13,36 @@ const Gallery = require('../models/Gallery');
 const AiUsageLog = require('../models/AiUsageLog');
 
 // GET /api/admin/stats — platform overview
+// ─── GET /api/admin/logs?type=&level=&q=&limit= ─ recent app events (30 days) ───
+router.get('/logs', adminAuth, async (req, res) => {
+    try {
+        const AppLog = require('../models/AppLog');
+        const filter = {};
+        if (req.query.type) filter.type = new RegExp('^' + String(req.query.type).replace(/[^\w.]/g, '').replace(/\./g, '\\.'));
+        if (['info', 'warn', 'error'].includes(req.query.level)) filter.level = req.query.level;
+        if (req.query.q) {
+            const q = new RegExp(String(req.query.q).slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            filter.$or = [{ msg: q }, { email: q }, { type: q }];
+        }
+        const limit = Math.min(500, Math.max(10, parseInt(req.query.limit, 10) || 200));
+        const [logs, counts] = await Promise.all([
+            AppLog.find(filter).sort({ createdAt: -1 }).limit(limit).lean(),
+            AppLog.aggregate([
+                { $match: { createdAt: { $gte: new Date(Date.now() - 864e5) } } },
+                { $group: { _id: '$level', n: { $sum: 1 } } },
+            ]),
+        ]);
+        const { isMailConfigured } = require('../utils/mailer');
+        res.json({
+            logs,
+            last24h: Object.fromEntries(counts.map((c) => [c._id, c.n])),
+            mail: isMailConfigured(),
+        });
+    } catch (err) {
+        res.status(500).json({ msg: 'Could not load logs' });
+    }
+});
+
 router.get('/stats', adminAuth, async (req, res) => {
     try {
         const [

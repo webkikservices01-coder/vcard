@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import WebCard from '../webcard/WebCard';
+import WebCard, { nativeModeOf } from '../webcard/WebCard';
 import { getVideoRoomUrl } from '../utils/videoRoom';
-import { markNotFound } from '../components/Seo';
+import { markNotFound, setCardIndexing } from '../components/Seo';
+import { faviconHref, setPageFavicon } from '../utils/favicon';
 
 const API = import.meta.env.VITE_API_URL;
 const _viewedSlugs = new Set();
@@ -16,33 +17,61 @@ const PublicVcard = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [aiPersona, setAiPersona] = useState(null);
+  // Owner viewing their own card: it refreshes so dashboard edits show up here.
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await axios.get(`${API}/api/vcard/public/${slug}`);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    axios
+      .get(`${API}/api/vcard/me`, { headers: { 'x-auth-token': token } })
+      .then((r) => setIsOwner((r.data?.username || '').toLowerCase() === slug))
+      .catch(() => {});
+  }, [slug]);
+
+  // Card data. Re-renders only when something actually changed.
+  const lastJson = useRef('');
+  const load = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/api/vcard/public/${slug}`);
+      const json = JSON.stringify(res.data);
+      if (json !== lastJson.current) {
+        lastJson.current = json;
         setData(res.data);
-      } catch (err) {
-        if (err.response?.status === 404) {
-          setNotFound(true);
-          markNotFound();
-        }
-      } finally {
-        setLoading(false);
+        setCardIndexing(res.data?.settings?.seoIndexing !== false);
       }
-    };
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setNotFound(true);
+        markNotFound();
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    // load() is async: its setState calls run after the request, not during the effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-
-    // Keeps the card in sync while the owner edits it from the dashboard.
-    const interval = setInterval(load, 5000);
-
     axios
       .get(`${API}/api/ai/public/${slug}`)
       .then((res) => setAiPersona(res.data))
       .catch(() => setAiPersona(null));
+  }, [slug, load]);
 
-    return () => clearInterval(interval);
-  }, [slug]);
+  // Only the owner's own view refreshes, so edits made in the dashboard show up here.
+  // Visitors load the card once (polling every visitor made cards slow and loaded the server).
+  useEffect(() => {
+    if (!isOwner) return;
+    const tick = () => !document.hidden && load();
+    const t = setInterval(tick, 10000);
+    window.addEventListener('focus', tick);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('focus', tick);
+    };
+  }, [isOwner, load]);
 
   useEffect(() => {
     if (!slug || _viewedSlugs.has(slug)) return;
@@ -54,6 +83,14 @@ const PublicVcard = () => {
   useEffect(() => {
     if (name) document.title = `${name} · Aicardly`;
   }, [name]);
+
+  // Browser-tab icon chosen by the owner (Advanced Settings → Card favicon).
+  const favicon = data ? faviconHref(data.settings?.favicon, data.card) : null;
+  useEffect(() => {
+    if (!favicon) return;
+    setPageFavicon(favicon);
+    return () => setPageFavicon(null);
+  }, [favicon]);
 
   if (loading)
     return (
@@ -78,13 +115,30 @@ const PublicVcard = () => {
       </div>
     );
 
-  // ?template=<id> lets the owner preview another template before saving it.
+  // ?template=<id>&palette=<1-5>&mode=light|dark lets the owner preview a look before saving it.
   const template = params.get('template') || data.card.theme;
+  const palette = params.has('palette') ? Math.max(0, Math.min(4, (parseInt(params.get('palette'), 10) || 1) - 1)) : undefined;
+  const mode = ['light', 'dark'].includes(params.get('mode')) ? params.get('mode') : undefined;
+
+  const saved = data.card.themeOptions || {};
+  const savedLook = { template: data.card.theme, palette: saved.palette || 0, mode: saved.mode || '', counter: saved.counter !== false };
+  const look = { template, palette: palette ?? savedLook.palette, mode: mode ?? savedLook.mode, counter: savedLook.counter };
+
 
   // Every AI button opens the template's own chat sheet, wired to the card's AI persona.
   return (
-    <div className="min-h-dvh bg-[#E7E7EA]">
-      <WebCard template={template} data={data} aiPersona={aiPersona} videoRoomUrl={getVideoRoomUrl(data.card._id)} />
+    // Page behind the card follows the card's light/dark look.
+    <div className="min-h-dvh" style={{ background: (look.mode || nativeModeOf(look.template)) === 'dark' ? '#050507' : '#E7E7EA' }}>
+      <WebCard
+        template={look.template}
+        palette={look.palette}
+        mode={look.mode || undefined}
+        counter={look.counter}
+        data={data}
+        aiPersona={aiPersona}
+        videoRoomUrl={getVideoRoomUrl(data.card._id)}
+        share
+      />
     </div>
   );
 };

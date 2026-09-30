@@ -1,0 +1,39 @@
+# Aicardly
+
+> Aicardly is an AI-powered digital business card platform built and operated by Webkik Services, Delhi, India. Professionals create a digital business card in under 60 seconds and share it with a QR code, an NFC tap, or a custom public link (aicardly.com/yourname). Each card can include an AI chat assistant that greets visitors, answers questions, and captures leads 24/7. Aicardly also offers premium metal NFC business cards linked to the digital card. Visitors do not need to install any app. It is free to start.
+
+Aicardly is built for founders, consultants, real estate agents, creators, coaches, and agencies.
+
+## Key facts
+
+- Product type: digital business card platform (SaaS) plus physical metal NFC business cards
+- Sharing methods: QR code, NFC tap, custom link, WhatsApp quick connect
+- AI feature: configurable AI persona and chat widget on every card
+- Analytics: profile views, link taps, and engagement dashboard
+- Pricing: free to start; premium metal NFC cards are sold separately
+- Company: Webkik Services, WZ-52, 2nd Floor, Above Shubham Band, Tagore Garden, Delhi - 110027, India
+- Contact: webkikservices01@gmail.com, +91-9868698698
+
+## Main pages
+
+- [Home](https://aicardly.com/): Overview of Aicardly, features, use cases, and how it works
+- [Features](https://aicardly.com/features): Everything an Aicardly card can do: QR, NFC, AI assistant, templates, portfolio, reels, documents, leads and insights
+- [Pricing](https://aicardly.com/pricing): Plans in INR, monthly or yearly, with a full feature comparison
+- [Metal NFC Business Card](https://aicardly.com/metal-nfc-card): Premium stainless steel NFC cards with logo and name engraving, linked to your digital card
+- [Create your card](https://aicardly.com/register): Sign up free and make your AI digital business card
+- [FAQs](https://aicardly.com/faqs): Answers about digital business cards, NFC, QR codes, and the AI chat widget
+
+## Company and policies
+
+- [About Us](https://aicardly.com/about-us)
+- [Contact Us](https://aicardly.com/contact-us)
+- [Privacy Policy](https://aicardly.com/privacy-policy)
+- [Terms and Conditions](https://aicardly.com/terms-conditions)
+- [Refund Policy](https://aicardly.com/refund-policy)
+- [Cancellation Policy](https://aicardly.com/cancellation-policy)
+- [How our AI uses data](https://aicardly.com/ai-data-privacy): Which AI model powers card assistants, what it sees and stores, and its guardrails
+- [Data Processing Addendum](https://aicardly.com/data-processing-addendum): DPDP Act terms for visitor data collected by cards
+
+## Optional
+
+- [Sitemap](https://aicardly.com/sitemap.xml)

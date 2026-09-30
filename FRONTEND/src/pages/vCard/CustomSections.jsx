@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Layout, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Layout, Sparkles, Paperclip, FileText, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,33 @@ import { useTheme } from '../../context/ThemeContext';
 const API = `${import.meta.env.VITE_API_URL}/api/custom-sections`;
 const token = () => localStorage.getItem('token');
 const headers = () => ({ 'x-auth-token': token() });
-const emptyForm = { title: '', content: '' };
+const emptyForm = { title: '', content: '', files: [] };
+
+// Documents a section can carry (same list as the server).
+const DOC_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.rtf,.odt,.ods,.odp,.zip,.jpg,.jpeg,.png,.webp,.gif,.svg,.mp3,.mp4';
+const MAX_DOC = 25 * 1024 * 1024;
+const sizeText = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+// Browser → Cloudinary directly when the server signs it (big files never pass through the API);
+// otherwise through the API.
+async function uploadDoc(file, onProgress) {
+  const { data: sig } = await axios.get(`${API}/upload-signature`, { params: { name: file.name }, headers: headers() });
+  if (sig.mode === 'cloudinary') {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('api_key', sig.apiKey);
+    fd.append('timestamp', sig.timestamp);
+    fd.append('folder', sig.folder);
+    fd.append('public_id', sig.publicId);
+    fd.append('signature', sig.signature);
+    const { data } = await axios.post(sig.uploadUrl, fd, { onUploadProgress: (e) => e.total && onProgress(Math.round((e.loaded / e.total) * 100)) });
+    return { name: file.name, url: data.secure_url, size: file.size };
+  }
+  const fd = new FormData();
+  fd.append('doc', file);
+  const { data } = await axios.post(`${API}/upload`, fd, { headers: headers(), onUploadProgress: (e) => e.total && onProgress(Math.round((e.loaded / e.total) * 100)) });
+  return { name: data.name || file.name, url: data.url, size: data.size || file.size };
+}
 
 // Shadow DOM component with automatic light/dark theme text color support
 const SafeHtml = ({ html, textColor }) => {
@@ -67,6 +93,7 @@ const CustomSections = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(null); // { name, pct } while a document uploads
 
   const [previewData, setPreviewData] = useState(null);
 
@@ -93,10 +120,30 @@ const CustomSections = () => {
   }, []);
 
   const openCreate = () => { setForm(emptyForm); setEditing(null); setFormOpen(true); };
-  const openEdit = (item) => { setForm({ title: item.title, content: item.content }); setEditing(item._id); setFormOpen(true); };
+  const openEdit = (item) => { setForm({ title: item.title, content: item.content || '', files: item.files || [] }); setEditing(item._id); setFormOpen(true); };
+
+  const addDocs = async (e) => {
+    const picked = [...(e.target.files || [])];
+    e.target.value = '';
+    for (const file of picked) {
+      if (form.files.length >= 10) { toast.error('Up to 10 documents per section.'); break; }
+      if (file.size > MAX_DOC) { toast.error(`${file.name} is over 25 MB.`); continue; }
+      setUploading({ name: file.name, pct: 0 });
+      try {
+        const doc = await uploadDoc(file, (pct) => setUploading({ name: file.name, pct }));
+        setForm((f) => ({ ...f, files: [...f.files, doc] }));
+      } catch (err) {
+        toast.error(err.response?.data?.msg || err.response?.data?.error?.message || `Could not upload ${file.name}`);
+      }
+    }
+    setUploading(null);
+  };
+  const removeDoc = (i) => setForm((f) => ({ ...f, files: f.files.filter((_, j) => j !== i) }));
 
   const handleSave = async () => {
-    if (!form.title || !form.content) { toast.error('Title and content are required'); return; }
+    if (!form.title.trim()) { toast.error('Please add a title'); return; }
+    if (!form.content.trim() && !form.files.length) { toast.error('Add some content or at least one document'); return; }
+    if (uploading) { toast.error('Please wait for the upload to finish'); return; }
     setSaving(true);
     try {
       if (editing) { await axios.put(`${API}/${editing}`, form, { headers: headers() }); }
@@ -117,7 +164,7 @@ const CustomSections = () => {
 
   const handlePreview = () => {
     setShowPopup(false);
-    if (slug) window.open(`/${slug}`, '_blank');
+    if (slug) window.dispatchEvent(new Event('card:preview'));
   };
 
   const handleNext = () => {
@@ -220,7 +267,7 @@ const CustomSections = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 flex justify-between" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>
-                      <span>Content (HTML/CSS allowed) *</span>
+                      <span>Content (text, HTML/CSS allowed)</span>
                       <span className="text-xs text-[#E70C65] font-bold">Live Previewing 👉</span>
                     </label>
                     <textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} rows={10}
@@ -232,6 +279,40 @@ const CustomSections = () => {
                       }}
                       placeholder={`<style>\n  .my-text { color: #E70C65; }\n</style>\n<h1 class="my-text">Hello World</h1>`} />
                     <p className="text-[11px] mt-2 font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>Note: CSS written here is isolated inside Shadow DOM and will not break site styles.</p>
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>Documents</label>
+                    <p className="text-[11px] mb-2 font-medium" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                      PDF, Word, PowerPoint, Excel, images, ZIP… up to 10 files, 25 MB each. Visitors can open them from your card.
+                    </p>
+                    {form.files.length > 0 && (
+                      <ul className="space-y-2 mb-3">
+                        {form.files.map((f, i) => (
+                          <li key={f.url} className="flex items-center gap-3 rounded-xl border px-3 py-2" style={{ borderColor: isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0' }}>
+                            <FileText className="w-4 h-4 shrink-0 text-[#E70C65]" />
+                            <span className="flex-1 min-w-0 truncate text-xs font-medium" style={{ color: isDark ? '#fff' : '#0f172a' }}>{f.name}</span>
+                            <span className="text-[11px] shrink-0" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>{sizeText(f.size)}</span>
+                            <button type="button" onClick={() => removeDoc(i)} aria-label={`Remove ${f.name}`} className="text-slate-400 hover:text-red-500">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {uploading ? (
+                      <div className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-xs" style={{ borderColor: isDark ? 'rgba(255,255,255,0.15)' : '#e2e8f0', color: isDark ? '#fff' : '#0f172a' }}>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#E70C65]" />
+                        <span className="flex-1 truncate">Uploading {uploading.name}…</span>
+                        <span className="font-bold">{uploading.pct}%</span>
+                      </div>
+                    ) : (
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed px-3 py-3 text-xs font-semibold transition hover:border-[#E70C65] hover:text-[#E70C65]" style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1', color: isDark ? '#cbd5e1' : '#475569' }}>
+                        <Paperclip className="w-4 h-4" /> Attach documents
+                        <input type="file" multiple accept={DOC_ACCEPT} className="sr-only" onChange={addDocs} />
+                      </label>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 p-6 pt-0">

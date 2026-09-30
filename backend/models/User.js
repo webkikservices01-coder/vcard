@@ -14,7 +14,10 @@ const UserSchema = new mongoose.Schema({
     isAdmin:   { type: Boolean, default: false },
     // Terms + Privacy Policy accepted at sign-up (DPDP consent record).
     consentAt:      { type: Date, default: null },
-    consentVersion: { type: String, default: '' }
+    consentVersion: { type: String, default: '' },
+    // Password reset: SHA-256 of the emailed token (never the token itself) and when it expires.
+    resetTokenHash:   { type: String, default: '' },
+    resetTokenExpiry: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

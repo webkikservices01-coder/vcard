@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Star } from 'lucide-react';
@@ -114,7 +115,7 @@ const Testimonials = () => {
 
   const handlePreview = () => {
     setShowPopup(false);
-    if (slug) window.open(`/${slug}`, '_blank');
+    if (slug) window.dispatchEvent(new Event('card:preview'));
   };
 
   const handleNext = () => {
@@ -210,7 +211,8 @@ const Testimonials = () => {
           </motion.div>
         )}
 
-        <AnimatePresence>
+        {createPortal(
+<AnimatePresence>
           {modalOpen && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -273,7 +275,8 @@ const Testimonials = () => {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+ document.body)}
       </div>
 
       <ActionPopup

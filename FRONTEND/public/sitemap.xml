@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://aicardly.com/</loc><lastmod>2026-09-29</lastmod><priority>1.0</priority></url>
+  <url><loc>https://aicardly.com/features</loc><lastmod>2026-09-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://aicardly.com/pricing</loc><lastmod>2026-09-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://aicardly.com/metal-nfc-card</loc><lastmod>2026-09-29</lastmod><priority>0.8</priority></url>
   <url><loc>https://aicardly.com/about-us</loc><lastmod>2026-09-29</lastmod><priority>0.5</priority></url>
   <url><loc>https://aicardly.com/contact-us</loc><lastmod>2026-09-29</lastmod><priority>0.5</priority></url>
   <url><loc>https://aicardly.com/faqs</loc><lastmod>2026-09-29</lastmod><priority>0.5</priority></url>

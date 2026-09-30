@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue, startTransition } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { LayoutTemplate, Save, Radio, ExternalLink } from 'lucide-react';
+import { LayoutTemplate, Save, Radio, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import GlassCard from '../../components/ui/GlassCard';
@@ -11,10 +11,18 @@ import MeshBackground from '../../components/ui/MeshBackground';
 import { useTheme } from '../../context/ThemeContext';
 import { fadeUp } from '../../utils/motion';
 import WebCard from '../../webcard/WebCard';
-import { TemplatePicker, templateIdOf, templateMeta } from '../../webcard/templates/TemplatePicker';
+import LiveTemplatePicker from '../../webcard/components/LiveTemplatePicker';
+import { ThemeControls } from '../../webcard/components/ThemeSheet';
+import { templateIdOf, templateMeta } from '../../webcard/templates/TemplatePicker';
+import { readThemeCache, writeThemeCache, loadThemeStudio } from '../../utils/themeStudioCache';
 
 const API = import.meta.env.VITE_API_URL;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
+
+const lookOf = (card) => {
+  const o = card?.themeOptions || {};
+  return { palette: o.palette || 0, mode: o.mode || '', counter: o.counter !== false };
+};
 
 // Template Studio: pick one of the WebCard templates and see it live with the owner's own content.
 const Theme = () => {
@@ -22,32 +30,34 @@ const Theme = () => {
   const { theme: appTheme } = useTheme();
   const isDark = appTheme === 'dark';
 
-  const [selected, setSelected] = useState(templateIdOf());
-  const [saved, setSaved] = useState(null);
-  const [payload, setPayload] = useState(null);
-  const [aiPersona, setAiPersona] = useState(null);
-  const [slug, setSlug] = useState('');
-  const [loading, setLoading] = useState(true);
+  // Last loaded card, so the studio opens instantly next time and refreshes in the background.
+  const [cached] = useState(readThemeCache);
+  const cachedCard = cached?.payload?.card;
+  const cachedLook = lookOf(cachedCard);
+  const [selected, setSelected] = useState(templateIdOf(cachedCard?.theme));
+  const [saved, setSaved] = useState(cachedCard?.theme ? templateIdOf(cachedCard.theme) : null);
+  // Look of the template (5 palettes, light/dark, visitor counter), saved with it.
+  const [look, setLook] = useState(cachedLook);
+  const [savedLook, setSavedLook] = useState(cachedLook);
+  const [payload, setPayload] = useState(cached?.payload || null);
+  const [aiPersona, setAiPersona] = useState(cached?.aiPersona || null);
+  const [slug, setSlug] = useState(cachedCard?.username || '');
+  const [loading, setLoading] = useState(!cached);
   const [saving, setSaving] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const { data: card } = await axios.get(`${API}/api/vcard/me`, { headers: headers() });
+        const { card, payload: full, aiPersona: ai } = await loadThemeStudio();
         const current = templateIdOf(card.theme);
         setSelected(current);
         setSaved(card.theme ? current : null);
+        const l = lookOf(card);
+        setLook(l);
+        setSavedLook(l);
         setSlug(card.username || '');
-        let full = { card };
-        if (card.username) {
-          const [pub, ai] = await Promise.allSettled([
-            axios.get(`${API}/api/vcard/public/${card.username}`),
-            axios.get(`${API}/api/ai/public/${card.username}`),
-          ]);
-          if (pub.status === 'fulfilled') full = pub.value.data;
-          if (ai.status === 'fulfilled') setAiPersona(ai.value.data);
-        }
+        setAiPersona(ai);
         setPayload(full);
       } catch {
         /* no card yet: the preview shows sample content */
@@ -61,8 +71,10 @@ const Theme = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.post(`${API}/api/vcard`, { theme: selected }, { headers: headers() });
+      await axios.post(`${API}/api/vcard`, { theme: selected, themeOptions: look }, { headers: headers() });
       setSaved(selected);
+      setSavedLook(look);
+      if (payload?.card) writeThemeCache({ payload: { ...payload, card: { ...payload.card, theme: selected, themeOptions: look } }, aiPersona });
       window.dispatchEvent(new Event('vcard:data-changed'));
       toast.success('Template saved!');
       setShowPopup(true);
@@ -78,12 +90,24 @@ const Theme = () => {
       toast.error('Set your card link in Vcard Profile first.');
       return;
     }
-    window.open(`/${slug}${id && id !== saved ? `?template=${id}` : ''}`, '_blank');
+    const target = id || selected;
+    const detail = target && (target !== saved || lookDirty) ? { template: target, palette: look.palette, mode: look.mode || undefined } : null;
+    window.dispatchEvent(new CustomEvent('card:preview', { detail }));
   };
 
   const meta = templateMeta(selected);
-  const ownerName = payload?.card?.personalInfo?.name || 'Your Name';
-  const dirty = selected !== saved;
+  const lookDirty = look.palette !== savedLook.palette || look.mode !== savedLook.mode || look.counter !== savedLook.counter;
+  const dirty = selected !== saved || lookDirty;
+  // Picker and Theme controls share one value: template + palette + mode + counter.
+  const choice = { template: selected, ...look };
+  const onChoice = (c) => {
+    startTransition(() => {
+      setSelected(c.template);
+      setLook({ palette: c.palette, mode: c.mode, counter: c.counter ?? look.counter });
+    });
+  };
+  const previewTemplate = useDeferredValue(selected);
+  const previewLook = useDeferredValue(look);
 
   if (loading)
     return (
@@ -116,18 +140,25 @@ const Theme = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <GlassCard {...fadeUp(0.05)} className="lg:col-span-7 p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Choose your template</h3>
-                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tap a template to preview it with your card.</p>
-              </div>
+            <div className="flex items-center justify-end gap-3 mb-2">
               {saved && (
                 <span className="shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold text-emerald-500">
                   Live: {templateMeta(saved)?.name}
                 </span>
               )}
             </div>
-            <TemplatePicker selected={selected} onPick={setSelected} name={ownerName} columns="auto" dark={isDark} />
+            <LiveTemplatePicker value={choice} onChange={(c) => onChoice({ ...c, counter: look.counter })} dark={isDark} />
+
+            {/* Theme: 5 palettes, Light/Dark, live visitor counter (upstream Theme sheet) */}
+            <div className={`mt-8 pt-5 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+              <div className="mb-4">
+                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Theme</h3>
+                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {meta?.name} · palette 1 in its own mode is the original design.
+                </p>
+              </div>
+              <ThemeControls value={choice} onChange={onChoice} dark={isDark} />
+            </div>
           </GlassCard>
 
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
@@ -149,7 +180,7 @@ const Theme = () => {
                 style={{ transform: 'translateZ(0)', '--wc-vw': '390px' }}
               >
                 <div className="h-full overflow-y-auto overscroll-contain" style={{ scrollbarWidth: 'none' }}>
-                  <WebCard template={selected} data={payload} aiPersona={aiPersona} />
+                  <WebCard template={previewTemplate} palette={previewLook.palette} mode={previewLook.mode || undefined} counter={previewLook.counter} data={payload} aiPersona={aiPersona} />
                 </div>
               </div>
             </GlassCard>
@@ -162,12 +193,12 @@ const Theme = () => {
                   isDark ? 'border-white/20 text-white hover:bg-white/5' : 'border-slate-300 text-slate-800 hover:bg-slate-50'
                 }`}
               >
-                <ExternalLink className="w-4 h-4" />
-                Open live
+                <Eye className="w-4 h-4" />
+                Preview
               </button>
               <GradientButton onClick={handleSave} disabled={saving || !dirty} loading={saving}>
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving…' : dirty ? 'Use this template' : 'Saved'}</span>
+                <span>{saving ? 'Saving…' : selected !== saved ? 'Use this template' : dirty ? 'Save look' : 'Saved'}</span>
               </GradientButton>
             </div>
           </div>

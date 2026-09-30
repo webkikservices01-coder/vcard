@@ -6,6 +6,8 @@ const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const { generateInvoice } = require('../utils/generateInvoice');
 const refrens = require('../utils/refrens');
+const { priceFor } = require('../constants/plans');
+const { logEvent } = require('../utils/logger');
 
 const makeInvoiceNumber = (txn) => `INV-${new Date(txn.createdAt).getFullYear()}-${String(txn._id).slice(-6).toUpperCase()}`;
 
@@ -16,9 +18,13 @@ async function markCompleted(txn) {
     txn.invoiceNumber = makeInvoiceNumber(txn);
     await txn.save();
 
-    const expiry = new Date();
+    // Renewing the same plan early adds to the time left instead of restarting it.
+    const user = await User.findById(txn.userId).select('plan planExpiry');
+    const renewing = user && user.plan === txn.plan && user.planExpiry && new Date(user.planExpiry) > new Date();
+    const expiry = renewing ? new Date(user.planExpiry) : new Date();
     expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
     await User.findByIdAndUpdate(txn.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
+    logEvent(null, 'payment.paid', `Paid ₹${txn.amount} for ${txn.plan} (${txn.billingType}); plan active until ${expiry.toDateString()}`, { userId: txn.userId, meta: { orderId: txn.cfOrderId, invoice: txn.invoiceNumber } });
 
     if (refrens.isConfigured()) {
         try {
@@ -28,7 +34,7 @@ async function markCompleted(txn) {
             txn.refrensPdfUrl = invoice.pdfUrl;
             await txn.save();
         } catch (err) {
-            console.error('Refrens invoice creation failed:', err.message);
+            logEvent(null, 'invoice.refrens.failed', err.message, { level: 'error', userId: txn.userId, meta: { orderId: txn.cfOrderId } });
         }
     }
 }
@@ -43,6 +49,14 @@ const cfHeaders = () => ({
     'x-client-id': process.env.CASHFREE_CLIENT_ID,
     'x-client-secret': process.env.CASHFREE_CLIENT_SECRET,
 });
+
+// Where Cashfree sends the buyer back: the site they paid from, if it's one of ours.
+const RETURN_ORIGINS = /^https:\/\/(www\.)?aicardly\.com$|^http:\/\/localhost:\d+$/;
+const returnBase = (req) => {
+    const origin = req.get('origin') || '';
+    if (RETURN_ORIGINS.test(origin)) return origin;
+    return process.env.FRONTEND_URL || 'https://aicardly.com';
+};
 
 router.get('/', auth, async (req, res) => {
     try {
@@ -70,10 +84,13 @@ router.get('/:id/invoice', auth, async (req, res) => {
 // Cashfree: create order
 router.post('/create-order', auth, async (req, res) => {
     try {
-        const { amount, plan, expireDays } = req.body;
+        // The price comes from the server's catalog, never from the request.
+        const price = priceFor(req.body.planId, req.body.billing);
+        if (!price) return res.status(400).json({ msg: 'Please choose a valid plan.' });
+        const { name: plan, amount, days: expireDays, billingType } = price;
         const user = await User.findById(req.user.userId);
 
-        const txn = new Transaction({ userId: req.user.userId, plan, amount, expireDays: expireDays || 365, status: 'pending' });
+        const txn = new Transaction({ userId: req.user.userId, plan, amount, billingType, expireDays, status: 'pending' });
         await txn.save();
 
         const orderId = `order_${txn._id}`;
@@ -91,12 +108,13 @@ router.post('/create-order', auth, async (req, res) => {
                     customer_phone: user.phone || '9999999999',
                 },
                 order_meta: {
-                    return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/plans?order_id={order_id}`,
+                    return_url: `${returnBase(req)}/dashboard/plans?order_id={order_id}`,
                 },
             }),
         });
         const data = await cfRes.json();
         if (!cfRes.ok) {
+            logEvent(req, 'payment.order.failed', data.message || 'Cashfree rejected the order', { level: 'error', meta: { plan, amount } });
             await Transaction.findByIdAndUpdate(txn._id, { $set: { status: 'failed' } });
             return res.status(400).json({ msg: data.message || 'Failed to create payment order' });
         }
@@ -105,6 +123,7 @@ router.post('/create-order', auth, async (req, res) => {
         txn.paymentSessionId = data.payment_session_id;
         await txn.save();
 
+        logEvent(req, 'payment.order', `Order for ${plan} (${billingType}) ₹${amount}`, { email: user.email, meta: { orderId: data.order_id } });
         res.json({ orderId: data.order_id, paymentSessionId: data.payment_session_id, txnId: txn._id });
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
@@ -148,7 +167,10 @@ router.post('/webhook', async (req, res) => {
             .update(timestamp + rawBody)
             .digest('base64');
 
-        if (expected !== signature) return res.status(400).send('Invalid signature');
+        if (expected !== signature) {
+            logEvent(req, 'payment.webhook.invalid', 'Cashfree webhook with a bad signature', { level: 'warn' });
+            return res.status(400).send('Invalid signature');
+        }
 
         const event = req.body;
         const orderId = event?.data?.order?.order_id;

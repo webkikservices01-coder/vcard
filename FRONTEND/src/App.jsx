@@ -12,6 +12,9 @@ const PlatformChatWidget = lazy(() => import('./components/platformChat/Platform
 
 // Auth
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const MetalNfcCard = lazy(() => import('./pages/MetalNfcCard'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -49,6 +52,7 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
 const AdminSupport = lazy(() => import('./pages/admin/AdminSupport'));
 const AdminCards = lazy(() => import('./pages/admin/AdminCards'));
+const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
 
 // Public
 const PublicVcard = lazy(() => import('./pages/PublicVcard'));
@@ -81,13 +85,22 @@ const PREFETCH = [
   () => import('./pages/Onboarding'),
   () => import('./pages/PublicVcard'),
 ];
+// Signed-in owners also get the card templates + Template Studio (the heaviest dashboard page)
+// ahead of time; visitors of the homepage don't download them.
+const PREFETCH_OWNER = [() => import('./webcard/WebCard'), () => import('./pages/vCard/Theme')];
 
 function App() {
   useEffect(() => {
     // Wake the serverless backend (and its DB connection) before the user logs in.
     fetch(`${import.meta.env.VITE_API_URL}/api/ping`).catch(() => {});
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
-    idle(() => PREFETCH.forEach((load) => load().catch(() => {})));
+    let signedIn = false;
+    try {
+      signedIn = !!localStorage.getItem('token');
+    } catch {
+      /* storage blocked */
+    }
+    idle(() => [...PREFETCH, ...(signedIn ? PREFETCH_OWNER : [])].forEach((load) => load().catch(() => {})));
   }, []);
 
   return (
@@ -104,6 +117,11 @@ function App() {
         <Route path="/login" element={page(<Login />)} />
         <Route path="/register" element={page(<Register />)} />
         <Route path="/forgot-password" element={page(<ForgotPassword />)} />
+        <Route path="/reset-password" element={page(<ForgotPassword />)} />
+
+        <Route path="/metal-nfc-card" element={page(<MetalNfcCard />)} />
+        <Route path="/features" element={page(<FeaturesPage />)} />
+        <Route path="/pricing" element={page(<PricingPage />)} />
 
         {/* Public vCard */}
         {/* Cards live at /<username>; the older /c/<username> links keep working. */}
@@ -157,6 +175,7 @@ function App() {
           <Route path="transactions" element={page(<AdminTransactions />)} />
           <Route path="support"      element={page(<AdminSupport />)} />
           <Route path="cards"        element={page(<AdminCards />)} />
+          <Route path="logs"         element={page(<AdminLogs />)} />
         </Route>
 
         <Route path="*" element={page(<NotFound />)} />

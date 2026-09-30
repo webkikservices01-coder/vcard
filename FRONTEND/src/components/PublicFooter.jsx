@@ -33,6 +33,9 @@ const MAPS_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(FULL_
 const MAPS_DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(FULL_ADDRESS)}`;
 
 const quickLinks = [
+  { label: "Features", to: "/features" },
+  { label: "Pricing", to: "/pricing" },
+  { label: "Metal NFC Card", to: "/metal-nfc-card" },
   { label: "About Us", to: "/about-us" },
   { label: "Contact Us", to: "/contact-us" },
   { label: "FAQs", to: "/faqs" },

@@ -1,12 +1,15 @@
 const PDFDocument = require('pdfkit');
 
-// Fill in real company details here once available (GSTIN, registered address, etc.)
+const { COMPANY: C } = require('../constants/chatbotKnowledge');
+
+// Seller details on the invoice (same source as the site footer and chatbot).
 const COMPANY = {
-    name: 'MYcardLINK',
-    tagline: 'Digital Business Card Platform',
-    email: 'support@mycardlink.site',
-    address: '',   // TODO: add registered business address
-    gstin: '',     // TODO: add GSTIN once available
+    name: C.name,
+    tagline: `${C.product} · AI Digital Business Card Platform`,
+    addressLines: C.addressLines,
+    email: C.email,
+    phone: C.phone,
+    gstin: C.gstin,
 };
 
 const ACCENT = '#db2777';
@@ -22,9 +25,10 @@ function generateInvoice(txn, user, res) {
     // Header
     doc.fontSize(20).fillColor(ACCENT).font('Helvetica-Bold').text(COMPANY.name, 50, 50);
     doc.fontSize(9).fillColor('#6b7280').font('Helvetica').text(COMPANY.tagline, 50, 74);
-    if (COMPANY.address) doc.text(COMPANY.address, 50, 87);
-    doc.text(COMPANY.email, 50, COMPANY.address ? 100 : 87);
-    if (COMPANY.gstin) doc.text(`GSTIN: ${COMPANY.gstin}`, 50, COMPANY.address ? 113 : 100);
+    doc.fontSize(8.5).fillColor('#374151')
+        .text(COMPANY.addressLines.join(' '), 50, 88, { width: 280 })
+        .text(`${COMPANY.email} · ${COMPANY.phone}`, 50, 101)
+        .font('Helvetica-Bold').text(`GSTIN: ${COMPANY.gstin}`, 50, 114);
 
     doc.fontSize(22).fillColor('#111827').font('Helvetica-Bold').text('INVOICE', 350, 50, { align: 'right', width: 195 });
     doc.fontSize(9).fillColor('#6b7280').font('Helvetica')
@@ -32,7 +36,7 @@ function generateInvoice(txn, user, res) {
         .text(`Date: ${formatDate(txn.createdAt)}`, 350, 93, { align: 'right', width: 195 })
         .text(`Status: PAID`, 350, 106, { align: 'right', width: 195 })
         .fontSize(7).fillColor('#9ca3af')
-        .text(`Ref: ${txn._id}`, 350, 119, { align: 'right', width: 195 });
+        .text(`Payment ref: ${txn.cfOrderId || txn._id}`, 350, 119, { align: 'right', width: 195 });
 
     doc.moveTo(50, 140).lineTo(545, 140).strokeColor('#e5e7eb').stroke();
 
@@ -52,7 +56,11 @@ function generateInvoice(txn, user, res) {
 
     const rowY = tableTop + 24;
     doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text(`${txn.plan} Plan`, 62, rowY + 12);
-    doc.fillColor('#6b7280').font('Helvetica').fontSize(9).text('MYcardLINK subscription', 62, rowY + 27);
+    const start = new Date(txn.updatedAt || txn.createdAt);
+    const end = new Date(start);
+    end.setDate(end.getDate() + (txn.expireDays || 365));
+    doc.fillColor('#6b7280').font('Helvetica').fontSize(9)
+        .text(`Aicardly subscription · ${txn.expireDays || 365} days (${formatDate(start)} – ${formatDate(end)})`, 62, rowY + 27, { width: 260 });
     doc.fillColor('#374151').font('Helvetica').fontSize(9).text(txn.billingType || 'Yearly', 330, rowY + 12);
     doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text(formatMoney(txn.amount), 460, rowY + 12, { width: 75, align: 'right' });
 

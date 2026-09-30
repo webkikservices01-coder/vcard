@@ -1,0 +1,97 @@
+{
+  "_about": "Homepage structured data (schema.org JSON-LD). vite.config.js turns this into <script type=\"application/ld+json\"> tags in index.html at build time, and the homepage FAQ section (LandingPage.jsx) shows the same `faqs`, so the markup always matches what visitors see. og.php keeps these tags on the homepage only. Metal NFC Product / BreadcrumbList go on /metal-nfc-card once that page and its price exist. Reviews are left out until they are confirmed as real customer reviews.",
+  "faqs": [
+    {
+      "q": "What is a digital business card?",
+      "a": "A digital business card is an online version of your paper visiting card. It holds your name, role, phone number, email, social links, portfolio, and more on one page that you can share with a link, a QR code, or an NFC tap. You can update it anytime, and it never gets lost or outdated like a printed card."
+    },
+    {
+      "q": "How does an NFC business card work?",
+      "a": "An NFC business card has a tiny chip inside it. When someone taps the card on the back of their phone, your Aicardly digital business card opens instantly in their browser. Nothing has to be typed or scanned, and it works with most modern iPhone and Android phones."
+    },
+    {
+      "q": "Do visitors need to install an app?",
+      "a": "No. Visitors do not need to install anything. Your card opens in any phone or desktop browser through your link, QR code, or NFC tap. You only need a free Aicardly account to create and manage your card."
+    },
+    {
+      "q": "Is Aicardly free?",
+      "a": "Yes, you can create your digital business card for free with no credit card required. Paid plans unlock the AI chat assistant and other advanced features, and premium metal NFC cards are available when you want to upgrade."
+    },
+    {
+      "q": "How does the AI chat widget work?",
+      "a": "The AI chat widget is an assistant on your digital card that greets visitors and answers common questions about you, your services, and your business. You set it up with your details and tone, and it replies 24/7, even when you are busy or offline, helping you capture leads without missing a call."
+    },
+    {
+      "q": "Can I get my own custom link like aicardly.com/yourname?",
+      "a": "Yes. You can choose your own public link such as aicardly.com/yourname, based on your name or brand. It is short, easy to remember, and simple to add to your email signature, WhatsApp, LinkedIn, and social bios."
+    }
+  ],
+  "graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://aicardly.com/#organization",
+      "name": "Aicardly",
+      "url": "https://aicardly.com/",
+      "logo": { "@type": "ImageObject", "url": "https://aicardly.com/logo.png", "width": 512, "height": 512 },
+      "image": "https://aicardly.com/og-image.jpg",
+      "description": "Aicardly is an AI-powered digital business card platform with QR code, NFC and WhatsApp sharing, plus premium metal NFC business cards.",
+      "email": "webkikservices01@gmail.com",
+      "telephone": "+91-9868698698",
+      "parentOrganization": { "@id": "https://aicardly.com/#webkik" },
+      "areaServed": "IN",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "telephone": "+91-9868698698",
+        "email": "webkikservices01@gmail.com",
+        "areaServed": "IN",
+        "availableLanguage": ["English", "Hindi"]
+      }
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": "https://aicardly.com/#webkik",
+      "name": "Webkik Services",
+      "url": "https://aicardly.com/",
+      "image": "https://aicardly.com/og-image.jpg",
+      "telephone": "+91-9868698698",
+      "email": "webkikservices01@gmail.com",
+      "priceRange": "₹",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "WZ-52, 2nd Floor, Above Shubham Band, Tagore Garden",
+        "addressLocality": "Delhi",
+        "addressRegion": "Delhi",
+        "postalCode": "110027",
+        "addressCountry": "IN"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://aicardly.com/#website",
+      "url": "https://aicardly.com/",
+      "name": "Aicardly",
+      "description": "AI digital business card and metal NFC business cards in India",
+      "inLanguage": "en-IN",
+      "publisher": { "@id": "https://aicardly.com/#organization" }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://aicardly.com/#software",
+      "name": "Aicardly",
+      "url": "https://aicardly.com/",
+      "description": "AI-powered digital business card platform. Create a card in under 60 seconds and share it with a QR code, an NFC tap or a custom link. Includes an AI chat assistant, analytics and WhatsApp quick connect.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "image": "https://aicardly.com/og-image.jpg",
+      "publisher": { "@id": "https://aicardly.com/#organization" },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock",
+        "url": "https://aicardly.com/"
+      }
+    }
+  ]
+}

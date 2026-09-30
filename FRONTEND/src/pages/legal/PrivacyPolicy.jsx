@@ -81,6 +81,8 @@ const PrivacyPolicy = () => (
       Everything you publish on your card is visible to anyone who has its link, QR code or NFC tag, and it can be saved
       to their phone contacts. Only add details you are comfortable sharing publicly. You can edit or remove any of it at
       any time from your dashboard.
+      Public cards can also appear in search engines such as Google. To keep your card out of search results, turn off
+      "Search Engine Indexing" in Advanced Settings.
     </p>
 
     <H2>5. Visitor data received by card owners</H2>
@@ -169,11 +171,19 @@ const PrivacyPolicy = () => (
       will inform the Data Protection Board of India and affected users as required by the DPDP Act.
     </p>
 
-    <H2>11. Cookies and local storage</H2>
-    <p>
-      We use only essential browser storage: to keep you signed in, remember your theme and similar preferences, and keep
-      the Service secure. We do not use advertising cookies or third-party ad trackers.
-    </p>
+    <H2>11. Cookies, local storage and analytics</H2>
+    <ul>
+      <li>
+        <strong>Essential storage:</strong> to keep you signed in, remember your theme and similar preferences, and keep the
+        Service secure.
+      </li>
+      <li>
+        <strong>Analytics:</strong> we use Google Tag Manager to load Google analytics tools, which use cookies to measure page
+        visits and how people use the website (for example pages viewed, device type and approximate location). This helps us
+        improve Aicardly. We do not sell this data. You can block these cookies in your browser settings, or use Google's
+        Analytics opt-out browser add-on.
+      </li>
+    </ul>
 
     <H2>12. Grievance Officer</H2>
     <p>For any question, request or complaint about your personal data, contact our Grievance Officer:</p>

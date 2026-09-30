@@ -6,7 +6,7 @@ import { COMPANY } from '../PublicFooter';
 // lives there), and /onboarding.
 export const ALLOWED_PATHS = [
   '/', '/login', '/register', '/forgot-password',
-  '/about-us', '/contact-us', '/faqs',
+  '/about-us', '/contact-us', '/faqs', '/features', '/pricing', '/metal-nfc-card',
   '/privacy-policy', '/terms-conditions', '/refund-policy', '/cancellation-policy',
 ];
 

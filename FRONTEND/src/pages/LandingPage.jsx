@@ -34,10 +34,14 @@ import {
   Cpu,
   Radio,
 } from "lucide-react";
-import PublicFooter from "../components/PublicFooter";
+import PublicFooter, { COMPANY } from "../components/PublicFooter";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import CyberCard3D from "./CyberCard3D";
 import { plans as realPlans } from "../data/plans";
+import HOME_SCHEMA from "../data/homeSchema.json";
+import MetalCardSection from "../components/MetalCardSection";
+import HomeExplainer from "../components/HomeExplainer";
+import TryYourCard from "../components/TryYourCard";
 import { PRICING_ENABLED } from "../utils/plan";
 import { useTheme } from "../context/ThemeContext";
 
@@ -850,30 +854,30 @@ export function LandingPage() {
                     : "border border-pink-100 bg-white/80 p-1 shadow-sm backdrop-blur-md"
               }`}
             >
-              <a
-                href="#nfc-card"
+              <Link
+                to="/metal-nfc-card"
                 className={`nav-link-glow anim-nav-features rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
                   isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                 }`}
               >
-                Executive Card
-              </a>
-              <a
-                href="#features"
+                Metal NFC Card
+              </Link>
+              <Link
+                to="/features"
                 className={`nav-link-glow anim-nav-features rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
                   isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                 }`}
               >
                 Features
-              </a>
-              {PRICING_ENABLED && (<a
-                href="#pricing"
+              </Link>
+              <Link
+                to="/pricing"
                 className={`nav-link-glow anim-nav-pricing rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
                   isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                 }`}
               >
                 Pricing
-              </a>)}
+              </Link>
               <a
                 href="#stories"
                 className={`nav-link-glow anim-nav-stories rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
@@ -882,10 +886,30 @@ export function LandingPage() {
               >
                 Stories
               </a>
+              <Link
+                to="/contact-us"
+                className={`nav-link-glow rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
+                  isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
+                }`}
+              >
+                Contact
+              </Link>
             </div>
 
             {/* Right Side: Theme Toggle + Auth CTAs */}
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <a
+                href={COMPANY.phoneHref}
+                aria-label={`Call ${COMPANY.phone}`}
+                className={`inline-flex items-center gap-1.5 rounded-full text-sm font-semibold transition-colors ${
+                  isDark ? "text-slate-200 hover:text-white" : "text-slate-800 hover:text-[#9F1C44]"
+                }`}
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-[#E70C65]/10 text-[#E70C65]">
+                  <Phone className="h-4 w-4" />
+                </span>
+                <span className="hidden xl:inline">{COMPANY.phone}</span>
+              </a>
               
               <div className="scale-90 sm:scale-100">
                 <ThemeToggle />
@@ -931,7 +955,7 @@ export function LandingPage() {
                   ? "border-white/10 bg-white/[0.05] text-[#ff6b9d]" 
                   : "border-[#E70C65]/20 bg-pink-50 text-[#9F1C44]"
               }`}>
-                <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> The AI-Powered Digital Card Platform
+                <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> AI Digital Business Card &amp; Metal NFC Cards
               </span>
               <h1 className={`mt-5 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl ${
                 isDark ? "text-white" : "text-slate-900"
@@ -948,7 +972,7 @@ export function LandingPage() {
               </p>
 
               <TypewriterText 
-                text="Design A Breathtaking Digital Business Card, Share It With A Single Link Or QR, And Let An AI Assistant Handle The Follow-Ups. Built For Professionals Who Care About First Impressions." 
+                text="Create a stunning AI digital business card and share it instantly with a QR code, an NFC tap, or one custom link. Your AI assistant greets visitors, answers questions, and handles follow-ups 24/7. Built for professionals who care about first impressions." 
                 speed={45}
                 delay={700}
               />
@@ -984,7 +1008,7 @@ export function LandingPage() {
                       <Star key={i} className="h-3.5 w-3.5 fill-[#E70C65] text-[#E70C65]" />
                     ))}
                   </div>
-                  <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>Loved By Early Professionals</p>
+                  <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>Trusted by 10,000+ Professionals in India</p>
                 </div>
               </div>
               <p className={`mt-6 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -1040,6 +1064,12 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── 1b. What it is / how it works / where / benefits ── */}
+      <HomeExplainer />
+
+      {/* ── 1c. Try it free: live preview card ── */}
+      <TryYourCard />
+
       {/* ── 2. NEW DEDICATED 3D EXECUTIVE NFC SHOWCASE SECTION ── */}
       <section 
         id="nfc-card"
@@ -1053,8 +1083,8 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <SectionHeading 
             eyebrow="Hardware Meets Intelligence" 
-            title="Next-Gen 3D Holographic Identity." 
-            subtitle="Rotate and interact with your custom contactless executive card. One tap transfers your full persona."
+            title="Next-Gen 3D Metal NFC Business Card." 
+            subtitle="Rotate and interact with your custom 3D metal NFC business card. One tap shares your digital business card, contact details, and AI assistant with any phone, with no app needed."
           />
 
           <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:items-center">
@@ -1121,10 +1151,10 @@ export function LandingPage() {
 
               <div className="pt-2">
                 <Link
-                  to="/register"
+                  to="/metal-nfc-card"
                   className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E70C65] to-[#9F1C44] px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#E70C65]/30 transition-all hover:shadow-2xl hover:shadow-[#E70C65]/50 active:scale-95 cursor-pointer"
                 >
-                  <span>Claim Your Custom Card</span>
+                  <span>Order Your Metal NFC Card</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
@@ -1267,6 +1297,9 @@ export function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* ── 5b. Metal NFC Card Section ─────────────────────── */}
+      <MetalCardSection />
 
       {/* ── 6. Pricing Section ──────────────────────────────── */}
       {PRICING_ENABLED && (
@@ -1477,6 +1510,30 @@ export function LandingPage() {
             <span>Build Your Free Card</span> <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
           </Link>
         </div>
+      </section>
+
+      {/* ── 9. FAQ Section (same Q&A as the FAQPage schema: src/data/homeSchema.json) ── */}
+      <section id="faq" className="relative mx-auto max-w-3xl px-6 pb-24 lg:px-10">
+        <SectionHeading eyebrow="FAQ" title="Questions, Answered." subtitle="Everything People Ask Before Making Their First Aicardly." />
+        <div className="mt-12 space-y-3">
+          {HOME_SCHEMA.faqs.map((f) => (
+            <details
+              key={f.q}
+              className={`group rounded-2xl border px-5 py-4 transition-colors ${
+                isDark ? "border-white/10 bg-white/[0.03] open:bg-white/[0.06]" : "border-slate-200 bg-white open:shadow-md"
+              }`}
+            >
+              <summary className={`flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold ${isDark ? "text-white" : "text-slate-900"}`}>
+                <h3 className="text-base font-semibold">{f.q}</h3>
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#E70C65]/10 text-[#E70C65] transition-transform duration-300 group-open:rotate-45 text-lg leading-none">+</span>
+              </summary>
+              <p className={`mt-3 text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>{f.a}</p>
+            </details>
+          ))}
+        </div>
+        <p className={`mt-6 text-center text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          More questions? See all <Link to="/faqs" className="font-semibold text-[#E70C65] hover:underline">FAQs</Link>.
+        </p>
       </section>
 
       <PublicFooter />

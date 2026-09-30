@@ -12,9 +12,8 @@ import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { useNavigate } from 'react-router-dom';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
 import MeshBackground from '../../components/ui/MeshBackground';
-import DynamicCyberCard3D from '../../components/ui/DynamicCyberCard3D';
+import LiveCardPreview from '../../components/LiveCardPreview';
 import { useTheme } from '../../context/ThemeContext';
-import { templatePalette } from '../../webcard/templates/TemplatePicker';
 import { useUsernameCheck, toUsername } from '../../utils/username';
 
 const MAX_BIO_WORDS = 50;
@@ -61,13 +60,15 @@ const VcardProfile = () => {
     banner: null
   });
 
-  const [cardThemeData, setCardThemeData] = useState({
+  const [, setCardThemeData] = useState({
     theme: '',
     customTheme: null
   });
 
   const [uploading, setUploading] = useState({ profile: false, banner: false });
   const [saving, setSaving] = useState(false);
+  // Username as saved (the live preview loads the card by it, not by the half-typed field).
+  const [savedSlug, setSavedSlug] = useState('');
   const [showPopup, setShowPopup] = useState(false);
   const [showVoiceFill, setShowVoiceFill] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -81,6 +82,7 @@ const VcardProfile = () => {
         });
 
         if (res.data) {
+          setSavedSlug(res.data.username || '');
           setFormData({
             profileImage: res.data.personalInfo?.profilePic || '',
             bannerImage: res.data.personalInfo?.bannerImage || '',
@@ -215,7 +217,7 @@ const VcardProfile = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (formData.slug) {
-      window.open(`/${formData.slug}`, '_blank');
+      window.dispatchEvent(new Event('card:preview'));
     } else {
       toast.error("Pehle profile save karein!");
     }
@@ -245,14 +247,6 @@ const VcardProfile = () => {
       };
     });
   };
-
-  // The 3D card takes the colours of the card's WebCard template.
-  const palette = templatePalette(cardThemeData.theme);
-  const laserColor = palette.accent;
-  const cardBg = palette.card;
-  const surfaceBg = palette.surface;
-  const linkBg = palette.link;
-  const subText = palette.sub;
 
   const hasAvatar = Boolean(formData.profileImage && formData.profileImage.trim() !== '');
   const hasBg = Boolean(formData.bannerImage && formData.bannerImage.trim() !== '');
@@ -567,31 +561,28 @@ const VcardProfile = () => {
                 <div className="flex items-center gap-2">
                   <Radio className="w-3.5 h-3.5 text-[#ff6b9d] animate-pulse" />
                   <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    Live 3D Hardware Sync
+                    Your Live Card
                   </span>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  Theme Synced
+                  Updates as you type
                 </span>
               </div>
 
-              <DynamicCyberCard3D
-                name={formData.title}
-                designation={formData.subTitle}
-                slug={formData.slug}
-                photoUrl={getImageUrl(formData.profileImage)}
-                bgImageUrl={getImageUrl(formData.bannerImage)}
-                themeColor={laserColor}
-                cardBgColor={cardBg}
-                surfaceBgColor={surfaceBg}
-                backBgColor={surfaceBg}
-                linkBgColor={linkBg}
-                subTextColor={subText}
-                isDark={isDark}
+              <LiveCardPreview
+                username={savedSlug}
+                height={560}
+                overrides={{
+                  name: formData.title,
+                  designation: formData.subTitle,
+                  bio: formData.description,
+                  profilePic: formData.profileImage,
+                  bannerImage: formData.bannerImage,
+                }}
               />
 
               <p className={`text-center text-[11px] mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Card matches your Theme Studio colors and database profile in real-time.
+                This is your real card with your template and colours. Scroll inside to see every section.
               </p>
             </div>
           </div>

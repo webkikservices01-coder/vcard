@@ -6,12 +6,17 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
+// Vercel sits in front of the app: trust its X-Forwarded-For so rate limits and logs see the real visitor IP.
+app.set('trust proxy', 1);
+const { requestLogger, logEvent } = require('./utils/logger');
 const PORT = process.env.PORT || 5000;
 
 // CORS_ORIGINS = comma-separated list (e.g. https://yourdomain.com,https://www.yourdomain.com).
 // Unset = allow all origins (same as before).
 const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors(corsOrigins.length ? { origin: corsOrigins } : undefined));
+// One log line per API request (method, path, status, ms, IP, user). See utils/logger.js.
+app.use(requestLogger);
 
 // Fix: Only apply express.json() when Content-Type is application/json so multipart/form-data uploads work perfectly
 app.use((req, res, next) => {
@@ -75,6 +80,13 @@ app.use('/api/admin',           require('./routes/admin'));
 app.use('/api/og',              require('./routes/og'));
 
 app.get('/', (req, res) => res.send('Aicardly API running!'));
+
+// Anything a route didn't catch: log it and answer with JSON instead of an HTML stack trace.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    logEvent(req, 'http.exception', err.message, { level: 'error', meta: { stack: String(err.stack || '').split(/\r?\n/).slice(0, 4).join(' | ') } });
+    res.status(err.status || 500).json({ msg: 'Something went wrong. Please try again.' });
+});
 
 if (require.main === module) {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

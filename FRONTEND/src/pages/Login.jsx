@@ -5,6 +5,7 @@ import { Mail, Lock, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-r
 import axios from 'axios';
 import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
+import BackButton from '../components/BackButton';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
 import PasswordEye from '../components/PasswordEye';
@@ -70,7 +71,7 @@ export const Login = () => {
     setError('');
     setLoading(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, form);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email: form.email.trim().toLowerCase(), password: form.password });
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -117,7 +118,8 @@ export const Login = () => {
       `}</style>
 
       {/* Floating Theme Toggle (Fixed Top-Right) */}
-      <div className="fixed top-5 right-5 z-50">
+      <div className="fixed top-5 right-5 z-50 flex items-center gap-2">
+        <BackButton />
         <ThemeToggle />
       </div>
 

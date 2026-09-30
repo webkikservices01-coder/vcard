@@ -1,4 +1,6 @@
 const express = require('express');
+const { CardPresence, CardDayView } = require('../models/CardVisit');
+const { logEvent } = require('../utils/logger');
 const router = express.Router();
 
 const auth = require('../middleware/auth');
@@ -27,9 +29,9 @@ const words = (list, max = 40) => (Array.isArray(list) ? list : []).map(v => str
 // Card links live at /<username> (older /c/<username> too): one owner per username, URL-safe,
 // and never the name of a site page, or the page would hide the card.
 const RESERVED_USERNAMES = new Set([
-    'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'onboarding', 'c', 'www', 'support', 'help',
+    'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'reset-password', 'onboarding', 'c', 'www', 'support', 'help',
     'about', 'about-us', 'contact', 'contact-us', 'faqs', 'privacy-policy', 'terms-conditions', 'refund-policy',
-    'cancellation-policy', 'data-processing-addendum', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined',
+    'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined',
 ]);
 const usernameProblem = (u) => {
     if (!u) return 'Please choose a username.';
@@ -59,6 +61,12 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         if (req.body.designation !== undefined) updateFields['personalInfo.designation'] = req.body.designation;
         if (req.body.bio !== undefined) updateFields['personalInfo.bio'] = req.body.bio;
         if (req.body.theme !== undefined) updateFields.theme = req.body.theme;
+        if (req.body.themeOptions && typeof req.body.themeOptions === 'object') {
+            const o = req.body.themeOptions;
+            if (o.palette !== undefined) updateFields['themeOptions.palette'] = Math.max(0, Math.min(4, parseInt(o.palette, 10) || 0));
+            if (o.mode !== undefined) updateFields['themeOptions.mode'] = ['light', 'dark'].includes(o.mode) ? o.mode : '';
+            if (o.counter !== undefined) updateFields['themeOptions.counter'] = !!o.counter;
+        }
         
         // FIX: Ensure customTheme is properly parsed and included in update fields
         if (req.body.customTheme !== undefined) {
@@ -187,6 +195,9 @@ router.get('/public/:username', async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
+// Today's date in India, for per-day view counts.
+const istDay = () => new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10);
+
 router.post('/public/:username/view', async (req, res) => {
     try {
         const card = await vCard.findOneAndUpdate(
@@ -195,8 +206,32 @@ router.post('/public/:username/view', async (req, res) => {
             { new: true, select: 'viewCount' }
         );
         if (!card) return res.status(404).json({ msg: 'Card not found' });
+        await CardDayView.updateOne({ vcardId: card._id, day: istDay() }, { $inc: { count: 1 } }, { upsert: true })
+            .catch((err) => console.error('Day view count failed:', err.message));
         res.json({ viewCount: card.viewCount });
     } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// Live visitor counter: GET ?v=<visitor id> marks this visitor as on the card now and returns
+// { now, today, total }. The card polls it every 15 seconds while it is open.
+router.get('/public/:username/live', async (req, res) => {
+    try {
+        const card = await vCard.findOne({ username: req.params.username }).select('viewCount');
+        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        const visitor = String(req.query.v || '').replace(/[^\w-]/g, '').slice(0, 64);
+        if (visitor) {
+            await CardPresence.updateOne({ vcardId: card._id, visitor }, { $set: { lastSeen: new Date() } }, { upsert: true });
+        }
+        const [now, day] = await Promise.all([
+            CardPresence.countDocuments({ vcardId: card._id, lastSeen: { $gte: new Date(Date.now() - 60 * 1000) } }),
+            CardDayView.findOne({ vcardId: card._id, day: istDay() }).select('count').lean(),
+        ]);
+        res.set('Cache-Control', 'no-store');
+        res.json({ now, today: day?.count || 0, total: card.viewCount || 0 });
+    } catch (err) {
+        console.error('Live stats error:', err.message);
+        res.status(500).json({ msg: 'Could not load visitor stats' });
+    }
 });
 
 router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
@@ -215,6 +250,7 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
         if (!card) return res.status(404).json({ msg: 'Card not found' });
 
         const enquiry = await Enquiry.create({ vcardId: card._id, name, email, mobile, message, consentAt: new Date(), cohort });
+        logEvent(req, 'enquiry.new', `Enquiry on /${card.username} from ${name}`, { userId: card.userId, email });
 
         // Best-effort email to the owner (settings' enquiry email, else their account email).
         const [settings, owner] = await Promise.all([

@@ -167,3 +167,31 @@
 .wc-swipe-dots{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:10px;min-height:8px;font-size:12px;opacity:.75}
 .wc-swipe-dots button{width:6px;height:6px;padding:0;border:0;border-radius:999px;background:currentColor;opacity:.3;cursor:pointer;transition:width .3s,opacity .3s}
 .wc-swipe-dots button.on{width:18px;opacity:.9}
+
+/* Visitor counter, Save Contact sheet and toast (upstream template kit) */
+@keyframes wcPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 6px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@keyframes wcRoll{from{transform:translateY(90%);opacity:0}to{transform:none;opacity:1}}
+@keyframes wcUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes wcToast{from{transform:translate(-50%,12px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.wc-pulse{animation:wcPulse 2s ease-out infinite}
+.wc-roll{animation:wcRoll .3s ease-out}
+.wc-sheet{animation:wcUp .22s ease-out}
+.wc-toast{animation:wcToast .22s ease-out}
+.wc-press:active{transform:scale(.97)}
+@media (prefers-reduced-motion: reduce){.wc-pulse,.wc-roll,.wc-sheet,.wc-toast{animation:none!important}}
+
+/* Owner buttons on their own live card (Templates / Theme) */
+.wc-ownerbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 48px);right:calc(max(0px,(100vw - 480px)/2) + 12px);z-index:50;display:flex;gap:6px}
+.wc-ownerbar button{height:36px;padding:0 12px;border:none;border-radius:999px;background:rgba(20,20,26,.88);color:#fff;font:600 13px 'Inter',sans-serif;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* Live template thumbnails fade in as they mount */
+@keyframes wcThumbIn{from{opacity:0}to{opacity:1}}
+
+/* Side Share button on the public card */
+.wc-thumb *,.wc-thumb *::before,.wc-thumb *::after{animation:none!important;transition:none!important}
+.wc-thumb iframe,.wc-thumb video{display:none!important}
+.wc-sideshare{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:40;display:flex;align-items:center;gap:6px;height:36px;padding:0 14px 0 11px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(20,20,26,.82);color:#fff;font:600 13px 'Inter',sans-serif;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px -8px rgba(0,0,0,.45);transition:transform .2s ease,background .2s ease}
+.wc-sideshare svg{width:17px;height:17px}
+.wc-sideshare:hover{background:rgba(20,20,26,.95);transform:scale(1.05)}
+.wc-sideshare:active{transform:scale(.95)}
+.wc-sharenote{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:rgba(20,20,26,.92);color:#fff;font:500 13px 'Inter',sans-serif;word-break:break-all;box-shadow:0 8px 24px -8px rgba(0,0,0,.5);animation:wcNoteIn .25s ease-out}
+@keyframes wcNoteIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}

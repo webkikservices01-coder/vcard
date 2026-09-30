@@ -5,6 +5,7 @@ const User = require('../models/User');
 const vCard = require('../models/vCard');
 const Product = require('../models/Product');
 const Testimonial = require('../models/Testimonial');
+const { activePlan } = require('../constants/plans');
 
 router.get('/', auth, async (req, res) => {
     try {
@@ -12,7 +13,8 @@ router.get('/', auth, async (req, res) => {
         const card = await vCard.findOne({ userId: req.user.userId });
 
         let stats = {
-            currentPlan: user.plan || 'Free Trial',
+            // After planExpiry the user is back on the free plan.
+            currentPlan: activePlan(user) || 'Free Trial',
             planExpiry: user.planExpiry || null,
             remainingDays: null,
             vcardCount: card ? 1 : 0,
@@ -31,7 +33,7 @@ router.get('/', auth, async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 phone: user.phone,
-                plan: user.plan,
+                plan: activePlan(user),
                 status: user.status,
                 isAdmin: user.isAdmin || false,
                 cardLimit: user.cardLimit || 1

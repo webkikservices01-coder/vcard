@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -190,7 +191,8 @@ const AdminUsers = () => {
       </GlassCard>
 
       {/* User Detail Modal */}
-      <AnimatePresence>
+      {createPortal(
+<AnimatePresence>
         {selected && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -291,7 +293,8 @@ const AdminUsers = () => {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+ document.body)}
     </div>
   );
 };

@@ -43,6 +43,9 @@ const cardSlug = (path) => {
   return m && !SEO.pages[path] ? m[1].toLowerCase() : null;
 };
 
+// PublicVcard: honour the owner's "Search Engine Indexing" switch (Advanced Settings).
+export const setCardIndexing = (allowed) => setMeta('name', 'robots', allowed ? 'index, follow' : 'noindex, follow');
+
 // PublicVcard calls this when a username has no card, so the empty page isn't indexed.
 export const markNotFound = () => {
   setMeta('name', 'robots', 'noindex, follow');
@@ -68,6 +71,16 @@ export default function Seo() {
     if (isPrivate) document.title = 'Dashboard | Aicardly';
 
     // Card pages set their own title (PublicVcard) and the backend supplies their preview text.
+    // Page-specific structured data from seo-pages.json (e.g. BreadcrumbList on /metal-nfc-card).
+    document.head.querySelectorAll('script[data-seo-jsonld]').forEach((el) => el.remove());
+    (page?.jsonld || []).forEach((ld) => {
+      const el = document.createElement('script');
+      el.type = 'application/ld+json';
+      el.dataset.seoJsonld = '1';
+      el.textContent = JSON.stringify(ld);
+      document.head.appendChild(el);
+    });
+
     if (page) {
       document.title = page.title;
       setMeta('name', 'description', page.description);
@@ -76,6 +89,20 @@ export default function Seo() {
       setMeta('name', 'twitter:title', page.title);
       setMeta('name', 'twitter:description', page.description);
     }
+
+    // Google Tag Manager: the React app changes pages without a reload, so tell GTM about each
+    // one. In GTM, trigger page-view tags on the custom event "page_view". Waits a moment so card
+    // pages have set their own title first.
+    const t = setTimeout(() => {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: path,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }, 300);
+    return () => clearTimeout(t);
   }, [pathname]);
   return null;
 }

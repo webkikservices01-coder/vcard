@@ -7,6 +7,7 @@ import {
   useLive,
   liveFrame,
   ImageSlot,
+  CoverImage,
   Fill,
   CardQR,
   EnquiryForm,
@@ -23,6 +24,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   componentDidMount() {
@@ -138,7 +140,7 @@ export function DevTerminal(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -166,6 +168,7 @@ export function DevTerminal(props) {
           backgroundSize: '22px 22px',
         }}
       >
+        <CoverImage style={{ opacity: 0.55 }} />
         <div
           style={{
             position: 'absolute',
@@ -1469,5 +1472,5 @@ export function DevTerminal(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

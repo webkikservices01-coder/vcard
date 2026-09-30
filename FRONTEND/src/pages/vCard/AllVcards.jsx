@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -184,7 +185,7 @@ const LiveCardTile2D = ({ card, onDelete }) => {
         style={{
           backgroundImage: bgImageUrl 
             ? `linear-gradient(rgba(18, 24, 38, 0.4), rgba(18, 24, 38, 0.75)), url(${bgImageUrl})` 
-            : 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)',
+            : `radial-gradient(circle at 85% 15%, ${themeColor}66, transparent 55%), radial-gradient(circle at 10% 95%, ${themeColor}33, transparent 50%), linear-gradient(145deg, #1e293b 0%, #0f172a 100%)`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderColor: 'rgba(255, 255, 255, 0.25)',
@@ -292,7 +293,7 @@ const AllVcards = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Custom Matrix Text State
-  const [matrixText, setMatrixText] = useState(() => localStorage.getItem('matrix_custom_text') || 'WEBKIK SERVICES');
+  const [matrixText, setMatrixText] = useState(() => localStorage.getItem('matrix_custom_text') || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tempText, setTempText] = useState(matrixText);
 
@@ -469,13 +470,14 @@ const AllVcards = () => {
 
           {/* Right Column: Smokee Orbiting Animation */}
           <div className="lg:col-span-6 flex items-center justify-center">
-            <OrbitingTechAnimation matrixText={matrixText} />
+            <OrbitingTechAnimation matrixText={matrixText || (cards[0]?.personalInfo?.company || cards[0]?.personalInfo?.name || 'Your Brand').toUpperCase()} />
           </div>
         </div>
       )}
 
       {/* Customize Text Modal */}
-      <AnimatePresence>
+      {createPortal(
+<AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
             <motion.div
@@ -513,7 +515,7 @@ const AllVcards = () => {
                     value={tempText}
                     onChange={(e) => setTempText(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white text-sm outline-none focus:ring-2 focus:ring-[#E70C65]"
-                    placeholder="e.g. WEBKIK SERVICES"
+                    placeholder="e.g. YOUR COMPANY"
                     required
                   />
                 </div>
@@ -537,7 +539,8 @@ const AllVcards = () => {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+ document.body)}
     </div>
   );
 };

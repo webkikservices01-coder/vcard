@@ -23,6 +23,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   componentDidMount() {
@@ -107,7 +108,7 @@ export function EditorialArchitect(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -1299,5 +1300,5 @@ export function EditorialArchitect(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

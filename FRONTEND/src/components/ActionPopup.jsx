@@ -1,10 +1,13 @@
+import { createPortal } from 'react-dom';
 import Button from './ui/Button';
 
 // Naya prop add kiya: nextText (jiska default value "Next Step" hai)
 const ActionPopup = ({ isOpen, onClose, onPreview, onNext, nextText = "Next Step" }) => {
   if (!isOpen) return null;
 
-  return (
+  // Rendered into <body>: the dashboard's animated page wrapper would otherwise trap this
+  // fixed overlay underneath the sticky header and vCard tabs.
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 transition-all duration-300">
       <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transform scale-100 animate-in fade-in zoom-in-95 duration-200">
         
@@ -40,7 +43,8 @@ const ActionPopup = ({ isOpen, onClose, onPreview, onNext, nextText = "Next Step
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

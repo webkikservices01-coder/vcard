@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useCallback, useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles, Clapperboard, Inbox, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Eye, Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles, Clapperboard, Inbox, BarChart3 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
 import ThemeToggle from './ui/ThemeToggle';
@@ -9,6 +9,9 @@ import MeshBackground from './ui/MeshBackground';
 import IconButton from './ui/IconButton';
 import axios from 'axios';
 import { hasChatFill, PRICING_ENABLED } from '../utils/plan';
+import { warmThemeStudio } from '../utils/themeStudioCache';
+
+const CardPreviewPanel = lazy(() => import('./CardPreviewPanel'));
 
 const breadcrumbMap = {
   '/dashboard': 'Dashboard',
@@ -61,6 +64,19 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState({ name: 'User', plan: 'Free Trial' });
+  const [cardSlug, setCardSlug] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLook, setPreviewLook] = useState(null);
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
+  // Pages ask for the preview with a 'card:preview' event (detail: an unsaved look, or null).
+  useEffect(() => {
+    const open = (e) => {
+      setPreviewLook(e.detail || null);
+      setPreviewOpen(true);
+    };
+    window.addEventListener('card:preview', open);
+    return () => window.removeEventListener('card:preview', open);
+  }, []);
   const dropdownRef = useRef(null);
 
   // Mobile Tabs Dropdown State
@@ -80,6 +96,7 @@ const DashboardLayout = () => {
           headers: { 'x-auth-token': token }
         });
         if (res.data?.user) setUser(res.data.user);
+        if (res.data?.cardSlug) setCardSlug(res.data.cardSlug);
 
         const { vcardCount, cardName, cardSlug } = res.data || {};
         if (!vcardCount || !cardName || !cardSlug) {
@@ -89,6 +106,16 @@ const DashboardLayout = () => {
     };
     fetchUser();
   }, [navigate]);
+
+  // Card templates are the heaviest part of the dashboard (Theme, previews): fetch them early.
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
+    idle(() => {
+      import('../webcard/WebCard').catch(() => {});
+      // Template Studio data too, so the Theme page opens instantly.
+      warmThemeStudio();
+    });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -115,8 +142,7 @@ const DashboardLayout = () => {
         @keyframes lightingSlideRightToLeft {
           0% {
             opacity: 0;
-            transform: translateX(50px);
-            filter: brightness(1.4);
+            transform: translateX(12px);
           }
           /* End on "none": a leftover transform/filter would trap every page's fixed popups
              inside <main>, underneath the sticky vCard tab bar. */
@@ -127,7 +153,7 @@ const DashboardLayout = () => {
           }
         }
         .animate-lighting-right-to-left {
-          animation: lightingSlideRightToLeft 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: lightingSlideRightToLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
 
@@ -139,7 +165,7 @@ const DashboardLayout = () => {
       {/* Right side container strictly scrollable */}
       <div className="flex-1 flex flex-col h-screen min-w-0 relative overflow-y-auto">
         {/* Header */}
-        <header className="sticky top-0 h-16 glass flex items-center justify-between px-4 md:px-6 shrink-0 z-35 border-x-0 border-t-0 shadow-sm">
+        <header className="sticky top-0 h-16 flex items-center justify-between px-4 md:px-6 shrink-0 z-40 border-b shadow-sm backdrop-blur-xl" style={{ background: 'color-mix(in srgb, var(--surface-bg) 94%, transparent)', borderColor: 'var(--surface-border)' }}>
           <div className="flex items-center space-x-3">
             <IconButton
               onClick={() => setSidebarOpen(true)}
@@ -148,6 +174,17 @@ const DashboardLayout = () => {
             >
               <Menu className="w-5 h-5" />
             </IconButton>
+            {/* Back to the previous dashboard page (hidden on the dashboard home). */}
+            {location.pathname !== '/dashboard' && (
+              <IconButton
+                onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/dashboard'))}
+                title="Back"
+                aria-label="Go back"
+                className="hover:text-brand-500 hover:bg-brand-500/10"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </IconButton>
+            )}
             <div>
               <AnimatePresence mode="wait">
                 <motion.h2
@@ -169,6 +206,18 @@ const DashboardLayout = () => {
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Preview the live card from any dashboard page, in a side panel next to the form. */}
+            {cardSlug && (
+              <button
+                type="button"
+                onClick={() => { setPreviewLook(null); setPreviewOpen(true); }}
+                title="Preview your live card"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-700 shadow-md shadow-brand-600/25 hover:-translate-y-0.5 hover:shadow-lg transition-all"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Preview card</span>
+              </button>
+            )}
             <ThemeToggle />
             {user.isAdmin && (
               <a
@@ -259,7 +308,7 @@ const DashboardLayout = () => {
 
         {/* vCard sub-navigation positioned safely below header */}
         {isVcardSection && (
-          <div className="sticky top-16 glass shrink-0 z-30 border-x-0 border-t-0 py-3 px-4 md:px-6 shadow-md">
+          <div className="sticky top-16 shrink-0 z-30 border-b py-3 px-4 md:px-6 shadow-md backdrop-blur-xl" style={{ background: 'color-mix(in srgb, var(--surface-bg) 94%, transparent)', borderColor: 'var(--surface-border)' }}>
             {/* Mobile: Clean Trigger Button */}
             <div className="lg:hidden relative">
               <button
@@ -391,10 +440,10 @@ const DashboardLayout = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             >
               <Outlet />
             </motion.div>
@@ -403,6 +452,20 @@ const DashboardLayout = () => {
       </div>
 
       {hasChatFill(user.plan) && <JarvisWidget plan={user.plan} />}
+
+      {/* Floating "Live preview" tab on the card-editing pages, so every step can be checked. */}
+      {cardSlug && location.pathname.startsWith('/dashboard/vcard/') && !previewOpen && (
+        <button
+          type="button"
+          onClick={() => { setPreviewLook(null); setPreviewOpen(true); }}
+          className="fixed bottom-5 left-4 z-[140] inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-brand-600/30 bg-gradient-to-r from-brand-600 to-brand-700 hover:-translate-y-0.5 transition-transform lg:left-[18rem]"
+        >
+          <Eye className="w-4 h-4" /> Live preview
+        </button>
+      )}
+      <Suspense fallback={null}>
+        {cardSlug && <CardPreviewPanel open={previewOpen} onClose={closePreview} username={cardSlug} look={previewLook} />}
+      </Suspense>
     </div>
   );
 };

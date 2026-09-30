@@ -21,6 +21,19 @@ const Transactions = () => {
           headers: { 'x-auth-token': token }
         });
         setTransactions(res.data);
+        // Pending payments from the last 2 days: ask Cashfree for their real status, so a
+        // payment that went through shows as completed (and activates the plan) on its own.
+        const recent = res.data.filter((t) => t.status === 'pending' && t.cfOrderId && Date.now() - new Date(t.createdAt) < 2 * 864e5);
+        if (recent.length) {
+          const results = await Promise.allSettled(
+            recent.map((t) => axios.post(`${import.meta.env.VITE_API_URL}/api/transactions/verify`, { orderId: t.cfOrderId }, { headers: { 'x-auth-token': token } }))
+          );
+          if (results.some((r) => r.status === 'fulfilled' && r.value.data?.status === 'PAID')) {
+            const again = await axios.get(`${import.meta.env.VITE_API_URL}/api/transactions`, { headers: { 'x-auth-token': token } });
+            setTransactions(again.data);
+            toast.success('Payment confirmed. Your plan is active!');
+          }
+        }
       } catch { toast.error('Failed to load transactions'); }
       finally { setLoading(false); }
     };
@@ -28,6 +41,11 @@ const Transactions = () => {
   }, []);
 
   const handleDownloadInvoice = async (txn) => {
+    // Refrens-hosted invoice: open it directly (fetching the redirect would fail on CORS).
+    if (txn.refrensPdfUrl) {
+      window.open(txn.refrensPdfUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     setDownloadingId(txn._id);
     try {
       const token = localStorage.getItem('token');

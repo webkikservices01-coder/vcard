@@ -12,6 +12,8 @@ const vcardSettingsSchema = new mongoose.Schema({
     showViews:     { type: Boolean, default: true },
     showLanguage:  { type: Boolean, default: true },
     seoIndexing:   { type: Boolean, default: true },
+    // Browser-tab icon of the public card: 'photo' | 'initials' | 'aicardly' | 'emoji:<emoji>' | uploaded image URL. '' = photo.
+    favicon:       { type: String, default: '' },
     carouselMode:  { type: Boolean, default: true },
     showEnquiryForm: { type: Boolean, default: true },
     sectionOrder:  { type: [String], default: ['contact','products','portfolio','gallery','testimonials','custom','enquiry'] },

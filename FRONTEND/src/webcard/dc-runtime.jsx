@@ -1,4 +1,5 @@
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
+import { themeTree } from './theme/themeTree.js';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { CARD, saveContact, shareCard, scrollToSection } from './cardData.js';
@@ -433,7 +434,15 @@ export function ChatText({ text }) {
 }
 
 // Renders the conversation using the template's own bubble designs.
-export function ChatThread({ chat, bot, user, typing }) {
+// The card's palette (null = the template's original colours). WebCard provides it; chat bubbles
+// come from the templates' bot()/user() render functions, so ChatThread paints them here.
+export const WcThemeCtx = createContext(null);
+
+export function ChatThread({ chat, bot: rawBot, user: rawUser, typing }) {
+  const th = useContext(WcThemeCtx);
+  const paint = (el) => (th && React.isValidElement(el) ? themeTree(th, el) : el);
+  const bot = (c, k) => paint(rawBot(c, k));
+  const user = (c, k) => paint(rawUser(c, k));
   const end = useRef(null);
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'end' });
@@ -444,7 +453,7 @@ export function ChatThread({ chat, bot, user, typing }) {
       {CARD.ai?.disclaimer ? bot(<div style={{ fontSize: '12.5px', opacity: 0.85 }}>ⓘ {CARD.ai.disclaimer}</div>, 'disclaimer') : null}
       {chat.pending ? user(chat.pending, 'pending') : null}
       {!chat.consented && chat.pending ? bot(<ConsentNote chat={chat} />, 'consent') : null}
-      {chat.busy ? typing || bot('…', 'typing') : null}
+      {chat.busy ? paint(typing) || bot('…', 'typing') : null}
       {chat.offer !== 'hidden' && CARD.ai?.offer ? bot(<OfferNote chat={chat} />, 'offer') : null}
       {chat.nps !== 'hidden' ? bot(<NpsNote chat={chat} />, 'nps') : null}
       <div ref={end} style={{ height: '1px', flexShrink: 0 }} />
@@ -489,6 +498,21 @@ export function ImageSlot({ id, placeholder, shape, radius, style }) {
   const letters =
     m && m[1] === 'av' ? CARD.initials : m && m[1] === 'logo' ? (CARD.company || CARD.fullName || '').charAt(0).toUpperCase() : '';
   const showInitials = !src && !!letters;
+  if (m && m[1] === 'cover' && src) {
+    // eslint-disable-next-line no-unused-vars
+    const { opacity, mixBlendMode, filter, ...box } = style || {};
+    return <CoverFit src={src} alt={`${CARD.fullName} cover image`} style={box} />;
+  }
+  // Descriptive alt text for search engines and screen readers.
+  const alt = !m
+    ? ''
+    : m[1] === 'av'
+      ? [CARD.fullName, CARD.roleLine].filter(Boolean).join(' – ')
+      : m[1] === 'logo'
+        ? `${CARD.company || CARD.fullName} logo`
+        : m[1] === 'cover'
+          ? `${CARD.fullName} cover image`
+          : CARD.projects?.[+m[2]]?.title || `${CARD.fullName} project`;
   return (
     <div
       aria-label={placeholder}
@@ -502,13 +526,14 @@ export function ImageSlot({ id, placeholder, shape, radius, style }) {
       {src ? (
         <img
           src={src}
-          alt=""
-          loading="lazy"
+          alt={alt}
+          loading={m && m[1] === 'av' ? 'eager' : 'lazy'}
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            objectPosition: /mshots/.test(src) ? 'top' : undefined,
+            // Portraits: keep the face (upper part) in the crop; website screenshots: keep the header.
+            objectPosition: /mshots/.test(src) ? 'top' : m && m[1] === 'av' ? 'center 22%' : undefined,
             display: 'block',
           }}
         />
@@ -528,25 +553,60 @@ export function ImageSlot({ id, placeholder, shape, radius, style }) {
   );
 }
 
-// Cover image (when the owner uploaded a banner) laid over a template's designed cover background.
-export function CoverImage({ style }) {
-  if (!CARD.cover) return null;
+// A cover / background image that always looks right: photos fill the area; logos and images
+// whose shape is far from the banner's are shown whole, over a blurred copy of themselves.
+export function CoverFit({ src, alt = '', style }) {
+  const ref = useRef(null);
+  const [whole, setWhole] = useState(/\.svg(\?|$)/i.test(src));
+  const onLoad = (e) => {
+    const img = e.currentTarget;
+    const box = ref.current?.getBoundingClientRect();
+    if (!box || !box.width || !box.height || !img.naturalWidth || !img.naturalHeight) return;
+    const r = img.naturalWidth / img.naturalHeight / (box.width / box.height);
+    // Even a small crop cuts logos and text off, so fill only when the shapes nearly match.
+    setWhole(r > 1.15 || r < 0.87 || /\.svg(\?|$)/i.test(src));
+  };
   return (
-    <img
-      src={CARD.cover}
-      alt=""
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', ...style }}
-    />
+    <div ref={ref} aria-hidden={alt ? undefined : true} style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...style }}>
+      {whole && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          style={{ position: 'absolute', inset: '-12%', width: '124%', height: '124%', objectFit: 'cover', filter: 'blur(22px) saturate(1.2) brightness(.85)' }}
+        />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={onLoad}
+        style={{
+          position: 'absolute',
+          inset: whole ? '8% 6%' : 0,
+          width: whole ? '88%' : '100%',
+          height: whole ? '84%' : '100%',
+          objectFit: whole ? 'contain' : 'cover',
+          objectPosition: 'center',
+          display: 'block',
+        }}
+      />
+    </div>
   );
 }
 
+// Cover image (when the owner uploaded a banner) laid over a template's designed cover background.
+export function CoverImage({ style }) {
+  if (!CARD.cover) return null;
+  return <CoverFit src={CARD.cover} alt={`${CARD.fullName} cover image`} style={style} />;
+}
+
 // Image inside a styled placeholder box (projects, portfolio tiles, reels).
-export function Fill({ src, style }) {
+export function Fill({ src, alt, style }) {
   if (!src) return null;
   return (
     <img
       src={src}
-      alt=""
+      alt={alt || `${CARD.fullName || 'Aicardly'} – work sample`}
       loading="lazy"
       style={{
         position: 'absolute',
@@ -1294,9 +1354,76 @@ export function CustomSections({ headStyle, boxStyle, pad = '28px 16px 0' }) {
   return list.map((s) => (
     <div key={s._id || s.title} style={{ padding: pad }}>
       <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: 700, ...headStyle }}>{s.title}</h3>
-      <div style={{ fontSize: '15px', lineHeight: 1.6, ...boxStyle }}>
-        <SafeHtml html={s.content} />
-      </div>
+      {s.content && s.content.trim() ? (
+        <div style={{ fontSize: '15px', lineHeight: 1.6, ...boxStyle }}>
+          <SafeHtml html={s.content} />
+        </div>
+      ) : null}
+      {s.files?.length ? <DocList files={s.files} boxStyle={boxStyle} /> : null}
     </div>
   ));
+}
+
+// Documents attached to a custom section. PDFs open in the card's viewer, Office files in
+// Microsoft's online viewer, anything else in a new tab.
+const DOC_ICON = [
+  [/\.pdf$/i, '📄', 'PDF'],
+  [/\.(docx?|odt|rtf|txt)$/i, '📝', 'Document'],
+  [/\.(pptx?|odp)$/i, '📽️', 'Presentation'],
+  [/\.(xlsx?|ods|csv)$/i, '📊', 'Spreadsheet'],
+  [/\.(jpe?g|png|webp|gif|svg)$/i, '🖼️', 'Image'],
+  [/\.(mp3|mp4)$/i, '🎬', 'Media'],
+  [/\.zip$/i, '🗜️', 'ZIP'],
+];
+const docKind = (name) => DOC_ICON.find(([re]) => re.test(name || '')) || [null, '📎', 'File'];
+const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+function openDoc(f) {
+  const url = f.url && !/^https?:/.test(f.url) ? `${import.meta.env.VITE_API_URL}${f.url}` : f.url;
+  if (/\.pdf$/i.test(f.name || url)) return openPdf(url);
+  if (/\.(docx?|pptx?|xlsx?)$/i.test(f.name || url) && /^https:/.test(url)) {
+    return window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`, '_blank', 'noopener');
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
+function DocList({ files, boxStyle }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+      {files.map((f, i) => {
+        const [, icon, kind] = docKind(f.name);
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => openDoc(f)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: '14px',
+              border: '1px solid rgba(128,128,128,.25)',
+              background: 'rgba(128,128,128,.08)',
+              color: 'inherit',
+              font: 'inherit',
+              textAlign: 'left',
+              cursor: 'pointer',
+              ...boxStyle,
+            }}
+          >
+            <span style={{ fontSize: '22px', lineHeight: 1 }} aria-hidden="true">
+              {icon}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</span>
+              <span style={{ display: 'block', fontSize: '12px', opacity: 0.7 }}>{[kind, fmtSize(f.size)].filter(Boolean).join(' · ')}</span>
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 700, opacity: 0.8 }}>Open ↗</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }

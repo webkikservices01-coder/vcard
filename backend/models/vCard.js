@@ -4,6 +4,13 @@ const vCardSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     username: { type: String, required: true, unique: true }, // Jaise: mycardlink.site/marketer-esskay
     theme: { type: String, default: 'webkik-signature' }, // WebCard template id (see FRONTEND/src/webcard)
+    // Look of the chosen template: one of its 5 colour palettes, light/dark ('' = the template's
+    // own mode), and whether the live visitor counter shows on the card.
+    themeOptions: {
+        palette: { type: Number, default: 0, min: 0, max: 4 },
+        mode:    { type: String, enum: ['', 'light', 'dark'], default: '' },
+        counter: { type: Boolean, default: true },
+    },
     personalInfo: {
         name: String,
         designation: String,

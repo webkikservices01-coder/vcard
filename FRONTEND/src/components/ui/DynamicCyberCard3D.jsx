@@ -8,12 +8,16 @@ function getInitials(fullName) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// 3D preview of the owner's card (Dashboard + Profile). Everything on it is the owner's own:
+// photo (or initials), name, role, link, and their "Card background" image, which also fills the
+// back of the card (fitted, never stretched).
 export default function DynamicCyberCard3D({
-  name = "SHAHID",
-  designation = "webkik",
-  slug = "shahid",
-  photoUrl = "/profile.png",
+  name = "",
+  designation = "",
+  slug = "",
+  photoUrl = "",
   bgImageUrl,
+  company = "",
   themeColor = "#3B82F6",
   cardBgColor = "#1E293B",
   surfaceBgColor = "#0F172A",
@@ -22,13 +26,15 @@ export default function DynamicCyberCard3D({
   subTextColor = "#FFFFFF",
   isDark = true
 }) {
-  const displayTitle = name ? name : "SHAHID";
-  const displayRole = designation ? designation : "webkik";
-  const displaySubName = name ? name : "SHAHID";
+  const displayTitle = name || "Your Name";
+  const displayRole = designation || "";
+  const displaySubName = name || "Your Name";
+  const backTitle = company || name || "Your Name";
+  const hasBg = !!(bgImageUrl && bgImageUrl.trim());
   const cardUrl = slug ? `${window.location.origin}/${slug}` : window.location.href;
   const initials = getInitials(name);
 
-  const avatarSrc = photoUrl || "/profile.png";
+  const avatarSrc = photoUrl || "";
 
   return (
     <div className="w-full h-[190px] sm:h-[210px] flex items-center justify-center overflow-hidden [perspective:1000px] my-0 py-0">
@@ -77,7 +83,7 @@ export default function DynamicCyberCard3D({
               className="absolute inset-0 w-full h-full"
               style={{
                 backgroundImage: `url(${bgImageUrl})`,
-                backgroundSize: '100% 100%',
+                backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
               }}
@@ -157,23 +163,41 @@ export default function DynamicCyberCard3D({
             boxShadow: `0 12px 30px rgba(0,0,0,0.4), 0 0 20px ${themeColor}44`,
           }}
         >
-          <div className="absolute top-2.5 left-0 right-0 h-5 border-y border-white/10 shadow-inner" style={{ backgroundColor: backBgColor }} />
-
-          <div className="my-auto text-center space-y-0.5 pt-3">
-            <h2 className="text-base font-black tracking-[0.2em] drop-shadow-lg text-white">
-              WEBKIK SERVICES
-            </h2>
-            <p className="text-[8px] font-bold tracking-[0.25em] uppercase" style={{ color: themeColor }}>
-              Next-Gen Digital Matrix
-            </p>
+          {/* Brand on the back: Aicardly mark on top, the owner's brand below. */}
+          <div className="absolute top-3 left-4 right-4 z-10 flex items-center justify-between">
+            <span className="text-[8px] font-black tracking-[0.3em] text-white/85 drop-shadow">AICARDLY</span>
+            {company && <span className="text-[8px] font-bold tracking-widest uppercase truncate max-w-[60%] drop-shadow" style={{ color: themeColor }}>{company}</span>}
           </div>
 
-          <div className="flex items-end justify-between relative z-10">
-            <div className="text-[7px] font-black uppercase tracking-widest opacity-80 text-white">
-              SECURE CONTACTLESS MATRIX
+          {hasBg && (
+            <>
+              {/* Same image, blurred, fills the card; the sharp copy sits on top, fitted. */}
+              <div className="absolute inset-0" style={{ backgroundImage: `url(${bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(14px) brightness(0.55)', transform: 'scale(1.15)' }} />
+              <div className="absolute inset-x-4 top-4 bottom-10 flex items-center justify-center">
+                <img src={bgImageUrl} alt="" className="max-h-full max-w-full object-contain rounded-md drop-shadow-lg" onError={(e) => { e.target.style.display = 'none'; }} />
+              </div>
+            </>
+          )}
+
+          {!hasBg && (
+            <div className="my-auto text-center space-y-0.5 pt-3 relative z-10">
+              <h2 className="text-base font-black tracking-[0.2em] drop-shadow-lg text-white uppercase truncate px-2">
+                {backTitle}
+              </h2>
+              {displayRole && (
+                <p className="text-[8px] font-bold tracking-[0.25em] uppercase truncate px-2" style={{ color: themeColor }}>
+                  {displayRole}
+                </p>
+              )}
             </div>
-            <span className="text-[7px] font-mono uppercase tracking-widest opacity-80 text-white">
-              AI SECURE 256-BIT
+          )}
+
+          <div className="mt-auto flex items-end justify-between relative z-10">
+            <div className="text-[8px] font-black uppercase tracking-widest text-white truncate pr-2 drop-shadow">
+              {hasBg ? backTitle : 'Tap · Scan · Connect'}
+            </div>
+            <span className="text-[7px] font-mono tracking-widest opacity-85 text-white shrink-0 drop-shadow">
+              aicardly.com/{slug}
             </span>
           </div>
 

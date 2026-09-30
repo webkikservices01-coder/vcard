@@ -7,6 +7,9 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# sitemap.xml = public pages + every public card, built by sitemap.php.
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
 # Every page of the React app (homepage included) is served through og.php, which puts that
 # page's own canonical, title, description and Open Graph / Twitter tags into the HTML.
 RewriteRule ^$ og.php [L,QSA]

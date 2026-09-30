@@ -158,7 +158,7 @@ const Portfolio = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/${slug}`, '_blank');
+      window.dispatchEvent(new Event('card:preview'));
     } else {
       toast.error('Profile not found! Please create a profile first.');
     }

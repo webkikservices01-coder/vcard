@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const vCard = require('../models/vCard');
+const VcardSettings = require('../models/VcardSettings');
 
 const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
 const DEFAULT_IMAGE = `${SITE}/og-image.jpg`;
@@ -45,12 +46,34 @@ function cardImage({ photo, name, role, link }) {
   return `https://res.cloudinary.com/${cloud}/image/upload/${layers.join('/')}/${publicId}.jpg`;
 }
 
+// ─── GET /api/og/_sitemap → [{ u, t }] public cards for sitemap.xml ─────────
+// Cards with a username and a name, minus those whose owner switched off "Search Engine Indexing".
+router.get('/_sitemap', async (req, res) => {
+  try {
+    const hidden = await VcardSettings.find({ seoIndexing: false }).distinct('vcardId');
+    const cards = await vCard
+      .find({ username: { $nin: [null, ''] }, 'personalInfo.name': { $nin: [null, ''] }, _id: { $nin: hidden } })
+      .select('username updatedAt')
+      .sort({ updatedAt: -1 })
+      .limit(45000)
+      .lean();
+    res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    res.json(cards.map((c) => ({ u: c.username, t: (c.updatedAt || new Date()).toISOString().slice(0, 10) })));
+  } catch (err) {
+    console.error('Sitemap error:', err.message);
+    res.status(500).json({ msg: 'Could not build sitemap' });
+  }
+});
+
 // ─── GET /api/og/:username → { head } (meta tags for that card) ─────────────
 router.get('/:username', async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
     const card = await vCard.findOne({ username }).select('username personalInfo').lean();
     if (!card) return res.status(404).json({ msg: 'Card not found' });
+    // Owner's "Search Engine Indexing" switch (Advanced Settings).
+    const settings = await VcardSettings.findOne({ vcardId: card._id }).select('seoIndexing').lean();
+    const indexable = settings?.seoIndexing !== false;
 
     const p = card.personalInfo || {};
     const name = oneLine(p.name, 60) || card.username;
@@ -67,6 +90,7 @@ router.get('/:username', async (req, res) => {
     const tags = [
       `<title>${esc(title)}</title>`,
       `<meta name="description" content="${esc(description)}" />`,
+      `<meta name="robots" content="${indexable ? 'index, follow' : 'noindex, follow'}" />`,
       `<link rel="canonical" href="${esc(url)}" />`,
       `<meta property="og:type" content="profile" />`,
       `<meta property="og:site_name" content="Aicardly" />`,

@@ -7,6 +7,7 @@ import {
   useLive,
   liveFrame,
   ImageSlot,
+  CoverImage,
   Fill,
   CardQR,
   EnquiryForm,
@@ -23,6 +24,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   state = { tab: 'services' };
@@ -345,7 +347,7 @@ export function LuxeNoir(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -1623,7 +1625,7 @@ export function LuxeNoir(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }
 
 export function SplitHeroCorporate(props) {
@@ -1631,7 +1633,7 @@ export function SplitHeroCorporate(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -2245,7 +2247,7 @@ export function SplitHeroCorporate(props) {
                               background: 'repeating-linear-gradient(135deg,#EEF2F6 0 10px,#E1E8EF 10px 11px)',
                             }}
                           >
-                            <Fill src={p?.image} />
+                            <Fill src={p?.image} alt={p?.title} />
                           </div>
                           <div style={{ minWidth: '0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
                             {p?.tag ? (
@@ -2994,7 +2996,7 @@ export function SplitHeroCorporate(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }
 
 export function SoftBentoWellness(props) {
@@ -3002,7 +3004,7 @@ export function SoftBentoWellness(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -3030,6 +3032,8 @@ export function SoftBentoWellness(props) {
           pointerEvents: 'none',
         }}
       >
+        {/* Owner's cover, fading into the page so the header text stays readable. */}
+        <CoverImage style={{ opacity: 0.5, WebkitMaskImage: 'linear-gradient(#000 40%, transparent)', maskImage: 'linear-gradient(#000 40%, transparent)' }} />
         <div
           style={{
             position: 'absolute',
@@ -3752,7 +3756,7 @@ export function SoftBentoWellness(props) {
                           background: p?.w,
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ minWidth: '0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
                         {p?.tag ? (
@@ -4467,5 +4471,5 @@ export function SoftBentoWellness(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

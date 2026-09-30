@@ -22,6 +22,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   state = { hl: 0 };
@@ -124,7 +125,7 @@ export function CreatorReel(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -865,7 +866,7 @@ export function CreatorReel(props) {
                           background: 'repeating-linear-gradient(135deg,#1C1C1C 0 10px,#232323 10px 11px)',
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ padding: '10px 12px 12px' }}>
                         {p?.tag ? <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#FFB38A' }}>{p?.tag}</div> : null}
@@ -1512,5 +1513,5 @@ export function CreatorReel(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

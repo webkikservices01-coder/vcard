@@ -23,6 +23,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   state = { align: null };
@@ -158,7 +159,7 @@ export function WebkikSignature(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -697,7 +698,7 @@ export function WebkikSignature(props) {
                           background: 'repeating-linear-gradient(135deg,#FFF5F8 0 10px,#FBE3EB 10px 11px)',
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ padding: '10px 12px 12px' }}>
                         {p?.tag ? (
@@ -1448,5 +1449,5 @@ export function WebkikSignature(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

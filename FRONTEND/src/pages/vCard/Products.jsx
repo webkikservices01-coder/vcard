@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon, Mic } from 'lucide-react';
@@ -115,7 +116,7 @@ const Products = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/${slug}`, '_blank');
+      window.dispatchEvent(new Event('card:preview'));
     } else {
       toast.error('Profile not found! Please create a profile first.');
     }
@@ -223,7 +224,8 @@ const Products = () => {
         )}
 
         {/* Product Form Modal (Creation/Editing) */}
-        <AnimatePresence>
+        {createPortal(
+<AnimatePresence>
           {modalOpen && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -309,7 +311,8 @@ const Products = () => {
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+ document.body)}
       </div>
 
       <ActionPopup

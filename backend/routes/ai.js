@@ -17,6 +17,7 @@ const ChatSession = require('../models/ChatSession');
 const Enquiry = require('../models/Enquiry');
 const { NICHES, nicheOf, cleanMessages, checkInput, checkOutput, safetyBlock } = require('../utils/aiGuard');
 const { DPA_VERSION, CHAT_CONSENT_VERSION } = require('../constants/legal');
+const { logEvent } = require('../utils/logger');
 const { normHex, fixTheme, THEME_KEYS } = require('../utils/themeAi');
 const { sendMail } = require('../utils/mailer');
 const PlatformLead = require('../models/PlatformLead');
@@ -168,7 +169,7 @@ IMPORTANT: When sharing contact info, ALWAYS use the exact markdown format above
 
   // Custom sections
   if (customSections.length > 0) {
-    sections.push(`=== ADDITIONAL INFO ===\n${customSections.map(c => `**${c.title}**\n${c.content}`).join('\n\n')}`);
+    sections.push(`=== ADDITIONAL INFO ===\n${customSections.map(c => `**${c.title}**\n${c.content || ''}${(c.files || []).length ? `\nDocuments: ${c.files.map(f => `📄 [${f.name}](${f.url})`).join(', ')}` : ''}`).join('\n\n')}`);
   }
 
   // FAQs
@@ -233,7 +234,7 @@ router.get('/persona', auth, async (req, res) => {
 router.post('/persona', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!hasChatFill(user.plan)) {
+    if (!hasChatFill(user)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use AI features.' });
     }
     const vcardId = await getCardId(req.user.userId);
@@ -292,7 +293,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     if (!card) return res.status(404).json({ msg: 'Card not found' });
 
     const owner = await User.findById(card.userId);
-    if (!hasChatFill(owner?.plan)) {
+    if (!hasChatFill(owner)) {
       return res.status(403).json({ msg: 'AI chat is not enabled for this card.' });
     }
 
@@ -334,6 +335,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
 
     const stop = checkInput(messages[messages.length - 1].content, guard);
     if (stop) {
+      logEvent(req, 'ai.guard', `Card AI blocked a message (${stop.reason}) on /${card.username}`, { level: 'warn', userId: card.userId });
       await track({ messages: 1, blocked: 1 });
       return res.json({ reply: stop.reply, guarded: stop.reason });
     }
@@ -364,7 +366,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     await track({ messages: 1, blocked: bad ? 1 : 0 }, showOffer ? { offerShown: true } : {});
     res.json({ reply, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
   } catch (err) {
-    console.error('AI chat error:', err.message);
+    logEvent(req, 'ai.chat.error', err.message, { level: 'error' });
     res.status(500).json({ msg: 'AI response failed. Please try again.' });
   }
 });
@@ -432,7 +434,7 @@ Respond with ONLY a raw JSON object, no markdown, no code fences, in this exact 
 router.post('/voice-fill', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!hasVoiceFill(user.plan)) {
+    if (!hasVoiceFill(user)) {
       return res.status(403).json({ msg: 'Upgrade to AI Agent Pro to use the voice assistant.' });
     }
 
@@ -636,7 +638,7 @@ router.post('/jarvis', auth, async (req, res) => {
     if (!message || !message.trim()) return res.status(400).json({ msg: 'No speech detected' });
 
     const user = await User.findById(req.user.userId);
-    if (!hasChatFill(user.plan)) {
+    if (!hasChatFill(user)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Assistant.' });
     }
 
@@ -710,7 +712,7 @@ router.get('/public/:username', async (req, res) => {
     if (!card) return res.json({ enabled: false });
 
     const owner = await User.findById(card.userId);
-    if (!hasChatFill(owner?.plan)) return res.json({ enabled: false });
+    if (!hasChatFill(owner)) return res.json({ enabled: false });
 
     const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
     if (!persona.enabled) return res.json({ enabled: false });
@@ -856,7 +858,7 @@ Reply with ONLY one raw JSON object, no markdown, in exactly this shape:
 router.post('/theme', auth, themeLimiter, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!hasChatFill(user.plan)) {
+    if (!hasChatFill(user)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Theme Designer.' });
     }
     const anthropic = getAnthropic();

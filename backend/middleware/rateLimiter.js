@@ -53,4 +53,22 @@ const feedbackLimiter = rateLimit({
   message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
 });
 
-module.exports = { platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter };
+// Sign-in / sign-up attempts per IP (slows password guessing).
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many attempts. Please wait a few minutes and try again.' },
+});
+
+// Password reset emails and resets per IP.
+const forgotLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
+});
+
+module.exports = { authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter };

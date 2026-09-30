@@ -114,6 +114,11 @@ if ($isPrivate) {
   $head = !empty($pg['noindex'])
     ? noindex($pg['title'])
     : tags($pg['title'], $pg['description'], $site . ($path === '/' ? '/' : $path), $site);
+  // Page-specific structured data (e.g. BreadcrumbList on /metal-nfc-card).
+  foreach (($pg['jsonld'] ?? []) as $ld) {
+    // "<" escaped so text inside the JSON can never close the script tag.
+    $head .= "\n    " . '<script type="application/ld+json">' . str_replace('<', '<', json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</script>';
+  }
 } elseif (preg_match('#^/(?:c/)?([A-Za-z0-9-]{3,30})$#', $path, $m)) {
   $card = fetch_card(strtolower($m[1]), $isBot);
   if ($card === 404) {
@@ -135,5 +140,10 @@ if ($head !== null) {
   $index = preg_replace_callback('/<!-- seo:start.*?<!-- seo:end -->/s', function () use ($head) {
     return "<!-- seo:start -->\n    " . $head . "\n    <!-- seo:end -->";
   }, $index, 1);
+}
+// Homepage structured data (Organization, WebSite, SoftwareApplication, FAQPage, BreadcrumbList)
+// belongs to the homepage only; the FAQ it marks up is shown there.
+if ($path !== '/') {
+  $index = preg_replace('/\s*<!-- schema:home:start -->.*?<!-- schema:home:end -->/s', '', $index, 1);
 }
 echo $index;

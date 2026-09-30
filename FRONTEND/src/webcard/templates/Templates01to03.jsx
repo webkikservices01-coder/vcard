@@ -7,6 +7,7 @@ import {
   useLive,
   liveFrame,
   ImageSlot,
+  CoverImage,
   Fill,
   CardQR,
   EnquiryForm,
@@ -23,6 +24,7 @@ import {
   ChatText,
   SwipeRow,
 } from '../dc-runtime.jsx';
+import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
   qr() {
@@ -297,7 +299,7 @@ export function AuroraAI(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -900,7 +902,7 @@ export function AuroraAI(props) {
                           background: 'repeating-linear-gradient(135deg,#17172C 0 10px,#1F1F38 10px 11px)',
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ minWidth: '0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
                         {p?.tag ? (
@@ -1648,7 +1650,7 @@ export function AuroraAI(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }
 
 export function MinimalPro(props) {
@@ -1656,7 +1658,7 @@ export function MinimalPro(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -1679,7 +1681,7 @@ export function MinimalPro(props) {
           height: `${f?.coverH}px`,
           overflow: 'hidden',
           background: '#E2E8F0',
-          filter: 'grayscale(1) contrast(.92)',
+          filter: CARD.cover ? 'none' : 'grayscale(1) contrast(.92)',
         }}
       >
         <ImageSlot
@@ -2148,7 +2150,7 @@ export function MinimalPro(props) {
                           background: 'repeating-linear-gradient(135deg,#F1F5F9 0 10px,#E2E8F0 10px 11px)',
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ flex: '1', minWidth: '0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {p?.tag ? (
@@ -2838,7 +2840,7 @@ export function MinimalPro(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }
 
 export function NeoBrutal(props) {
@@ -2846,7 +2848,7 @@ export function NeoBrutal(props) {
   const { openChat, closeChat, ...live } = useLive();
   const f = liveFrame(V.frames, live, props);
   const chat = useChat();
-  return (
+  return themeTree(props.__theme, (
     <div
       style={{
         position: 'relative',
@@ -2921,6 +2923,7 @@ export function NeoBrutal(props) {
             borderBottom: 'none',
           }}
         ></div>
+        <CoverImage />
         {CARD.company ? (
           <div
             style={{
@@ -2977,6 +2980,9 @@ export function NeoBrutal(props) {
         <div
           style={{
             flexShrink: '0',
+            position: 'relative', // paint above the (positioned) banner it overlaps
+            zIndex: 2,
+            alignSelf: 'flex-start', // keep it round (the row would stretch it into an oval)
             marginTop: 'calc(clamp(92px, 26cqi, 104px) / -2)',
             width: 'clamp(92px, 26cqi, 104px)',
             aspectRatio: '1',
@@ -3499,7 +3505,7 @@ export function NeoBrutal(props) {
                           boxSizing: 'border-box',
                         }}
                       >
-                        <Fill src={p?.image} />
+                        <Fill src={p?.image} alt={p?.title} />
                       </div>
                       <div style={{ minWidth: '0', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px' }}>
                         {p?.tag ? (
@@ -4255,5 +4261,5 @@ export function NeoBrutal(props) {
         </>
       ) : null}
     </div>
-  );
+  ));
 }

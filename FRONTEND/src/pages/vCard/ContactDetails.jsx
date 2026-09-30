@@ -230,7 +230,7 @@ const ContactDetails = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/${slug}`, '_blank');
+      window.dispatchEvent(new Event('card:preview'));
     } else {
       alert('Profile URL not found! Please create a profile first.');
     }

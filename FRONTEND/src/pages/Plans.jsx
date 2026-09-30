@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X as XIcon, ShieldCheck, Sparkles } from 'lucide-react';
@@ -10,6 +11,7 @@ import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
 import { plans, featureSections } from '../data/plans.jsx';
+import axiosClient from 'axios';
 
 let cashfreePromise = null;
 const getCashfree = () => {
@@ -77,8 +79,10 @@ const FeatureComparisonTable = ({ highlightId }) => (
 );
 
 // Derived from real plan pricing, not hardcoded — stays accurate if prices in data/plans.jsx change.
+// Plans on a ₹1 test price are left out so they don't inflate the saving.
+const pricedPlans = plans.filter(p => p.price.monthly > 1);
 const yearlySavingsPct = Math.round(
-  (plans.reduce((sum, p) => sum + (1 - p.price.yearly / (p.price.monthly * 12)), 0) / plans.length) * 100
+  (pricedPlans.reduce((sum, p) => sum + (1 - p.price.yearly / (p.price.monthly * 12)), 0) / (pricedPlans.length || 1)) * 100
 );
 
 const Plans = () => {
@@ -87,7 +91,7 @@ const Plans = () => {
   const [billing, setBilling] = useState('yearly');
   const [loading, setLoading] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const closeTimerRef = useRef(null);
+
 
   // Straight from onboarding ("Continue to Pricing")? Open the plan popup immediately
   // instead of making them hover a card — this is the payment step they were sent here for.
@@ -99,29 +103,38 @@ const Plans = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Hover-intent: open instantly, but delay closing so the cursor has time to
-  // travel from the card to the popup without it disappearing mid-move.
-  const openPanel = (plan) => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    setSelectedPlan(plan);
-  };
-  const scheduleClosePanel = () => {
-    closeTimerRef.current = setTimeout(() => setSelectedPlan(null), 350);
-  };
-  const cancelClosePanel = () => {
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-  };
+  // Back from Cashfree's own page (some UPI / bank payments redirect here with ?order_id=…):
+  // confirm the payment with the server and activate the plan without the user doing anything.
+  useEffect(() => {
+    const orderId = new URLSearchParams(location.search).get('order_id');
+    if (!orderId) return;
+    navigate(location.pathname, { replace: true });
+    const id = toast.loading('Confirming your payment…');
+    axiosClient
+      .post(`${import.meta.env.VITE_API_URL}/api/transactions/verify`, { orderId }, { headers: { 'x-auth-token': localStorage.getItem('token') } })
+      .then(({ data }) => {
+        if (data.status === 'PAID') {
+          toast.success('Payment received. Your plan is active!', { id });
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          toast('Payment not completed yet. If money was deducted, your plan activates automatically within a few minutes.', { id, icon: '⏳', duration: 7000 });
+        }
+      })
+      .catch((err) => toast.error(err.response?.data?.msg || 'Could not confirm the payment. Check Transactions in a minute.', { id }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tapping a plan card opens its details popup.
+  const openPanel = (plan) => setSelectedPlan(plan);
 
   const handleSubscribe = async (plan) => {
     setLoading(plan.id);
     try {
       const token = localStorage.getItem('token');
-      const axios = (await import('axios')).default;
-      const amount = billing === 'yearly' ? plan.price.yearly : plan.price.monthly;
-      const expireDays = billing === 'yearly' ? 365 : 30;
-
+      const axios = axiosClient;
+      // The server prices the order from its own catalog; we only say which plan and period.
       const orderRes = await axios.post(`${import.meta.env.VITE_API_URL}/api/transactions/create-order`, {
-        amount, plan: plan.name, expireDays
+        planId: plan.id, billing,
       }, { headers: { 'x-auth-token': token } });
 
       const cashfree = await getCashfree();
@@ -217,8 +230,6 @@ const Plans = () => {
               key={plan.id}
               {...fadeUp(0.1 + i * 0.08)}
               hover
-              onMouseEnter={() => openPanel(plan)}
-              onMouseLeave={scheduleClosePanel}
               onClick={() => openPanel(plan)}
               className={`relative overflow-hidden cursor-pointer ${plan.popular ? 'ring-2 ring-brand-500' : ''} ${selectedPlan?.id === plan.id ? 'ring-2 ring-brand-500' : ''}`}
             >
@@ -339,30 +350,32 @@ const Plans = () => {
 
       {/* Plan details popup — reveals on hover over any plan card, full-screen centered so the
           side-by-side comparison (same table as below) makes the differences between plans obvious */}
+      {createPortal(
       <AnimatePresence>
         {selectedPlan && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-            onMouseEnter={cancelClosePanel}
-            onMouseLeave={scheduleClosePanel}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm"
             onClick={() => setSelectedPlan(null)}
           >
             <motion.div
-              initial={{ opacity: 0, y: 24, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.97 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedPlan.name} plan details`}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl w-full max-w-3xl max-h-[88vh] overflow-y-auto"
+              className="flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[88dvh] rounded-t-3xl sm:rounded-2xl overflow-hidden"
               style={{
                 background: 'var(--surface-1)',
                 border: '1px solid var(--surface-border)',
                 boxShadow: '0 30px 80px -20px rgba(0,0,0,0.45)',
               }}
             >
-              <div className="p-6 flex items-start justify-between gap-3 sticky top-0 z-10" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-1)' }}>
+              <div className="px-5 py-4 sm:p-6 flex items-start justify-between gap-3 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)', background: 'var(--surface-1)' }}>
                 <div>
                   <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>Compare plans</h3>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
@@ -378,9 +391,11 @@ const Plans = () => {
                 </IconButton>
               </div>
 
-              <FeatureComparisonTable highlightId={selectedPlan.id} />
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                <FeatureComparisonTable highlightId={selectedPlan.id} />
+              </div>
 
-              <div className="p-6 flex flex-wrap items-center justify-between gap-4" style={{ borderTop: '1px solid var(--surface-border)' }}>
+              <div className="px-5 py-4 sm:p-6 flex flex-wrap items-center justify-between gap-3 shrink-0" style={{ borderTop: '1px solid var(--surface-border)', background: 'var(--surface-1)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>Ready to go with</p>
                   <p className="text-2xl font-black" style={{ color: 'var(--surface-text)' }}>
@@ -403,7 +418,8 @@ const Plans = () => {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body)}
     </div>
   );
 };

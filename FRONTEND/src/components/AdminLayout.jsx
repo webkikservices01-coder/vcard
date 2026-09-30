@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, LifeBuoy, LogOut, Menu, X, Globe, ScrollText } from 'lucide-react';
 import ThemeToggle from './ui/ThemeToggle';
 import Logo from './ui/Logo';
 import IconButton from './ui/IconButton';
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/admin/transactions', label: 'Transactions',  icon: CreditCard },
   { path: '/admin/support',      label: 'Support',       icon: LifeBuoy },
   { path: '/admin/cards',        label: 'Top Cards',     icon: Globe },
+  { path: '/admin/logs',         label: 'Logs',          icon: ScrollText },
 ];
 
 const NavPill = ({ active, children, ...props }) => (

@@ -5,6 +5,7 @@ import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Loader2, Sparkles } f
 import axios from 'axios';
 import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
+import BackButton from '../components/BackButton';
 import Logo from '../components/ui/Logo';
 import { useTheme } from '../context/ThemeContext';
 import PasswordEye from '../components/PasswordEye';
@@ -58,15 +59,28 @@ export const Register = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '', accept: false });
+  // Name and phone typed in the homepage "Try it free" card carry over here.
+  const [form, setForm] = useState(() => {
+    let t = {};
+    try {
+      t = JSON.parse(sessionStorage.getItem('aicardly-try-card')) || {};
+    } catch {
+      /* storage blocked */
+    }
+    return { name: t.name || '', email: '', phone: (t.phone || '').replace(/[^\d+]/g, ''), password: '', confirm: '', accept: false };
+  });
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
 
+  const mismatch = !!form.confirm && form.confirm !== form.password;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorCode('');
     if (form.password !== form.confirm) { 
       setError('Passwords do not match.'); 
       return; 
@@ -82,12 +96,14 @@ export const Register = () => {
     setLoading(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-        name: form.name, email: form.email, phone: form.phone, password: form.password, acceptTerms: true
+        name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(),
+        password: form.password, confirm: form.confirm, acceptTerms: true
       });
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.msg || 'Registration failed. Please try again.');
+      setError(err.response?.data?.msg || 'Registration failed. Please check your internet and try again.');
+      setErrorCode(err.response?.data?.code || '');
     } finally {
       setLoading(false);
     }
@@ -130,7 +146,8 @@ export const Register = () => {
       `}</style>
 
       {/* Theme Toggle Aligned With Header Baseline */}
-      <div className="fixed top-8 right-6 sm:top-10 sm:right-10 z-50">
+      <div className="fixed top-8 right-6 sm:top-10 sm:right-10 z-50 flex items-center gap-2">
+        <BackButton />
         <ThemeToggle />
       </div>
 
@@ -308,7 +325,9 @@ export const Register = () => {
                       value={form.confirm}
                       onChange={(e) => setForm({ ...form, confirm: e.target.value })}
                       placeholder="••••••••"
-                      className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
+                      aria-invalid={mismatch}
+                      aria-describedby={mismatch ? 'pwd-mismatch' : undefined}
+                      className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${mismatch ? '!border-red-500 ' : ''}${
                         isDark 
                           ? 'border-white/10 bg-white/[0.04] text-white placeholder-slate-500 focus:border-[#E70C65] focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(231,12,101,0.3)]' 
                           : 'border-slate-200 bg-slate-50/70 text-slate-900 placeholder-slate-400 focus:border-[#E70C65] focus:bg-white focus:shadow-[0_0_15px_rgba(231,12,101,0.15)]'
@@ -316,6 +335,14 @@ export const Register = () => {
                     />
                     <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className={isDark ? 'text-slate-300' : 'text-slate-500'} />
                   </div>
+                  {mismatch && (
+                    <p id="pwd-mismatch" role="alert" className="mt-1 flex items-center gap-1 text-[11px] font-medium text-red-500">
+                      <AlertCircle className="h-3.5 w-3.5" /> Passwords do not match
+                    </p>
+                  )}
+                  {!mismatch && form.confirm && form.confirm === form.password && (
+                    <p className="mt-1 text-[11px] font-medium text-emerald-500">✓ Passwords match</p>
+                  )}
                 </motion.div>
               </div>
 
@@ -345,7 +372,18 @@ export const Register = () => {
                     exit={{ opacity: 0, height: 0, y: -6 }}
                     className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2 text-xs font-medium text-red-500 overflow-hidden backdrop-blur-md"
                   >
-                    <AlertCircle className="h-4 w-4 shrink-0 text-red-500" /> {error}
+                    <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                    <span>
+                      {error}
+                      {errorCode === 'EMAIL_EXISTS' && (
+                        <>
+                          {' '}
+                          <Link to="/login" className="font-bold underline">Sign in</Link>
+                          {' · '}
+                          <Link to={`/forgot-password?email=${encodeURIComponent(form.email.trim())}`} className="font-bold underline">Reset password</Link>
+                        </>
+                      )}
+                    </span>
                   </motion.div>
                 )}
               </AnimatePresence>

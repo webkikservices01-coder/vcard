@@ -4,6 +4,16 @@ const auth = require('../middleware/auth');
 const VcardSettings = require('../models/VcardSettings');
 const vCard = require('../models/vCard');
 const User = require('../models/User');
+const { upload, fileUrl } = require('../utils/upload');
+
+// Allowed card favicon values (see VcardSettings.favicon).
+const cleanFavicon = (v) => {
+    const s = String(v || '').trim().slice(0, 500);
+    if (['', 'photo', 'initials', 'aicardly'].includes(s)) return s;
+    if (/^emoji:.{1,8}$/u.test(s)) return s;
+    if (/^https:\/\/res\.cloudinary\.com\//.test(s) || /^\/uploads\//.test(s)) return s;
+    return '';
+};
 
 const getCardId = async (userId) => {
     const card = await vCard.findOne({ userId });
@@ -27,11 +37,23 @@ router.post('/', auth, async (req, res) => {
         if (!vcardId) return res.status(404).json({ msg: 'vCard not found.' });
         const settings = await VcardSettings.findOneAndUpdate(
             { vcardId },
-            { $set: { ...req.body, vcardId } },
+            { $set: { ...req.body, ...(req.body.favicon !== undefined ? { favicon: cleanFavicon(req.body.favicon) } : {}), vcardId } },
             { new: true, upsert: true }
         );
         res.json(settings);
     } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// POST /api/settings/favicon (multipart "favicon"): upload a custom card favicon image.
+router.post('/favicon', auth, (req, res, next) => upload.single('favicon')(req, res, (err) => {
+    if (err) return res.status(400).json({ msg: err.message || 'Upload failed' });
+    next();
+}), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ msg: 'Please choose an image.' });
+        if (!/^image\//.test(req.file.mimetype)) return res.status(400).json({ msg: 'Please upload an image (PNG, JPG, SVG or ICO).' });
+        res.json({ url: fileUrl(req.file) });
+    } catch (err) { res.status(500).json({ msg: 'Upload failed' }); }
 });
 
 // GET user profile

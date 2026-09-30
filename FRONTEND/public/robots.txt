@@ -1,9 +1,39 @@
+# robots.txt for https://aicardly.com
+
+# ---------- All search engines ----------
 User-agent: *
+Allow: /
+# Private / non-SEO areas
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /login
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
+Disallow: /*?utm_
+Disallow: /*?ref=
+
+# ---------- AI search and answer engines (allowed, so Aicardly can show up in AI answers) ----------
+# Note: a bot with its own group ignores the "*" group above,
+# so the private-path rules are repeated here.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
 Allow: /
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /onboarding
 Disallow: /login
 Disallow: /forgot-password
+Disallow: /api/
 
+# ---------- Sitemap ----------
 Sitemap: https://aicardly.com/sitemap.xml

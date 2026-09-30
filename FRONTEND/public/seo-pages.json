@@ -6,6 +6,48 @@
       "title": "Aicardly – AI Digital Business Card & Metal NFC Cards in India",
       "description": "Create an AI-powered digital business card with QR, NFC & WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds."
     },
+    "/features": {
+      "title": "Features – AI Digital Business Card with QR, NFC & AI Chat | Aicardly",
+      "description": "Share by QR, NFC tap or link, save contacts in one tap, add an AI assistant, portfolio, reels and documents, and see leads and views. All Aicardly features.",
+      "jsonld": [
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://aicardly.com/features" }
+          ]
+        }
+      ]
+    },
+    "/pricing": {
+      "title": "Pricing – Aicardly Digital Business Card Plans in India",
+      "description": "Aicardly plans in INR: Digital Card, Smart AI Card and AI Agent Pro. Start free, pay monthly or yearly, and compare every feature.",
+      "jsonld": [
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Pricing", "item": "https://aicardly.com/pricing" }
+          ]
+        }
+      ]
+    },
+    "/metal-nfc-card": {
+      "title": "Premium Metal NFC Business Card in India | Aicardly",
+      "description": "Stainless steel NFC business card with custom logo and name engraving. Tap any phone to share your AI digital business card, no app needed. Delivered across India in 5–7 days.",
+      "jsonld": [
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Metal NFC Card", "item": "https://aicardly.com/metal-nfc-card" }
+          ]
+        }
+      ]
+    },
     "/about-us": {
       "title": "About Us | Aicardly",
       "description": "Aicardly is an AI digital business card platform by Webkik Services, Delhi. Learn why we build smarter cards for modern professionals."
@@ -49,6 +91,11 @@
     "/login": {
       "title": "Sign In | Aicardly",
       "description": "Sign in to your Aicardly dashboard to edit your digital business card.",
+      "noindex": true
+    },
+    "/reset-password": {
+      "title": "Choose a New Password | Aicardly",
+      "description": "Set a new password for your Aicardly account.",
       "noindex": true
     },
     "/forgot-password": {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save } from 'lucide-react';
+import { Save, Upload, Loader2 } from 'lucide-react';
+import { FAVICON_EMOJIS, faviconHref } from '../../utils/favicon';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ const defaultSettings = {
   showLanguage: true, seoIndexing: true, carouselMode: true,
   showEnquiryForm: true,
   orientation: 'vertical',
+  favicon: '',
 };
 
 const checkboxOptions = [
@@ -39,6 +41,8 @@ const AdvancedSettings = () => {
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const [slug, setSlug] = useState('');
+  const [card, setCard] = useState({});
+  const [uploadingIcon, setUploadingIcon] = useState(false);
 
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(true);
@@ -57,6 +61,7 @@ const AdvancedSettings = () => {
     const fetchUserDetails = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/me`, { headers: headers() });
+        if (res.data) setCard(res.data);
         if (res.data?.username) {
           setSlug(res.data.username);
         }
@@ -66,6 +71,26 @@ const AdvancedSettings = () => {
     fetchSettings();
     fetchUserDetails();
   }, []);
+
+  // Custom favicon image → server upload → saved as the favicon value.
+  const uploadIcon = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error('Please use an image under 2 MB.');
+    setUploadingIcon(true);
+    try {
+      const fd = new FormData();
+      fd.append('favicon', file);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/settings/favicon`, fd, { headers: headers() });
+      setSettings((p) => ({ ...p, favicon: data.url }));
+      toast.success('Icon uploaded. Save settings to apply it.');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Upload failed');
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -79,7 +104,7 @@ const AdvancedSettings = () => {
   const handlePreview = () => {
     setShowPopup(false);
     if (slug) {
-      window.open(`/${slug}`, '_blank');
+      window.dispatchEvent(new Event('card:preview'));
     } else {
       toast.error('Profile not found! Please create a profile first.');
     }
@@ -165,6 +190,77 @@ const AdvancedSettings = () => {
               );
             })}
           </div>
+        </GlassCard>
+
+        {/* Card favicon */}
+        <GlassCard {...fadeUp(0.15)} className="p-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: 'var(--surface-text)' }}>Card favicon</h3>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>The small icon in the browser tab when someone opens your card.</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 shrink-0" style={{ background: 'var(--surface-2)' }} title="Preview">
+              <img src={faviconHref(settings.favicon, card)} alt="" className="h-5 w-5 rounded" />
+              <span className="text-xs font-medium max-w-[120px] truncate" style={{ color: 'var(--surface-text)' }}>{card?.personalInfo?.name || 'Your card'}</span>
+            </div>
+          </div>
+          {(() => {
+            const cur = settings.favicon || 'photo';
+            const tile = (on) =>
+              `relative grid place-items-center h-12 w-12 rounded-xl border-2 fast-transition cursor-pointer ${on ? 'border-brand-600 ring-2 ring-brand-500/30' : 'hover:border-brand-400'}`;
+            const tileStyle = (on) => (on ? { background: 'var(--surface-1)' } : { borderColor: 'var(--surface-border)', background: 'var(--surface-1)' });
+            const isCustom = /^(https?:|\/uploads\/)/.test(cur);
+            return (
+              <>
+                <div className="flex flex-wrap gap-2.5">
+                  {[
+                    ['photo', 'Your photo'],
+                    ['initials', 'Initials'],
+                    ['aicardly', 'Aicardly logo'],
+                  ].map(([v, label]) => (
+                    <button key={v} type="button" onClick={() => setSettings({ ...settings, favicon: v })} className="flex flex-col items-center gap-1" aria-pressed={cur === v}>
+                      <span className={tile(cur === v)} style={tileStyle(cur === v)}>
+                        <img src={faviconHref(v, card)} alt="" className="h-7 w-7 rounded" />
+                      </span>
+                      <span className="text-[11px]" style={{ color: 'var(--surface-text-2)' }}>{label}</span>
+                    </button>
+                  ))}
+                  <label className="flex flex-col items-center gap-1 cursor-pointer" aria-pressed={isCustom}>
+                    <span className={tile(isCustom)} style={tileStyle(isCustom)}>
+                      {uploadingIcon ? (
+                        <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--surface-text-2)' }} />
+                      ) : isCustom ? (
+                        <img src={faviconHref(cur, card)} alt="" className="h-7 w-7 rounded" />
+                      ) : (
+                        <Upload className="h-5 w-5" style={{ color: 'var(--surface-text-2)' }} />
+                      )}
+                    </span>
+                    <span className="text-[11px]" style={{ color: 'var(--surface-text-2)' }}>Upload</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" className="sr-only" onChange={uploadIcon} />
+                  </label>
+                </div>
+                <p className="text-xs font-semibold mt-5 mb-2" style={{ color: 'var(--surface-text)' }}>Or pick an icon</p>
+                <div className="grid grid-cols-8 gap-2">
+                  {FAVICON_EMOJIS.map((e) => {
+                    const v = 'emoji:' + e;
+                    return (
+                      <button
+                        key={e}
+                        type="button"
+                        aria-label={`Use ${e} as favicon`}
+                        aria-pressed={cur === v}
+                        onClick={() => setSettings({ ...settings, favicon: v })}
+                        className={`grid aspect-square place-items-center rounded-xl border-2 text-xl fast-transition ${cur === v ? 'border-brand-600 ring-2 ring-brand-500/30' : 'hover:border-brand-400'}`}
+                        style={cur === v ? { background: 'var(--surface-1)' } : { borderColor: 'var(--surface-border)', background: 'var(--surface-1)' }}
+                      >
+                        {e}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </GlassCard>
 
         {/* Visibility Options */}

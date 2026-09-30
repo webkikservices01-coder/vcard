@@ -67,11 +67,14 @@ const PlatformChatWidget = () => {
   const inputRef = useRef(null);
   const panelRef = useRef(null);
   const launcherRef = useRef(null);
+  // Opened by itself on the homepage (see below) and not touched yet by the visitor.
+  const autoOpen = useRef(false);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }); }, [messages, isBusy, flow, leadState, reducedMotion]);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), reducedMotion ? 0 : 300);
+    // No focus when it opened by itself: that would pop up the phone keyboard and scroll the page.
+    if (isOpen && !autoOpen.current) setTimeout(() => inputRef.current?.focus(), reducedMotion ? 0 : 300);
   }, [isOpen, reducedMotion]);
 
   // One-time launcher pulse: shouldPulse is read once at mount; mark it seen once the launcher is actually shown.
@@ -80,25 +83,44 @@ const PlatformChatWidget = () => {
     try { localStorage.setItem(PULSE_SEEN_KEY, '1'); } catch { /* ignore */ }
   }, [allowed, shouldPulse]);
 
-  // Dismissible greeting bubble — home page only, once per session.
+  // Homepage, once per session: the chat opens by itself for about 5 seconds so visitors notice
+  // the AI assistant, then tucks away into the greeting bubble unless they start using it.
   useEffect(() => {
-    if (!allowed || location.pathname !== '/' || isOpen) return;
+    if (!allowed || location.pathname !== '/') return;
     let shown = false;
     try { shown = sessionStorage.getItem(GREETING_SESSION_KEY) === '1'; } catch { /* ignore */ }
     if (shown) return;
-    const t = setTimeout(() => {
-      setShowGreeting(true);
+    const open = setTimeout(() => {
       try { sessionStorage.setItem(GREETING_SESSION_KEY, '1'); } catch { /* ignore */ }
-    }, GREETING_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [allowed, location.pathname, isOpen]);
+      autoOpen.current = true;
+      setIsOpen(true);
+    }, Math.min(GREETING_DELAY_MS, 1500));
+    const close = setTimeout(() => {
+      if (!autoOpen.current) return; // visitor is using it: leave it open
+      autoOpen.current = false;
+      setIsOpen(false);
+      setShowGreeting(true);
+    }, Math.min(GREETING_DELAY_MS, 1500) + 5000);
+    return () => { clearTimeout(open); clearTimeout(close); };
+  }, [allowed, location.pathname]);
+
+  // Any tap or key inside the panel means the visitor took over: no auto-close.
+  useEffect(() => {
+    if (!isOpen) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const took = () => { autoOpen.current = false; };
+    panel.addEventListener('pointerdown', took);
+    panel.addEventListener('keydown', took);
+    return () => { panel.removeEventListener('pointerdown', took); panel.removeEventListener('keydown', took); };
+  }, [isOpen]);
 
   // Focus trap + Esc-to-close while the panel is open.
   useEffect(() => {
     if (!isOpen) return;
     const panel = panelRef.current;
     const getFocusables = () => panel?.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
-    setTimeout(() => getFocusables()?.[0]?.focus(), 0);
+    if (!autoOpen.current) setTimeout(() => getFocusables()?.[0]?.focus(), 0);
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') { setIsOpen(false); launcherRef.current?.querySelector('button')?.focus(); return; }
@@ -442,18 +464,44 @@ const PlatformChatWidget = () => {
         )}
       </AnimatePresence>
 
-      {/* Launcher */}
-      <div ref={launcherRef}>
+      {/* Launcher: floats, wiggles now and then and shows an "Ask AI" label, so everyone
+          notices there is an AI assistant (all motion off under reduced-motion). */}
+      <style>{`
+        @keyframes cardyFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+        @keyframes cardyWiggle { 0%,86%,100% { transform: rotate(0) } 88% { transform: rotate(-14deg) } 90% { transform: rotate(12deg) } 92% { transform: rotate(-9deg) } 94% { transform: rotate(6deg) } 96% { transform: rotate(-3deg) } }
+        @keyframes cardyRing { 0% { transform: scale(1); opacity: .55 } 100% { transform: scale(1.75); opacity: 0 } }
+        @keyframes cardyLabel { from { opacity: 0; transform: translateX(8px) } to { opacity: 1; transform: none } }
+        .cardy-float { animation: cardyFloat 3s ease-in-out infinite }
+        .cardy-wiggle { animation: cardyWiggle 6s ease-in-out infinite; transform-origin: 50% 60% }
+        .cardy-ring { animation: cardyRing 2.2s ease-out infinite }
+        .cardy-label { animation: cardyLabel .4s ease-out both }
+        @media (prefers-reduced-motion: reduce) { .cardy-float, .cardy-wiggle, .cardy-ring, .cardy-label { animation: none } }
+      `}</style>
+      <div ref={launcherRef} className={`relative flex items-center gap-2 ${!isOpen ? 'cardy-float' : ''}`}>
+        {!isOpen && !showGreeting && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="cardy-label hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold shadow-lg"
+            style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-1)', color: 'var(--surface-text)' }}
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" /> Chat with AI · 24/7
+          </button>
+        )}
+        {!isOpen && <span aria-hidden="true" className="cardy-ring pointer-events-none absolute right-0 h-14 w-14 rounded-full" style={{ backgroundImage: 'var(--background-image-gradient-crimson)' }} />}
         <IconButton
           variant="bare"
           size="lg"
           onClick={() => { setIsOpen(o => !o); setShowGreeting(false); }}
-          title={isOpen ? 'Close Aicardly assistant' : 'Open Aicardly assistant'}
-          className="relative !h-14 !w-14 text-white shadow-lg"
+          title={isOpen ? 'Close Aicardly assistant' : 'Chat with the Aicardly AI assistant'}
+          className={`relative !h-14 !w-14 text-white shadow-lg ${!isOpen ? 'cardy-wiggle' : ''}`}
           style={{ backgroundImage: 'var(--background-image-gradient-crimson)', boxShadow: 'var(--shadow-glow-crimson-lg)' }}
-          animate={shouldPulse && !isOpen && !reducedMotion ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-          transition={shouldPulse && !isOpen && !reducedMotion ? { duration: 1.6, repeat: 2 } : {}}
         >
+          {!isOpen && (
+            <span className="absolute -top-1 -left-1 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-black text-[#E70C65] shadow" aria-hidden="true">
+              AI
+            </span>
+          )}
           <AnimatePresence mode="wait">
             {isOpen ? (
               <motion.span key="close" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }}>

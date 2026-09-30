@@ -7,10 +7,10 @@ export const PLANS = {
   AI_AGENT_PRO: 'AI AGENT PRO',
 };
 
-// Smart AI Card + AI Agent Pro: chatbot assistant to fill vCard details
+// Smart AI Card + AI Agent Pro: chatbot assistant, AI persona, card AI chat
 export const CHAT_FILL_PLANS = [PLANS.SMART_AI, PLANS.AI_AGENT_PRO];
 
-// Smart AI Card + AI Agent Pro: voice assistant to fill vCard details
+// Voice assistant to fill vCard details
 export const VOICE_FILL_PLANS = [PLANS.SMART_AI, PLANS.AI_AGENT_PRO];
 
 // Pricing is switched off for now: no plans/prices/upgrade prompts are shown and every
