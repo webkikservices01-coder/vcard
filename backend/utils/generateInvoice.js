@@ -1,4 +1,4 @@
-const PDFDocument = require('pdfkit');
+// pdfkit loads on first use, not when the server starts.
 
 const { COMPANY: C } = require('../constants/chatbotKnowledge');
 
@@ -19,6 +19,7 @@ const formatMoney = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
 
 // Streams a one-page invoice PDF for a completed transaction directly to the given writable stream (e.g. an Express response).
 function generateInvoice(txn, user, res) {
+    const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(res);
 

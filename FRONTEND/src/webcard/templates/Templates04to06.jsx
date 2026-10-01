@@ -1,29 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  CoverImage,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  scrollToSection,
-  enquire,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -233,7 +211,7 @@ class Logic extends DCLogic {
     }));
 
     const tab = CARD.services.length === 0 ? 'projects' : CARD.projects.length === 0 ? 'services' : this.state.tab;
-    const navLabels = ['Profile', 'Services', 'Projects', 'Reels', 'Portfolio', 'Contact', 'QR'];
+    const navLabels = ['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
     const on = (a, b) => (a ? b[0] : b[1]);
     const bar = CARD.barFrom([
       { label: 'Call', icon: ic.phone },
@@ -315,8 +293,8 @@ class Logic extends DCLogic {
       timings: CARD.timings,
       servicesW: CARD.fill(CARD.services, [
         { wide: true, bg: '#E8F3EE', fg: '#23775A', icon: ic.code },
-        { bg: '#FDEDEC', fg: '#B2463F', link: '#8E2F28', icon: ic.mobile },
-        { bg: '#EEF0FB', fg: '#4A55A8', link: '#39448F', icon: ic.cpu },
+        { bg: '#FDEDEC', fg: '#B2463F', linkColor: '#8E2F28', icon: ic.mobile },
+        { bg: '#EEF0FB', fg: '#4A55A8', linkColor: '#39448F', icon: ic.cpu },
         { wide: true, bg: '#E8F3EE', fg: '#23775A', icon: ic.trend },
       ]),
       rating: CARD.testimonials.length
@@ -766,56 +744,7 @@ export function LuxeNoir(props) {
                 <h3 style={{ margin: '0', fontFamily: "'Cormorant Garamond',serif", fontWeight: '600', fontSize: '26px' }}>{'Services'}</h3>
                 <span style={{ flex: '1', height: '1px', background: 'linear-gradient(90deg, rgba(201,164,92,.5), transparent)' }}></span>
               </div>
-              {(V.services || []).map((sv, $index) => (
-                <React.Fragment key={$index}>
-                  <div style={{ display: 'flex', gap: '14px', padding: '16px 0', borderBottom: '1px solid #1F1D19' }}>
-                    <span
-                      style={{
-                        width: '40px',
-                        flexShrink: '0',
-                        fontFamily: "'Cormorant Garamond',serif",
-                        fontSize: '20px',
-                        color: '#8C7A55',
-                      }}
-                    >
-                      {sv?.roman}
-                    </span>
-                    <div style={{ flex: '1', minWidth: '0' }}>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '21px', fontWeight: '600' }}>{sv?.title}</div>
-                      <div style={{ fontSize: '14px', lineHeight: '1.5', color: '#A89F8C', marginTop: '2px' }}>{sv?.desc}</div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '16px',
-                          marginTop: '8px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          letterSpacing: '.1em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        <span role="button" onClick={enquire(sv)} style={{ position: 'relative', color: '#C9A45C' }} className="dcp-b6">
-                          {'Enquire'}
-                        </span>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#CFC7B6' }}
-                            className="dcp-b7"
-                          >
-                            <span dangerouslySetInnerHTML={V.sparkLx} style={{ display: 'flex' }}></span>
-                            {'Ask AI'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
+              <ServiceSlides items={CARD.services} pad={20} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -932,7 +861,7 @@ export function LuxeNoir(props) {
                 <span style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: 'italic', fontSize: '22px', color: '#C9A45C' }}>
                   {'04'}
                 </span>
-                <h3 style={{ margin: '0', fontFamily: "'Cormorant Garamond',serif", fontWeight: '600', fontSize: '26px' }}>{'Reels'}</h3>
+                <h3 style={{ margin: '0', fontFamily: "'Cormorant Garamond',serif", fontWeight: '600', fontSize: '26px' }}>{'Featured Videos'}</h3>
                 <span style={{ flex: '1', height: '1px', background: 'linear-gradient(90deg, rgba(201,164,92,.5), transparent)' }}></span>
               </div>
               <div
@@ -1018,33 +947,7 @@ export function LuxeNoir(props) {
                 </h3>
                 <span style={{ flex: '1', height: '1px', background: 'linear-gradient(90deg, rgba(201,164,92,.5), transparent)' }}></span>
               </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(88px,27cqi,110px)',
-                  gridAutoFlow: 'dense',
-                  gap: '2px',
-                }}
-              >
-                {(V.portfolioLx || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        gridRow: `span ${pf?.r}`,
-                        gridColumn: `span ${pf?.c}`,
-                        background: pf?.bg,
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} pad={0} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -1543,7 +1446,7 @@ export function LuxeNoir(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 20px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 20px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1579,6 +1482,7 @@ export function LuxeNoir(props) {
                   padding: '0 0 0 4px',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}
@@ -2125,84 +2029,9 @@ export function SplitHeroCorporate(props) {
                 </h3>
               )}
               {V.tab?.isS ? (
-                <>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                    {(V.services || []).map((sv, $index) => (
-                      <React.Fragment key={$index}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px',
-                            background: '#FFFFFF',
-                            border: '1px solid #E3E9F0',
-                            borderRadius: '14px',
-                          }}
-                        >
-                          <span
-                            dangerouslySetInnerHTML={sv?.icon}
-                            style={{
-                              width: '40px',
-                              height: '40px',
-                              flexShrink: '0',
-                              borderRadius: '10px',
-                              background: '#E4F2EE',
-                              color: '#0E7C66',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          ></span>
-                          <div style={{ flex: '1', minWidth: '0' }}>
-                            <div style={{ fontSize: '15px', fontWeight: '700' }}>{sv?.title}</div>
-                            <div
-                              style={{
-                                fontSize: '13px',
-                                color: '#5B6B7C',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}
-                            >
-                              {sv?.desc}
-                            </div>
-                            <div style={{ display: 'flex', gap: '14px', marginTop: '4px', fontSize: '13px', fontWeight: '600' }}>
-                              <span
-                                role="button"
-                                onClick={enquire(sv)}
-                                style={{ position: 'relative', color: '#0E7C66' }}
-                                className="dcp-b17"
-                              >
-                                {'Enquire →'}
-                              </span>
-                              {CARD.ai.enabled ? (
-                                <span
-                                  role="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openChat();
-                                  }}
-                                  style={{
-                                    position: 'relative',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    color: '#334155',
-                                  }}
-                                  className="dcp-b18"
-                                >
-                                  <span dangerouslySetInnerHTML={V.sparkCo} style={{ display: 'flex' }}></span>
-                                  {'Ask AI'}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </>
+                <div style={{ marginTop: '12px' }}>
+                  <ServiceSlides items={CARD.services} />
+                </div>
               ) : null}
               {V.tab?.isP ? (
                 <>
@@ -2362,7 +2191,7 @@ export function SplitHeroCorporate(props) {
           ) : null}
           {CARD.reels.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
-              <h3 style={{ margin: '0 0 12px', fontFamily: "'Manrope',sans-serif", fontSize: '19px', fontWeight: '800' }}>{'Reels'}</h3>
+              <h3 style={{ margin: '0 0 12px', fontFamily: "'Manrope',sans-serif", fontSize: '19px', fontWeight: '800' }}>{'Featured Videos'}</h3>
               <div
                 data-wc-reels="1"
                 style={{ display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none', marginRight: '-16px' }}
@@ -2442,25 +2271,7 @@ export function SplitHeroCorporate(props) {
           {CARD.photos.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Manrope',sans-serif", fontSize: '19px', fontWeight: '800' }}>{'Portfolio'}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '6px' }}>
-                {(V.portfolioM || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        aspectRatio: '1',
-                        borderRadius: '10px',
-                        background: 'repeating-linear-gradient(135deg,#EEF2F6 0 10px,#E1E8EF 10px 11px)',
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -2911,7 +2722,7 @@ export function SplitHeroCorporate(props) {
                 typing={null}
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '10px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '10px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -2950,6 +2761,7 @@ export function SplitHeroCorporate(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}
@@ -3464,100 +3276,9 @@ export function SoftBentoWellness(props) {
                 {CARD.services.length > 0 ? 'Services & visit info' : 'Visit info'}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gridAutoFlow: 'dense', gap: '10px' }}>
-                {(V.servicesW || []).map((sv, $index) =>
-                  sv.wide ? (
-                    <div
-                      key={$index}
-                      style={{
-                        gridColumn: 'span 2',
-                        padding: '16px',
-                        borderRadius: '24px',
-                        background: sv.bg,
-                        display: 'flex',
-                        gap: '12px',
-                        alignItems: 'flex-start',
-                      }}
-                    >
-                      <span
-                        dangerouslySetInnerHTML={sv.icon}
-                        style={{
-                          width: '44px',
-                          height: '44px',
-                          flexShrink: '0',
-                          borderRadius: '50%',
-                          background: '#FFFFFF',
-                          color: sv.fg,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      ></span>
-                      <div style={{ flex: '1', minWidth: '0' }}>
-                        <div style={{ fontSize: '16px', fontWeight: '800' }}>{sv.title}</div>
-                        {sv.desc ? (
-                          <div style={{ fontSize: '13.5px', lineHeight: '1.45', color: '#3F3C3A', marginTop: '2px' }}>{sv.desc}</div>
-                        ) : null}
-                        {sv.price ? <div style={{ fontSize: '13.5px', fontWeight: '800', marginTop: '4px' }}>{sv.price}</div> : null}
-                        <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '13px', fontWeight: '700' }}>
-                          <span role="button" onClick={enquire(sv)} style={{ position: 'relative', color: sv.fg }} className="dcp-b27">
-                            {'Enquire →'}
-                          </span>
-                          {CARD.ai.enabled ? (
-                            <span
-                              role="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openChat();
-                              }}
-                              style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              className="dcp-b28"
-                            >
-                              <span dangerouslySetInnerHTML={V.sparkW} style={{ display: 'flex' }}></span>
-                              {'Ask AI'}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      key={$index}
-                      style={{
-                        padding: '14px',
-                        borderRadius: '24px',
-                        background: sv.bg,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      <span
-                        dangerouslySetInnerHTML={sv.icon}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: '#FFFFFF',
-                          color: sv.fg,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      ></span>
-                      <div style={{ fontSize: '15px', fontWeight: '800', marginTop: '2px' }}>{sv.title}</div>
-                      {sv.desc ? <div style={{ fontSize: '13px', lineHeight: '1.4', color: '#3F3C3A' }}>{sv.desc}</div> : null}
-                      {sv.price ? <div style={{ fontSize: '13px', fontWeight: '800' }}>{sv.price}</div> : null}
-                      <span
-                        role="button"
-                        onClick={enquire(sv)}
-                        style={{ position: 'relative', fontSize: '13px', fontWeight: '700', color: sv.link, marginTop: 'auto' }}
-                        className="dcp-b29"
-                      >
-                        {'Enquire →'}
-                      </span>
-                    </div>
-                  ),
-                )}
+                <div style={{ gridColumn: 'span 2' }}>
+                  <ServiceSlides items={CARD.services} />
+                </div>
                 {CARD.href.Location ? (
                   <a
                     href={CARD.href.Location}
@@ -3808,7 +3529,7 @@ export function SoftBentoWellness(props) {
           ) : null}
           {CARD.reels.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>{'Reels'}</h3>
+              <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>{'Featured Videos'}</h3>
               <div
                 data-wc-reels="1"
                 style={{ display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none', marginRight: '-16px' }}
@@ -3886,34 +3607,7 @@ export function SoftBentoWellness(props) {
           {CARD.photos.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>{'Portfolio'}</h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(56px,17cqi,70px)',
-                  gridAutoFlow: 'dense',
-                  gap: '8px',
-                }}
-              >
-                {(V.portfolioW || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        gridRow: `span ${pf?.r}`,
-                        gridColumn: `span ${pf?.c}`,
-                        borderRadius: '18px',
-                        background: pf?.bg,
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -4383,7 +4077,7 @@ export function SoftBentoWellness(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips
                 .map((l, i) => ({ l, bg: ['#E8F3EE', '#FDEDEC', '#EEF0FB', '#E8F3EE'][i % 4] }))
                 .map((c, $index) => (
@@ -4424,6 +4118,7 @@ export function SoftBentoWellness(props) {
                   boxShadow: '0 4px 12px rgba(43,43,43,.05)',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

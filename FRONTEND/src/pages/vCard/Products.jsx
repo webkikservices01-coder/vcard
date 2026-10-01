@@ -1,11 +1,13 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon, Mic } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Image as ImageIcon, Mic, ExternalLink, Globe } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import ImportServices from './ImportServices';
+import { siteShot } from '../../utils/media';
 import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
 import GlassCard from '../../components/ui/GlassCard';
@@ -21,10 +23,37 @@ const headers = () => ({ 'x-auth-token': token() });
 
 const emptyForm = { title: '', description: '', price: '', link: '', coverImage: null };
 
-const Products = () => {
+// One page for both dashboard tabs. Services open the owner's website when tapped on the card,
+// so their link is required.
+const COPY = {
+  product: {
+    heading: 'Products', sub: 'Showcase the products you sell on your vCard', one: 'Product', search: 'Search products...',
+    empty: 'No products yet. Add your first one.', titlePh: 'Product name', linkLabel: 'Link URL', pricePh: '999', next: '/dashboard/vcard/services',
+  },
+  service: {
+    heading: 'Services', sub: 'List the services you offer. Visitors tap one on your card to open your website.', one: 'Service', search: 'Search services...',
+    empty: 'No services yet. Add what you offer, with a link to your website.', titlePh: 'e.g. Website Design, GST Filing, Bridal Makeup', linkLabel: 'Website link *', pricePh: 'Starting 4,999', next: '/dashboard/vcard/portfolio',
+  },
+};
+
+// Same rule as the server: web addresses only; "site.com" gets https:// added.
+const webLink = (v) => {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(s) ? s : `https://${s.replace(/^\/+/, '')}`);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : '';
+  } catch {
+    return '';
+  }
+};
+
+const Products = ({ kind = 'product' }) => {
+  const copy = COPY[kind];
   const plan = usePlan();
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [showVoiceFill, setShowVoiceFill] = useState(false);
   const [slug, setSlug] = useState('');
 
@@ -39,9 +68,9 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(API, { headers: headers() });
+      const res = await axios.get(`${API}?kind=${kind}`, { headers: headers() });
       setItems(res.data);
-    } catch { toast.error('Failed to load products'); }
+    } catch { toast.error(`Failed to load ${copy.heading.toLowerCase()}`); }
     finally { setLoading(false); }
   };
 
@@ -62,7 +91,8 @@ const Products = () => {
 
     window.addEventListener('vcard:data-changed', fetchProducts);
     return () => window.removeEventListener('vcard:data-changed', fetchProducts);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
 
   const openCreate = () => { setForm(emptyForm); setPreview(''); setEditing(null); setModalOpen(true); };
 
@@ -83,10 +113,14 @@ const Products = () => {
 
   const handleSave = async () => {
     if (!form.title) { toast.error('Title is required'); return; }
+    const link = webLink(form.link);
+    if (kind === 'service' && !link) { toast.error('Please add your website link, e.g. https://yourwebsite.com'); return; }
+    if (form.link && !link) { toast.error('Please enter a valid web link starting with https://'); return; }
     setSaving(true);
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v !== null && k !== 'coverImage') fd.append(k, v); });
+      Object.entries({ ...form, link }).forEach(([k, v]) => { if (v !== null && k !== 'coverImage') fd.append(k, v); });
+      if (!editing) fd.append('kind', kind);
       if (form.coverImage) fd.append('coverImage', form.coverImage);
 
       if (editing) {
@@ -98,14 +132,14 @@ const Products = () => {
       setModalOpen(false);
       fetchProducts();
       setShowPopup(true);
-      toast.success('Product saved successfully!');
+      toast.success(`${copy.one} saved successfully!`);
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to save');
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this product?')) return;
+    if (!window.confirm(`Delete this ${copy.one.toLowerCase()}?`)) return;
     try {
       await axios.delete(`${API}/${id}`, { headers: headers() });
       toast.success('Deleted');
@@ -124,7 +158,7 @@ const Products = () => {
 
   const handleNext = () => {
     setShowPopup(false);
-    navigate('/dashboard/vcard/portfolio');
+    navigate(copy.next);
   };
 
   const handleVoiceFill = (fields) => {
@@ -148,8 +182,8 @@ const Products = () => {
           <MeshBackground className="opacity-60" />
           <div className="relative">
             <p className="text-xs text-white/60 mb-1 uppercase tracking-wider">vCard</p>
-            <h2 className="text-2xl font-black text-white leading-tight">Products &amp; Services</h2>
-            <p className="text-sm text-white/70 mt-1">Showcase what you offer on your vCard</p>
+            <h2 className="text-2xl font-black text-white leading-tight">{copy.heading}</h2>
+            <p className="text-sm text-white/70 mt-1">{copy.sub}</p>
           </div>
         </motion.div>
 
@@ -161,12 +195,24 @@ const Products = () => {
               value={search} onChange={e => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
               style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-              placeholder="Search products..."
+              placeholder={copy.search}
             />
           </div>
-          <GradientButton onClick={openCreate} className="!w-auto px-5 shrink-0">
-            <Plus className="w-4 h-4" /><span>Add Product</span>
-          </GradientButton>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {kind === 'service' && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowImport(true)}
+                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                className="hover:border-brand-500 hover:text-brand-500"
+              >
+                <Globe className="w-4 h-4" /><span>Import from website</span>
+              </Button>
+            )}
+            <GradientButton onClick={openCreate} className="!w-auto px-5 shrink-0">
+              <Plus className="w-4 h-4" /><span>Add {copy.one}</span>
+            </GradientButton>
+          </div>
         </motion.div>
 
         {/* Grid */}
@@ -179,10 +225,22 @@ const Products = () => {
         ) : filtered.length === 0 ? (
           <GlassCard {...fadeUp(0.1)} className="p-12 text-center">
             <ImageIcon className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
-            <p className="text-sm mb-4" style={{ color: 'var(--surface-text-2)' }}>No products yet. Add your first one.</p>
-            <GradientButton onClick={openCreate} className="!w-auto px-6 mx-auto">
-              <Plus className="w-4 h-4" /><span>Add Product</span>
-            </GradientButton>
+            <p className="text-sm mb-4" style={{ color: 'var(--surface-text-2)' }}>{copy.empty}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {kind === 'service' && (
+                <GradientButton onClick={() => setShowImport(true)} className="!w-auto px-6">
+                  <Globe className="w-4 h-4" /><span>Import from my website</span>
+                </GradientButton>
+              )}
+              <Button
+                variant="ghost"
+                onClick={openCreate}
+                style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                className="hover:border-brand-500 hover:text-brand-500"
+              >
+                <Plus className="w-4 h-4" /><span>Add {copy.one} yourself</span>
+              </Button>
+            </div>
           </GlassCard>
         ) : (
           <motion.div {...staggerContainer(0.06, 0.1)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -196,8 +254,9 @@ const Products = () => {
                   className="p-4 flex flex-col"
                 >
                   <div className="aspect-video rounded-xl overflow-hidden mb-3" style={{ background: 'var(--surface-2)' }}>
-                    {item.coverImage ? (
-                      <img src={getImageUrl(item.coverImage)} alt="" className="w-full h-full object-cover" />
+                    {item.coverImage || item.link ? (
+                      // No picture? The card shows a screenshot of the service's page, so preview the same.
+                      <img src={getImageUrl(item.coverImage) || siteShot(item.link)} alt="" loading="lazy" className="w-full h-full object-cover object-top" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon className="w-6 h-6" style={{ color: 'var(--surface-text-2)' }} />
@@ -207,7 +266,14 @@ const Products = () => {
                   <h3 className="text-sm font-bold truncate" style={{ color: 'var(--surface-text)' }}>{item.title}</h3>
                   <p className="text-xs mt-1 line-clamp-2 flex-1" style={{ color: 'var(--surface-text-2)' }}>{item.description || '—'}</p>
                   <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--surface-border)' }}>
-                    <span className="text-sm font-black text-brand-500">{item.price ? `₹${item.price}` : '—'}</span>
+                    <div className="min-w-0">
+                      <span className="text-sm font-black text-brand-500">{item.price ? `₹${item.price}` : '—'}</span>
+                      {webLink(item.link) && (
+                        <a href={webLink(item.link)} target="_blank" rel="noopener noreferrer" className="mt-0.5 flex items-center gap-1 truncate text-xs hover:text-brand-500" style={{ color: 'var(--surface-text-2)' }}>
+                          <ExternalLink className="w-3 h-3 shrink-0" /> <span className="truncate">{webLink(item.link).replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+                        </a>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
                       <IconButton variant="ghost" title="Edit" onClick={() => openEdit(item)}>
                         <Pencil className="w-4 h-4" />
@@ -239,7 +305,7 @@ const Products = () => {
                 className="glass rounded-2xl w-full max-w-md"
               >
                 <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid var(--surface-border)' }}>
-                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? 'Edit Product' : 'Add Product'}</h3>
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--surface-text)' }}>{editing ? `Edit ${copy.one}` : `Add ${copy.one}`}</h3>
                   <div className="flex items-center space-x-1">
                     {hasVoiceFill(plan) && (
                       <IconButton
@@ -261,7 +327,7 @@ const Products = () => {
                     <input value={form.title} onChange={e => setForm({...form, title: e.target.value})}
                       className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
                       style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                      placeholder="Product name" />
+                      placeholder={copy.titlePh} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Description</label>
@@ -276,14 +342,14 @@ const Products = () => {
                       <input value={form.price} onChange={e => setForm({...form, price: e.target.value})}
                         className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
                         style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                        placeholder="999" />
+                        placeholder={copy.pricePh} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Link URL</label>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>{copy.linkLabel}</label>
                       <input value={form.link} onChange={e => setForm({...form, link: e.target.value})}
                         className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none fast-transition focus:ring-2 focus:ring-brand-400"
                         style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-                        placeholder="https://..." />
+                        placeholder="https://yourwebsite.com" inputMode="url" />
                     </div>
                   </div>
                   <div>
@@ -314,6 +380,10 @@ const Products = () => {
         </AnimatePresence>,
  document.body)}
       </div>
+
+      {kind === 'service' && (
+        <ImportServices open={showImport} onClose={() => setShowImport(false)} onImported={fetchProducts} />
+      )}
 
       <ActionPopup
         isOpen={showPopup}

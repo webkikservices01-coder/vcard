@@ -238,7 +238,7 @@ const ContactDetails = () => {
 
   const handleNext = () => {
     setShowPopup(false);
-    navigate('/dashboard/vcard/products');
+    navigate('/dashboard/vcard/services');
   };
 
   const handleVoiceFill = (fields) => {

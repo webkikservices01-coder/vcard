@@ -24,6 +24,8 @@ const CardOrderSchema = new mongoose.Schema(
     paidAt: { type: Date, default: null },
     razorpayPaymentId: { type: String, default: '' },
     reminderSentAt: { type: Date, default: null },
+    // Free order: paid with an admin-granted credit (users.freeCardCredits), no payment link.
+    complimentary: { type: Boolean, default: false },
 
     delivery: {
       status: { type: String, enum: ['NOT_STARTED', 'PENDING', 'SENT', 'DELIVERED', 'READ', 'FAILED', 'SKIPPED'], default: 'NOT_STARTED' },

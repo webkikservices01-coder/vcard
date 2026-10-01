@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+/* Two themes from one set of class names. Light is Tailwind's own palette; dark (the default,
+   like aicardly.com) re-steps the same names below, so every page follows without dark: classes.
+   `surface` = cards/panels, `ink` = always-dark chips (tooltips, toasts), `canvas` = page. */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-brand-50: #fdf2f6;
+  --color-brand-100: #fce7ef;
+  --color-brand-300: #f7a1c3;
+  --color-brand-400: #f0548e;
+  --color-brand-500: #e70c65;
+  --color-brand-600: #c00a55;
+  --color-brand-700: #9f1c44;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8f9fb;
+  --color-canvas: #f4f5f8;
+  --color-ink: #0b0d14;
+  /* Chart mark colour (validated: lightness band + 3:1 on the surface in each theme). */
+  --color-chart: #e70c65;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --color-surface: #11131a;
+  --color-surface-2: #161923;
+  --color-canvas: #0a0b10;
+  --color-chart: #e8457f;
+  /* Neutral scale, re-stepped for a dark surface (50 = subtle fill … 950 = brightest text). */
+  --color-slate-50: #171a23;
+  --color-slate-100: #1c2029;
+  --color-slate-200: #272b37;
+  --color-slate-300: #363b49;
+  --color-slate-400: #6c7488;
+  --color-slate-500: #8b93a7;
+  --color-slate-600: #a6adbf;
+  --color-slate-700: #c4c9d6;
+  --color-slate-800: #dde1ea;
+  --color-slate-900: #eef0f6;
+  --color-slate-950: #f8f9fc;
+  /* Status tints: dark fills, light text. */
+  --color-emerald-50: #0f2a20;
+  --color-emerald-200: #1d5a42;
+  --color-emerald-700: #5fe0a8;
+  --color-emerald-800: #86ebbf;
+  --color-red-50: #33141a;
+  --color-red-200: #6b2330;
+  --color-red-700: #ff8a9b;
+  --color-red-800: #ffb0bc;
+  --color-amber-50: #2e2410;
+  --color-amber-200: #6a5320;
+  --color-amber-700: #fbcf5c;
+  --color-amber-800: #fde08f;
+  --color-sky-50: #0f2433;
+  --color-sky-200: #1f4a66;
+  --color-sky-700: #7cc8f5;
+  --color-brand-50: #2a0f1c;
+  --color-brand-100: #3a1426;
+  --color-brand-700: #ff7aaa;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-slate-900);
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Soft brand glow behind the dark theme, like the main site. */
+html[data-theme='dark'] body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(231, 12, 101, 0.13), transparent 60%),
+    radial-gradient(700px 420px at -10% 110%, rgba(99, 102, 241, 0.08), transparent 60%),
+    var(--color-canvas);
+  background-attachment: fixed;
+}
+
+/* Tables scroll sideways on phones instead of squeezing. */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Brand gradient (buttons, active nav, icons). */
+.bg-brand-gradient {
+  background-image: linear-gradient(135deg, #e70c65 0%, #9f1c44 100%);
+}
+.text-brand-gradient {
+  background-image: linear-gradient(90deg, #e70c65, #ff6b9d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.shadow-brand {
+  box-shadow: 0 8px 24px -8px rgba(231, 12, 101, 0.55);
+}
+
+/* Native date inputs follow the theme. */
+html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Thin scrollbars inside panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

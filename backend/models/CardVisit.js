@@ -19,6 +19,8 @@ const CardDayViewSchema = new mongoose.Schema({
   count:   { type: Number, default: 0 },
 });
 CardDayViewSchema.index({ vcardId: 1, day: 1 }, { unique: true });
+// Admin dashboard: views per day across all cards.
+CardDayViewSchema.index({ day: 1 });
 
 module.exports = {
   CardPresence: mongoose.model('CardPresence', CardPresenceSchema),

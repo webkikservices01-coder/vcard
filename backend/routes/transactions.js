@@ -8,6 +8,7 @@ const { generateInvoice } = require('../utils/generateInvoice');
 const refrens = require('../utils/refrens');
 const { priceFor } = require('../constants/plans');
 const { logEvent } = require('../utils/logger');
+const { recordPlan } = require('../services/planHistory');
 
 const makeInvoiceNumber = (txn) => `INV-${new Date(txn.createdAt).getFullYear()}-${String(txn._id).slice(-6).toUpperCase()}`;
 
@@ -24,6 +25,12 @@ async function markCompleted(txn) {
     const expiry = renewing ? new Date(user.planExpiry) : new Date();
     expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
     await User.findByIdAndUpdate(txn.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
+    // Plan history for the admin panel; never blocks the payment confirmation.
+    recordPlan({
+        userId: txn.userId, planName: txn.plan, tier: txn.plan, source: 'purchase',
+        startAt: renewing ? new Date(user.planExpiry) : new Date(), endAt: expiry,
+        amount: txn.amount, transactionId: txn._id,
+    }).catch((err) => logEvent(null, 'plan.history.error', err.message, { level: 'error', userId: txn.userId }));
     logEvent(null, 'payment.paid', `Paid ₹${txn.amount} for ${txn.plan} (${txn.billingType}); plan active until ${expiry.toDateString()}`, { userId: txn.userId, meta: { orderId: txn.cfOrderId, invoice: txn.invoiceNumber } });
 
     if (refrens.isConfigured()) {

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Mic, MicOff, X, Loader2, Bot, Send } from 'lucide-react';
-import { hasVoiceFill } from '../utils/plan';
+import { hasVoiceFill, DASHBOARD_AI_FOR_ALL } from '../utils/plan';
 import IconButton from './ui/IconButton';
 
 const API = `${import.meta.env.VITE_API_URL}/api`;
@@ -26,7 +26,8 @@ const FAQ_CHIPS = [
 
 const JarvisWidget = ({ plan }) => {
   const navigate = useNavigate();
-  const canUseVoice = hasVoiceFill(plan);
+  // Voice comes with the assistant whenever it's open to everyone (DASHBOARD_AI_FOR_ALL).
+  const canUseVoice = DASHBOARD_AI_FOR_ALL || hasVoiceFill(plan);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState('idle'); // idle | listening | thinking | speaking | error
   const [log, setLog] = useState([]);

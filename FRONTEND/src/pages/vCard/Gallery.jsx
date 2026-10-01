@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Search, X, Image as ImageIcon, Video } from 'lucide-react';
+import { Plus, Trash2, Search, X, Image as ImageIcon, Video, Globe } from 'lucide-react';
+import ImportFromWeb from './ImportFromWeb';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +30,13 @@ const Gallery = () => {
   const [form, setForm] = useState({ type: 'image', url: '', image: null });
   const [preview, setPreview] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const importPhotos = async (photos) => {
+    const res = await axios.post(`${API}/import`, { urls: photos.map((p) => p.url) }, { headers: headers(), timeout: 120000 });
+    fetchGallery();
+    const { added, failed } = res.data;
+    return `${added} photo${added === 1 ? '' : 's'} added${failed ? ` (${failed} couldn't be saved)` : ''}`;
+  };
 
   const fetchGallery = async () => {
     try { 
@@ -140,12 +148,22 @@ const Gallery = () => {
               placeholder="Search..."
             />
           </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => setShowImport(true)}
+            style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+            className="hover:border-brand-500 hover:text-brand-500 shrink-0"
+          >
+            <Globe className="w-4 h-4" /><span>Photos from website</span>
+          </Button>
           <GradientButton
             onClick={() => { setModalOpen(true); setForm({ type: 'image', url: '', image: null }); setPreview(''); }}
             className="!w-auto px-5 shrink-0"
           >
             <Plus className="w-4 h-4" /><span>Add</span>
           </GradientButton>
+          </div>
         </motion.div>
 
         {/* Grid */}
@@ -285,6 +303,7 @@ const Gallery = () => {
  document.body)}
       </div>
 
+      <ImportFromWeb kind="photos" open={showImport} onClose={() => setShowImport(false)} onSave={importPhotos} />
       <ActionPopup
         isOpen={showPopup}
         onClose={() => setShowPopup(false)}

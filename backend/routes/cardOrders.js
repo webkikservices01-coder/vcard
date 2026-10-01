@@ -1,17 +1,14 @@
 // /api/card-orders — "Get my card": pay with a Razorpay link, receive the card on WhatsApp + email.
 const express = require('express');
 const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
 const { cardOrderLimiter } = require('../middleware/rateLimiter');
 const CardOrder = require('../models/CardOrder');
-const Notification = require('../models/Notification');
 const User = require('../models/User');
 const vCard = require('../models/vCard');
 const { toE164 } = require('../utils/phone');
 const { isRazorpayConfigured } = require('../utils/razorpay');
 const { isWhatsAppConfigured } = require('../utils/whatsapp');
 const svc = require('../services/cardOrders');
-const { logEvent } = require('../utils/logger');
 const background = require('../utils/background');
 
 const router = express.Router();
@@ -112,40 +109,6 @@ router.post('/:id/resend-card', auth, cardOrderLimiter, async (req, res) => {
   }
 });
 
-// ─── Admin ───────────────────────────────────────────────────────────────────
-// GET /admin/list?status=&delivery= → recent orders with user and notifications.
-router.get('/admin/list', adminAuth, async (req, res) => {
-  try {
-    const q = {};
-    if (req.query.status) q.status = req.query.status;
-    if (req.query.delivery) q['delivery.status'] = req.query.delivery;
-    const orders = await CardOrder.find(q).sort({ createdAt: -1 }).limit(200).populate('user', 'name email phone').populate('card', 'username').lean();
-    const notes = await Notification.find({ order: { $in: orders.map((o) => o._id) } }).sort({ createdAt: -1 }).lean();
-    res.json(
-      orders.map((o) => ({
-        ...svc.publicOrder(o),
-        paymentLinkUrl: o.paymentLinkUrl,
-        razorpayPaymentId: o.razorpayPaymentId,
-        user: o.user,
-        username: o.card?.username,
-        notifications: notes.filter((n) => String(n.order) === String(o._id)).map((n) => ({ channel: n.channel, type: n.type, status: n.status, error: n.error, at: n.createdAt })),
-      }))
-    );
-  } catch (err) {
-    fail(res, err, 'Could not load orders.');
-  }
-});
-
-// POST /admin/:id/resend-card
-router.post('/admin/:id/resend-card', adminAuth, async (req, res) => {
-  try {
-    const done = await svc.deliverCard(req.params.id, { manual: true });
-    if (!done) return res.status(409).json({ msg: 'Not paid yet, or a delivery is running right now.' });
-    logEvent(req, 'card_order.admin.resend', 'Admin re-sent a card', { meta: { orderId: req.params.id } });
-    res.json({ order: svc.publicOrder(done) });
-  } catch (err) {
-    fail(res, err, 'Could not resend the card.');
-  }
-});
+// Admin actions on orders live in the admin panel API (routes/admin/payments.js).
 
 module.exports = router;

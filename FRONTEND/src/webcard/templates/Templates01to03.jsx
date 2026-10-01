@@ -1,29 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  CoverImage,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  scrollToSection,
-  enquire,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -209,7 +187,7 @@ class Logic extends DCLogic {
       chipTopM: f.statusH + 12,
     }));
 
-    const navLabels = ['Profile', 'Services', 'Projects', 'Reels', 'Portfolio', 'Contact', 'QR'];
+    const navLabels = ['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
     const bar = CARD.barFrom([
       { label: 'Call', icon: ic.phone, cA: '#F5F5FA', cM: '#0F172A' },
       { label: 'WhatsApp', icon: ic.wa, cA: '#4ADE80', cM: '#15803D' },
@@ -777,82 +755,7 @@ export function AuroraAI(props) {
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontSize: '20px', fontWeight: '600' }}>
                 {'Services'}
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px' }}>
-                {(V.services || []).map((sv, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      style={{
-                        gridColumn: sv?.bento,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        padding: '14px 14px 6px',
-                        borderRadius: '20px',
-                        border: '1px solid transparent',
-                        background: `linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,.05)) padding-box, linear-gradient(#0B0B14,#0B0B14) padding-box, ${sv?.aBorder} border-box`,
-                      }}
-                    >
-                      <span
-                        dangerouslySetInnerHTML={sv?.icon}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'rgba(124,92,255,.16)',
-                          color: '#B9A8FF',
-                        }}
-                      ></span>
-                      <div style={{ fontSize: '15.5px', fontWeight: '600', marginTop: '4px' }}>{sv?.title}</div>
-                      <div style={{ fontSize: '13.5px', lineHeight: '1.4', color: '#A6A6BD' }}>{sv?.desc}</div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '6px',
-                          minHeight: '40px',
-                          marginTop: 'auto',
-                        }}
-                      >
-                        <a
-                          role="button"
-                          onClick={enquire(sv)}
-                          href={'#contact'}
-                          style={{ position: 'relative', fontSize: '14px', fontWeight: '600', color: '#67E8F9' }}
-                          className="dcp-a6"
-                        >
-                          {'Enquire →'}
-                        </a>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{
-                              position: 'relative',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              color: '#C9C9DA',
-                            }}
-                            className="dcp-a7"
-                          >
-                            <span dangerouslySetInnerHTML={V.sparkA} style={{ display: 'flex' }}></span>
-                            {'Ask AI'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -957,7 +860,7 @@ export function AuroraAI(props) {
           {CARD.reels.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontSize: '20px', fontWeight: '600' }}>
-                {'Reels'}
+                {'Featured Videos'}
               </h3>
               <div
                 data-wc-reels="1"
@@ -1041,34 +944,7 @@ export function AuroraAI(props) {
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontSize: '20px', fontWeight: '600' }}>
                 {'Portfolio'}
               </h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(56px,17cqi,70px)',
-                  gridAutoFlow: 'dense',
-                  gap: '6px',
-                }}
-              >
-                {(V.portfolio || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        gridRow: `span ${pf?.r}`,
-                        gridColumn: `span ${pf?.c}`,
-                        borderRadius: '12px',
-                        background: 'repeating-linear-gradient(135deg,#17172C 0 10px,#1F1F38 10px 11px)',
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -1564,7 +1440,7 @@ export function AuroraAI(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1604,6 +1480,7 @@ export function AuroraAI(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}
@@ -2057,54 +1934,7 @@ export function MinimalPro(props) {
           {CARD.services.length > 0 ? (
             <div style={{ padding: '32px 16px 0' }}>
               <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '600' }}>{'Services'}</h3>
-              {(V.services || []).map((sv, $index) => (
-                <React.Fragment key={$index}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minHeight: '72px', borderBottom: '1px solid #E2E8F0' }}>
-                    <span
-                      dangerouslySetInnerHTML={sv?.icon}
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        flexShrink: '0',
-                        borderRadius: '10px',
-                        background: '#F1F5F9',
-                        color: '#2563EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    ></span>
-                    <div style={{ flex: '1', minWidth: '0', padding: '12px 0' }}>
-                      <div style={{ fontSize: '15.5px', fontWeight: '600' }}>{sv?.title}</div>
-                      <div
-                        style={{ fontSize: '13.5px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                      >
-                        {sv?.desc}
-                      </div>
-                      <div style={{ display: 'flex', gap: '14px', marginTop: '4px', fontSize: '13px', fontWeight: '600' }}>
-                        <span role="button" onClick={enquire(sv)} style={{ position: 'relative', color: '#2563EB' }} className="dcp-a18">
-                          {'Enquire'}
-                        </span>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#475569' }}
-                            className="dcp-a19"
-                          >
-                            <span dangerouslySetInnerHTML={V.sparkM} style={{ display: 'flex' }}></span>
-                            {'Ask AI'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <span dangerouslySetInnerHTML={V.ic?.chevR} style={{ display: 'flex', color: '#94A3B8' }}></span>
-                  </div>
-                </React.Fragment>
-              ))}
+              <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -2200,7 +2030,7 @@ export function MinimalPro(props) {
           ) : null}
           {CARD.reels.length > 0 ? (
             <div style={{ padding: '32px 16px 0' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: '600' }}>{'Reels'}</h3>
+              <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: '600' }}>{'Featured Videos'}</h3>
               <div
                 data-wc-reels="1"
                 style={{ display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none', marginRight: '-16px' }}
@@ -2281,25 +2111,7 @@ export function MinimalPro(props) {
           {CARD.photos.length > 0 ? (
             <div style={{ padding: '32px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: '600' }}>{'Portfolio'}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '6px' }}>
-                {(V.portfolioM || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        aspectRatio: '1',
-                        borderRadius: '6px',
-                        background: 'repeating-linear-gradient(135deg,#F1F5F9 0 10px,#E2E8F0 10px 11px)',
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -2754,7 +2566,7 @@ export function MinimalPro(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -2794,6 +2606,7 @@ export function MinimalPro(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}
@@ -3364,84 +3177,7 @@ export function NeoBrutal(props) {
               >
                 {'Services'}
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '12px', paddingRight: '4px' }}>
-                {(V.services || []).map((sv, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        padding: '12px 12px 6px',
-                        background: sv?.bBg,
-                        border: '2px solid #111',
-                        boxShadow: '4px 4px 0 #111',
-                        borderRadius: '12px',
-                      }}
-                    >
-                      <span
-                        dangerouslySetInnerHTML={sv?.icon}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: '#FFF',
-                          border: '2px solid #111',
-                          boxSizing: 'border-box',
-                        }}
-                      ></span>
-                      <div
-                        style={{
-                          fontFamily: "'Space Grotesk',sans-serif",
-                          fontSize: '16px',
-                          fontWeight: '700',
-                          marginTop: '4px',
-                          lineHeight: '1.2',
-                        }}
-                      >
-                        {sv?.title}
-                      </div>
-                      <div style={{ fontSize: '13.5px', lineHeight: '1.4' }}>{sv?.desc}</div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          minHeight: '40px',
-                          marginTop: 'auto',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                        }}
-                      >
-                        <span
-                          role="button"
-                          onClick={enquire(sv)}
-                          style={{ position: 'relative', textDecoration: 'underline' }}
-                          className="dcp-a31"
-                        >
-                          {'Enquire'}
-                        </span>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                            className="dcp-a32"
-                          >
-                            <span dangerouslySetInnerHTML={V.sparkB} style={{ display: 'flex' }}></span>
-                            {'Ask AI'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -3570,7 +3306,7 @@ export function NeoBrutal(props) {
                   textTransform: 'uppercase',
                 }}
               >
-                {'Reels'}
+                {'Featured Videos'}
               </h3>
               <div
                 data-wc-reels="1"
@@ -3674,35 +3410,7 @@ export function NeoBrutal(props) {
               >
                 {'Portfolio'}
               </h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(56px,17cqi,70px)',
-                  gridAutoFlow: 'dense',
-                  gap: '8px',
-                }}
-              >
-                {(V.portfolio || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        gridRow: `span ${pf?.r}`,
-                        gridColumn: `span ${pf?.c}`,
-                        border: '2px solid #111',
-                        borderRadius: '8px',
-                        background: pf?.bB,
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -4171,7 +3879,7 @@ export function NeoBrutal(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 6px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 6px' }}>
               {chat.chips
                 .map((label, i) => ({ label, bg: ['#FFD23F', '#3DDC97', '#FFFFFF', '#FF5C39'][i % 4] }))
                 .map((c, $index) => (
@@ -4213,6 +3921,7 @@ export function NeoBrutal(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

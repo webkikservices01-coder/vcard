@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState, useCallback } from 'react';
+import { useSpeechInput, speak, stopSpeaking } from '../components/platformChat/speech';
 import { themeTree } from './theme/themeTree.js';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { CARD, saveContact, shareCard, scrollToSection } from './cardData.js';
+import { getImageUrl, siteShot } from '../utils/media';
 
 export { saveContact, shareCard, scrollToSection };
 
@@ -149,11 +151,30 @@ const newSessionId = () =>
 export function useChat() {
   const first = CARD.firstName || 'me';
   const greeting = CARD.ai?.greeting || `Hi! I'm ${first}'s AI assistant. Ask me about services, work, or how to get in touch.`;
-  const [messages, setMessages] = useState(() => [{ role: 'assistant', content: greeting }]);
+  // Kept for this browser tab, so a reload or a tap on a link doesn't lose the conversation.
+  const savedKey = 'wc-chat-' + (CARD.slug || '');
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = JSON.parse(store.get(savedKey) || 'null');
+      if (saved && Array.isArray(saved.messages) && saved.messages.length) return saved.messages.slice(-40);
+    } catch {
+      /* nothing saved */
+    }
+    return [{ role: 'assistant', content: greeting }];
+  });
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const [sessionId] = useState(newSessionId);
+  const [sessionId] = useState(() => {
+    try {
+      return JSON.parse(store.get(savedKey) || 'null')?.sessionId || newSessionId();
+    } catch {
+      return newSessionId();
+    }
+  });
+  useEffect(() => {
+    if (CARD.slug && messages.some((m) => m.role === 'user')) store.set(savedKey, JSON.stringify({ sessionId, messages: messages.slice(-40) }));
+  }, [messages, sessionId, savedKey]);
   const consentKey = 'wc-chat-consent-' + (CARD.slug || '');
   const [consented, setConsented] = useState(() => !!store.get(consentKey));
   // A question typed before the visitor accepted the notice; sent once they do.
@@ -183,7 +204,8 @@ export function useChat() {
         sessionId,
         cohort: visitorCohort(),
       });
-      const updated = [...next, { role: 'assistant', content: res.data.reply }];
+      const cards = Array.isArray(res.data.cards) ? res.data.cards.slice(0, 10) : [];
+      const updated = [...next, { role: 'assistant', content: res.data.reply, ...(cards.length ? { cards } : {}) }];
       setMessages(updated);
       if (res.data.showOffer && CARD.ai?.offer) setOffer((o) => (o === 'hidden' ? 'shown' : o));
       // Ask for a rating once the conversation has had a few real answers.
@@ -433,6 +455,169 @@ export function ChatText({ text }) {
   });
 }
 
+// Copy and read-aloud buttons under an answer; they take the bubble's own text colour.
+const toolBtn = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  font: 'inherit',
+  fontSize: '11.5px',
+  fontWeight: 600,
+  padding: '3px 8px',
+  borderRadius: '999px',
+  border: 'none',
+  background: 'transparent',
+  color: 'inherit',
+  opacity: 0.65,
+  cursor: 'pointer',
+};
+
+function AnswerTools({ text }) {
+  const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const canSpeakAloud = typeof window !== 'undefined' && !!window.speechSynthesis;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked */
+    }
+  };
+  const read = () => {
+    if (speaking) {
+      stopSpeaking();
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    speak(text, () => setSpeaking(false));
+  };
+  useEffect(() => () => speaking && stopSpeaking(), [speaking]);
+  return (
+    <div style={{ display: 'flex', gap: '2px', marginTop: '6px', marginLeft: '-8px' }}>
+      <button type="button" onClick={copy} style={toolBtn} aria-label="Copy answer">
+        {copied ? '✓ Copied' : '⧉ Copy'}
+      </button>
+      {canSpeakAloud && (
+        <button type="button" onClick={read} style={toolBtn} aria-label={speaking ? 'Stop reading' : 'Read answer aloud'}>
+          {speaking ? '■ Stop' : '🔊 Listen'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Mic next to the chat box in every template: speak the question (English or Hindi), it is typed
+// in and sent when you stop. Hidden where the browser can't do speech input.
+export function ChatMic({ chat }) {
+  const [lang, setLang] = useState('en-IN');
+  const onText = useCallback(
+    (text, final) => {
+      chat.setInput(text);
+      if (final && text.trim()) setTimeout(() => chat.send(text), 250);
+    },
+    [chat]
+  );
+  const voice = useSpeechInput(onText);
+  if (!voice.supported) return null;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, marginRight: '4px' }}>
+      <button
+        type="button"
+        onClick={() => (voice.listening ? voice.stop() : voice.start(lang))}
+        aria-label={voice.listening ? 'Stop listening' : 'Ask by voice'}
+        title={voice.listening ? 'Stop listening' : 'Ask by voice'}
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          border: 'none',
+          display: 'grid',
+          placeItems: 'center',
+          cursor: 'pointer',
+          color: 'inherit',
+          background: voice.listening ? 'rgba(231,12,101,.9)' : 'transparent',
+          opacity: voice.listening ? 1 : 0.75,
+          animation: voice.listening ? 'wcMicPulse 1.2s ease-in-out infinite' : 'none',
+        }}
+      >
+        {voice.listening ? (
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" rx="2" fill="#fff" /></svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4" />
+          </svg>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => setLang((l) => (l === 'en-IN' ? 'hi-IN' : 'en-IN'))}
+        aria-label={`Voice language: ${lang === 'en-IN' ? 'English' : 'Hindi'}. Tap to switch.`}
+        title="Voice language: English or Hindi"
+        style={{ border: 'none', background: 'transparent', color: 'inherit', font: 'inherit', fontSize: '10px', fontWeight: 700, opacity: 0.6, padding: '2px', cursor: 'pointer' }}
+      >
+        {lang === 'en-IN' ? 'EN' : 'हिं'}
+      </button>
+    </span>
+  );
+}
+
+// Projects / services / products the AI points at, as a swipeable row of photo cards under its
+// answer (like the Essentia chatbot). Colours come from the chat's own text colour.
+const CARD_KIND = { project: 'Project', service: 'Service', product: 'Product' };
+function ChatCards({ cards }) {
+  const tint = (pct) => `color-mix(in srgb, currentColor ${pct}%, transparent)`;
+  const open = (c) => (e) => {
+    if (c.link) openLink(c.link)(e);
+    else enquire(c)(e);
+  };
+  return (
+    <div
+      data-wc-chat-cards=""
+      role="list"
+      aria-label="Suggested items"
+      style={{ display: 'flex', gap: '10px', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'thin', padding: '2px 2px 8px', margin: '-2px 0 4px', alignSelf: 'stretch', maxWidth: '100%', flexShrink: 0 }}
+    >
+      {cards.map((c, i) => {
+        const img = getImageUrl(c.image) || siteShot(c.link);
+        const label = c.kind === 'project' ? (c.link ? 'View project →' : 'Enquire →') : c.link ? 'Visit website ↗' : 'Enquire →';
+        return (
+          <div
+            key={c.id || i}
+            role="listitem"
+            style={{ flex: '0 0 172px', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', borderRadius: '14px', overflow: 'hidden', border: `1px solid ${tint(16)}`, background: tint(6) }}
+          >
+            <div style={{ position: 'relative', aspectRatio: '16 / 10', background: tint(10), overflow: 'hidden' }}>
+              {img ? (
+                <Fill src={img} alt={c.title} />
+              ) : (
+                <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: '26px', fontWeight: 800, opacity: 0.35 }}>{(c.title || '?').charAt(0).toUpperCase()}</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '9px 10px 10px', flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{c.title}</div>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '10.5px', opacity: 0.7 }}>
+                <span style={{ padding: '1px 7px', borderRadius: '999px', border: `1px solid ${tint(22)}` }}>{CARD_KIND[c.kind] || 'Item'}</span>
+                {c.price ? <span style={{ fontWeight: 700 }}>{/^\d/.test(String(c.price)) ? `₹${c.price}` : c.price}</span> : null}
+              </div>
+              <button
+                type="button"
+                onClick={open(c)}
+                style={{ marginTop: 'auto', font: 'inherit', fontSize: '12px', fontWeight: 700, padding: '7px 8px', borderRadius: '9px', border: 'none', cursor: 'pointer', color: 'inherit', background: tint(16) }}
+              >
+                {label}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // Renders the conversation using the template's own bubble designs.
 // The card's palette (null = the template's original colours). WebCard provides it; chat bubbles
 // come from the templates' bot()/user() render functions, so ChatThread paints them here.
@@ -449,7 +634,24 @@ export function ChatThread({ chat, bot: rawBot, user: rawUser, typing }) {
   }, [chat.messages.length, chat.busy, chat.pending, chat.offer, chat.nps]);
   return (
     <>
-      {chat.messages.map((m, i) => (m.role === 'user' ? user(m.content, i) : bot(m.content, i)))}
+      {chat.messages.map((m, i) =>
+        m.role === 'user' ? (
+          user(m.content, i)
+        ) : (
+          <React.Fragment key={i}>
+            {bot(
+              i === 0 ? m.content : (
+                <>
+                  <ChatText text={m.content} />
+                  <AnswerTools text={m.content} />
+                </>
+              ),
+              i
+            )}
+            {m.cards?.length ? <ChatCards cards={m.cards} /> : null}
+          </React.Fragment>
+        )
+      )}
       {CARD.ai?.disclaimer ? bot(<div style={{ fontSize: '12.5px', opacity: 0.85 }}>ⓘ {CARD.ai.disclaimer}</div>, 'disclaimer') : null}
       {chat.pending ? user(chat.pending, 'pending') : null}
       {!chat.consented && chat.pending ? bot(<ConsentNote chat={chat} />, 'consent') : null}
@@ -470,8 +672,9 @@ export function liveFrame(frames, live, props) {
   return {
     ...base,
     h: 'auto',
-    barHidden: !live.past,
-    launchBottom: live.past ? base.launchBottom || 100 : 24,
+    // The Call / WhatsApp / Save bar stays put at the bottom (out of the way only while typing).
+    barHidden: live.kb,
+    launchBottom: live.kb ? 24 : base.launchBottom || 100,
     chat: ai && live.chat,
     tip: ai && live.tip && !live.chat,
     launch: ai && !live.kb && !live.chat,
@@ -553,19 +756,23 @@ export function ImageSlot({ id, placeholder, shape, radius, style }) {
   );
 }
 
-// A cover / background image that always looks right: photos fill the area; logos and images
-// whose shape is far from the banner's are shown whole, over a blurred copy of themselves.
+// A cover / background image that always looks right, whatever its size or shape: photos that
+// nearly match the area fill it; anything else is shown whole (never cut), over a blurred copy of
+// itself. Wide banners span the full width; tall or square images and logos keep a margin.
 export function CoverFit({ src, alt = '', style }) {
   const ref = useRef(null);
-  const [whole, setWhole] = useState(/\.svg(\?|$)/i.test(src));
+  // 'fill' | 'wide' | 'tall'
+  const [fit, setFit] = useState(/\.svg(\?|$)/i.test(src) ? 'tall' : 'fill');
   const onLoad = (e) => {
     const img = e.currentTarget;
     const box = ref.current?.getBoundingClientRect();
     if (!box || !box.width || !box.height || !img.naturalWidth || !img.naturalHeight) return;
     const r = img.naturalWidth / img.naturalHeight / (box.width / box.height);
     // Even a small crop cuts logos and text off, so fill only when the shapes nearly match.
-    setWhole(r > 1.15 || r < 0.87 || /\.svg(\?|$)/i.test(src));
+    setFit(/\.svg(\?|$)/i.test(src) || r < 0.87 ? 'tall' : r > 1.15 ? 'wide' : 'fill');
   };
+  const whole = fit !== 'fill';
+  const inset = fit === 'tall' ? '8% 6%' : 0;
   return (
     <div ref={ref} aria-hidden={alt ? undefined : true} style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...style }}>
       {whole && (
@@ -582,9 +789,9 @@ export function CoverFit({ src, alt = '', style }) {
         onLoad={onLoad}
         style={{
           position: 'absolute',
-          inset: whole ? '8% 6%' : 0,
-          width: whole ? '88%' : '100%',
-          height: whole ? '84%' : '100%',
+          inset,
+          width: fit === 'tall' ? '88%' : '100%',
+          height: fit === 'tall' ? '84%' : '100%',
           objectFit: whole ? 'contain' : 'cover',
           objectPosition: 'center',
           display: 'block',
@@ -602,12 +809,21 @@ export function CoverImage({ style }) {
 
 // Image inside a styled placeholder box (projects, portfolio tiles, reels).
 export function Fill({ src, alt, style }) {
+  // A website screenshot that isn't made yet comes back as mShots' 400x300 "generating" picture:
+  // ask again a few times until the real one is there.
+  const [attempt, setAttempt] = useState(0);
   if (!src) return null;
+  const shot = /mshots\/v1\//.test(src);
+  const onLoad = (e) => {
+    const img = e.currentTarget;
+    if (shot && img.naturalWidth === 400 && img.naturalHeight === 300 && attempt < 6) setTimeout(() => setAttempt((a) => a + 1), 3000);
+  };
   return (
     <img
-      src={src}
+      src={shot && attempt ? `${src}${src.includes('?') ? '&' : '?'}r=${attempt}` : src}
       alt={alt || `${CARD.fullName || 'Aicardly'} – work sample`}
       loading="lazy"
+      onLoad={onLoad}
       style={{
         position: 'absolute',
         inset: 0,
@@ -624,6 +840,48 @@ export function Fill({ src, alt, style }) {
 
 // Minimum widths the Instagram / Facebook embeds lay themselves out for; smaller boxes scale them down.
 const EMBED_BASE = { instagram: 326, facebook: 320 };
+
+// Instagram's embed draws its own header (name, "View profile") above the video and a footer
+// ("View more on Instagram", likes) below. Measured: the header is 54px and the video is 4:5 at any
+// width. This shows only the video, filling the box like a reel tile.
+const IG_W = 326;
+const IG_HEAD = 57; // 54 + a little, so no line of the header peeks in when scaled up
+export function IgFrame({ src, title, style }) {
+  const box = useRef(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const media = IG_W * 1.25;
+  const s = size.w && size.h ? Math.max(size.w / IG_W, size.h / media) : 1;
+  return (
+    <div ref={box} style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#000', ...style }}>
+      {size.w > 0 && (
+        <iframe
+          src={src}
+          title={title}
+          scrolling="no"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write"
+          allowFullScreen
+          style={{
+            position: 'absolute',
+            border: 0,
+            width: `${IG_W}px`,
+            height: `${IG_HEAD + media + 200}px`,
+            left: `${(size.w - IG_W * s) / 2}px`,
+            top: `${-IG_HEAD * s - (media * s - size.h) / 2}px`,
+            transform: `scale(${s})`,
+            transformOrigin: '0 0',
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 // Plays a reel inside its card: YouTube and video files start muted when scrolled into view,
 // Instagram and Facebook use their official embed players.
@@ -680,7 +938,13 @@ export function ReelMedia({ reel, index = 0, openable = true }) {
     ) : (
       <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />
     );
-  } else if (reel.kind === 'instagram' || reel.kind === 'facebook') {
+  } else if (reel.kind === 'instagram') {
+    media = visible ? (
+      <IgFrame src={reel.embed} title={reel.title || 'Instagram reel'} />
+    ) : reel.thumb ? (
+      <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />
+    ) : null;
+  } else if (reel.kind === 'facebook') {
     const base = EMBED_BASE[reel.kind];
     const scale = size.w ? Math.min(1, size.w / base) : 1;
     media = visible ? (
@@ -760,6 +1024,7 @@ export function ReelViewer() {
   const frame = { width: '100%', height: '100%', border: 0, display: 'block', background: '#000' };
   let media;
   if (r.kind === 'file') media = <video key={r.src} src={r.src} autoPlay controls playsInline style={{ ...frame, objectFit: 'contain' }} />;
+  else if (r.kind === 'instagram') media = <IgFrame key={r.full} src={r.full} title={r.title || 'Instagram reel'} />;
   else
     media = (
       <iframe
@@ -895,9 +1160,151 @@ const rowStep = (row) => {
 // Holds off the auto-slide after someone steps through a row themselves.
 const pauseRow = (row) => (row.dataset.wcPause = String(Date.now() + 8000));
 
+// Services as a slider of photo cards, like the projects row (arrows, dots, auto-slide, drag).
+// Used by every template. Colours come from the section's own text colour (currentColor), so the
+// cards fit each template and palette. A service without its own picture shows a screenshot of
+// its web page; tapping a card with a link opens it.
+// pad: the section's side padding, so the row can run edge to edge like the projects row.
+export function ServiceSlides({ items, pad = 16, accent }) {
+  const list = items || [];
+  if (!list.length) return null;
+  const tint = (pct) => `color-mix(in srgb, currentColor ${pct}%, transparent)`;
+  return (
+    <SwipeRow
+      label="Services"
+      itemLabel="Service"
+      style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        gap: '12px',
+        overflowX: 'auto',
+        scrollSnapType: 'x mandatory',
+        scrollbarWidth: 'none',
+        margin: `0 -${pad}px`,
+        padding: '0 16px 6px',
+        scrollPadding: '0 16px',
+      }}
+    >
+      {list.map((sv, i) => (
+        <div
+          key={i}
+          {...serviceLink(sv)}
+          data-wc-svc-slide=""
+          style={{
+            flex: '0 0 78%',
+            maxWidth: '340px',
+            scrollSnapAlign: 'start',
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: '18px',
+            overflow: 'hidden',
+            border: `1px solid ${tint(14)}`,
+            background: tint(5),
+          }}
+        >
+          <div style={{ position: 'relative', aspectRatio: '16 / 10', overflow: 'hidden', background: tint(8) }}>
+            {sv.image ? (
+              <Fill src={sv.image} alt={sv.title} />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: '34px', fontWeight: 800, opacity: 0.35 }}>
+                {(sv.title || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
+            {sv.price ? (
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  bottom: '10px',
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  background: 'rgba(0,0,0,.62)',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                {/^\d/.test(String(sv.price)) ? `₹${sv.price}` : sv.price}
+              </span>
+            ) : null}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px 14px 14px', flex: 1 }}>
+            <div style={{ fontSize: '15.5px', fontWeight: 700, lineHeight: 1.3 }}>{sv.title}</div>
+            {sv.desc ? (
+              <div style={{ fontSize: '13px', lineHeight: 1.45, opacity: 0.72, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {sv.desc}
+              </div>
+            ) : null}
+            <a
+              role="button"
+              href="#contact"
+              onClick={enquire(sv)}
+              style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '13.5px', fontWeight: 700, color: accent || 'inherit', textDecoration: 'none' }}
+            >
+              {enquireLabel(sv, 'Enquire →')}
+            </a>
+          </div>
+        </div>
+      ))}
+    </SwipeRow>
+  );
+}
+
+// Gallery photos as a slider (arrows, dots, auto-slide, drag), like projects and services.
+// pad: the section's side padding, so the row can run edge to edge.
+export function PhotoSlides({ items, pad = 16 }) {
+  const list = (items || []).filter((p) => p && p.src);
+  if (!list.length) return null;
+  const tint = (pct) => `color-mix(in srgb, currentColor ${pct}%, transparent)`;
+  return (
+    <SwipeRow
+      label="Photos"
+      itemLabel="Photo"
+      style={{
+        display: 'flex',
+        gap: '10px',
+        overflowX: 'auto',
+        scrollSnapType: 'x mandatory',
+        scrollbarWidth: 'none',
+        margin: `0 -${pad}px`,
+        padding: '0 16px 6px',
+        scrollPadding: '0 16px',
+      }}
+    >
+      {list.map((ph, i) => (
+        <div
+          key={i}
+          role="button"
+          tabIndex={0}
+          aria-label={`Open photo ${i + 1}`}
+          onClick={openLink(ph.src)}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openLink(ph.src)(e)}
+          data-wc-photo-slide=""
+          style={{
+            position: 'relative',
+            flex: '0 0 72%',
+            maxWidth: '320px',
+            aspectRatio: '4 / 3',
+            scrollSnapAlign: 'start',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            cursor: 'zoom-in',
+            border: `1px solid ${tint(12)}`,
+            background: tint(8),
+          }}
+        >
+          <Fill src={ph.src} alt={`${CARD.fullName || 'Gallery'} – photo ${i + 1}`} />
+        </div>
+      ))}
+    </SwipeRow>
+  );
+}
+
 // A horizontal swipe row of project cards with dots, plus prev/next arrows on mouse devices.
 // The row itself keeps the template's style; useReelCarousel below auto-slides it.
-export function SwipeRow({ style, children }) {
+export function SwipeRow({ style, children, label = 'Projects', itemLabel = 'Project' }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ i: 0, n: 0, start: true, end: true });
   const count = React.Children.count(children);
@@ -960,13 +1367,13 @@ export function SwipeRow({ style, children }) {
         {pos.n > 1 && arrow(1)}
       </div>
       {pos.n > 1 && (
-        <div className="wc-swipe-dots" role="tablist" aria-label="Projects">
+        <div className="wc-swipe-dots" role="tablist" aria-label={label}>
           {pos.n <= 10 ? (
             Array.from({ length: pos.n }, (_, k) => (
               <button
                 key={k}
                 type="button"
-                aria-label={`Project ${k + 1}`}
+                aria-label={`${itemLabel} ${k + 1}`}
                 aria-selected={k === pos.i}
                 className={k === pos.i ? 'on' : ''}
                 onClick={() => go(k)}
@@ -1232,6 +1639,34 @@ export const enquire = (item) => (e) => {
   else if (CARD.showEnquiry) scrollToSection('Contact');
   else if (CARD.href.WhatsApp) openLink(CARD.href.WhatsApp)();
   else if (CARD.href.Call) openLink(CARD.href.Call)();
+};
+
+// Button text on a service: services with a website link say so, the rest keep the design's
+// own "Enquire" wording.
+export const enquireLabel = (item, label) => {
+  if (!item || !item.link) return label;
+  return /^enquire\(\)/.test(label) ? 'visit() ↗' : 'Visit website ↗';
+};
+
+// Makes a whole service card open its website when tapped (only when it has a link).
+// Spread on the card's outer element: <div {...serviceLink(sv)} style={...}>. webcard.css adds
+// the pointer and a small ↗ in the corner.
+export const serviceLink = (item) => {
+  if (!item || !item.link) return {};
+  const go = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    openLink(item.link)(e);
+  };
+  return {
+    role: 'link',
+    tabIndex: 0,
+    'data-wc-svc-link': '',
+    'aria-label': `${item.title || 'Service'}: open website`,
+    onClick: go,
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') go(e);
+    },
+  };
 };
 
 // Real enquiry form, styled by the template that renders it.

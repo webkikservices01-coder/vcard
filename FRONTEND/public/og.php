@@ -145,5 +145,8 @@ if ($head !== null) {
 // belongs to the homepage only; the FAQ it marks up is shown there.
 if ($path !== '/') {
   $index = preg_replace('/\s*<!-- schema:home:start -->.*?<!-- schema:home:end -->/s', '', $index, 1);
+  // The prerendered homepage markup (scripts/prerender.mjs) is only for "/"; other pages start
+  // from an empty root.
+  $index = preg_replace('/<!-- home:start -->.*?<!-- home:end -->/s', '<div id="root"></div>', $index, 1);
 }
 echo $index;

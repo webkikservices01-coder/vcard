@@ -1,27 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD, socialIcon } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  enquire,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -72,7 +52,7 @@ class Logic extends DCLogic {
         { label: 'Email', icon: ic.mail, c: '#FFFFFF' },
         { label: 'Location', icon: ic.pin, c: '#FFFFFF' },
       ]),
-      nav: CARD.navFrom(['Reels', 'Profile', 'Services', 'Projects', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Videos', 'Profile', 'Services', 'Projects', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           bg: i === 0 ? G : '#1A1A1A',
@@ -517,7 +497,7 @@ export function CreatorReel(props) {
                   marginBottom: '12px',
                 }}
               >
-                <h3 style={{ margin: '0', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Reels'}</h3>
+                <h3 style={{ margin: '0', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Featured Videos'}</h3>
               </div>
               <div
                 data-wc-reels="1"
@@ -686,104 +666,8 @@ export function CreatorReel(props) {
           {CARD.services.length > 0 ? (
             <div style={{ padding: '28px 0 0' }}>
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Services'}</h3>
-              <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', scrollbarWidth: 'none', padding: '0 16px' }}>
-                {(V.highlights || []).map((h, $index) => (
-                  <React.Fragment key={$index}>
-                    <button
-                      onClick={h?.pick}
-                      style={{
-                        flexShrink: '0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '0',
-                        border: 'none',
-                        background: 'none',
-                        color: '#fff',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: '68px',
-                          height: '68px',
-                          borderRadius: '50%',
-                          padding: '2.5px',
-                          boxSizing: 'border-box',
-                          background: h?.ring,
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            borderRadius: '50%',
-                            background: '#0D0D0D',
-                            padding: '3px',
-                            boxSizing: 'border-box',
-                            display: 'block',
-                          }}
-                        >
-                          <span
-                            dangerouslySetInnerHTML={h?.icon}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              borderRadius: '50%',
-                              background: '#1F1F1F',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          ></span>
-                        </span>
-                      </span>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: h?.fg }}>{h?.short}</span>
-                    </button>
-                  </React.Fragment>
-                ))}
-              </div>
-              <div
-                style={{
-                  margin: '12px 16px 0',
-                  padding: '14px 16px',
-                  borderRadius: '18px',
-                  background: '#161616',
-                  border: '1px solid #242424',
-                }}
-              >
-                <div style={{ fontFamily: "'Sora',sans-serif", fontSize: '16px', fontWeight: '700' }}>{V.hl?.title}</div>
-                <div style={{ fontSize: '14px', lineHeight: '1.5', color: '#C9C9C9', marginTop: '2px' }}>{V.hl?.desc}</div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '16px',
-                    marginTop: '8px',
-                    minHeight: '32px',
-                    alignItems: 'center',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                  }}
-                >
-                  <span role="button" onClick={enquire(V.hl)} style={{ position: 'relative', color: '#FFB38A' }} className="dcp-c7">
-                    {'Enquire →'}
-                  </span>
-                  {CARD.ai.enabled ? (
-                    <span
-                      role="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openChat();
-                      }}
-                      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      className="dcp-c8"
-                    >
-                      <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-                      {'Ask AI'}
-                    </span>
-                  ) : null}
-                </div>
+              <div style={{ padding: '0 16px' }}>
+                <ServiceSlides items={CARD.services} />
               </div>
             </div>
           ) : null}
@@ -904,19 +788,7 @@ export function CreatorReel(props) {
           {CARD.photos.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Portfolio'}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '4px' }}>
-                {(V.grid6 || []).map((g, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(g?.src)}
-                      role="button"
-                      style={{ position: 'relative', overflow: 'hidden', aspectRatio: '4/5', borderRadius: '8px', background: g?.bg }}
-                    >
-                      <Fill src={g?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -1428,7 +1300,7 @@ export function CreatorReel(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1467,6 +1339,7 @@ export function CreatorReel(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

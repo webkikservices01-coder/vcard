@@ -18,31 +18,9 @@ const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const findByEmail = (email) => User.findOne({ email: new RegExp(`^${escRe(email)}$`, 'i') });
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const signToken = (user) => jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-const VERIFY_HOURS = 24;
-
-// Creates a fresh verification link for the user and emails it. Returns true when sent.
-async function sendVerification(user) {
-    const token = crypto.randomBytes(32).toString('hex');
-    user.verifyTokenHash = sha256(token);
-    user.verifyTokenExpiry = new Date(Date.now() + VERIFY_HOURS * 60 * 60 * 1000);
-    await user.save();
-    const first = user.firstName || user.name;
-    const link = `${SITE}/verify-email?email=${encodeURIComponent(user.email)}&token=${token}`;
-    return sendMail({
-        to: user.email,
-        subject: 'Verify your email for Aicardly',
-        text: `Hi ${first},\n\nPlease verify your email to activate your Aicardly account (link valid for ${VERIFY_HOURS} hours):\n${link}\n\nIf you didn't sign up, ignore this email.\n\n– Team Aicardly`,
-        html: emailHtml({
-            heading: `Verify your email, ${first}`,
-            paragraphs: [
-                'Thanks for signing up to Aicardly! Please confirm this is your email address to activate your account.',
-                `This link works for ${VERIFY_HOURS} hours.`,
-            ],
-            button: { label: 'Verify my email', url: link },
-            footer: "Didn't create this account? Just ignore this email.",
-        }),
-    });
-}
+const { sendVerification, sendResetLink } = require('../services/accountEmails');
+const AdminHandoff = require('../models/AdminHandoff');
+const { forgetAccountStatus } = require('../utils/accountStatus');
 
 // Register
 router.post('/register', authLimiter, async (req, res) => {
@@ -93,12 +71,12 @@ router.post('/register', authLimiter, async (req, res) => {
         // Welcome email (best-effort; the account is already saved).
         sendMail({
             to: email,
-            subject: 'Welcome to Aicardly 🎉',
-            text: `Hi ${nameParts[0]},\n\nYour Aicardly account is ready. Sign in any time at ${SITE}/login to build your AI digital business card.\n\n– Team Aicardly`,
+            subject: 'Welcome to AiCardly 🎉',
+            text: `Hi ${nameParts[0]},\n\nYour AiCardly account is ready. Sign in any time at ${SITE}/login to build your AI digital business card.\n\n– Team AiCardly`,
             html: emailHtml({
                 heading: `Welcome, ${nameParts[0]}!`,
                 paragraphs: [
-                    'Your Aicardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.',
+                    'Your AiCardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.',
                     `You signed up with <b>${email}</b>.`,
                 ],
                 button: { label: 'Open my dashboard', url: `${SITE}/login` },
@@ -121,10 +99,16 @@ router.post('/login', authLimiter, async (req, res) => {
         const { password } = req.body;
         if (!email || typeof password !== 'string') return res.status(400).json({ msg: 'Please enter your email and password.' });
 
-        const user = await findByEmail(email);
+        const found = await findByEmail(email);
+        // A removed (soft-deleted) account behaves like no account at all.
+        const user = found && !found.deletedAt ? found : null;
         if (!user || !(await bcrypt.compare(password, user.password))) {
             logEvent(req, 'auth.login.failed', user ? 'Wrong password' : 'No account with this email', { level: 'warn', email, userId: user?._id });
             return res.status(400).json({ msg: 'Invalid email or password.' });
+        }
+        if (user.isBlocked) {
+            logEvent(req, 'auth.login.blocked', 'Login to a blocked account', { level: 'warn', email, userId: user._id });
+            return res.status(403).json({ msg: 'Your account has been blocked. Please contact support.', code: 'ACCOUNT_BLOCKED' });
         }
         if (user.status === 'inactive') {
             logEvent(req, 'auth.login.blocked', 'Login to an inactive account', { level: 'warn', email, userId: user._id });
@@ -169,11 +153,11 @@ router.post('/verify-email', forgotLimiter, async (req, res) => {
         const first = user.firstName || user.name;
         sendMail({
             to: user.email,
-            subject: 'Welcome to Aicardly 🎉',
-            text: `Hi ${first},\n\nYour email is verified and your Aicardly account is ready: ${SITE}/login\n\n– Team Aicardly`,
+            subject: 'Welcome to AiCardly 🎉',
+            text: `Hi ${first},\n\nYour email is verified and your AiCardly account is ready: ${SITE}/login\n\n– Team AiCardly`,
             html: emailHtml({
                 heading: `Welcome, ${first}!`,
-                paragraphs: ['Your email is verified and your Aicardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.'],
+                paragraphs: ['Your email is verified and your AiCardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.'],
                 button: { label: 'Open my dashboard', url: `${SITE}/login` },
             }),
         });
@@ -213,22 +197,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
             logEvent(req, 'auth.forgot.unknown', 'Reset asked for an email with no account', { level: 'warn', email });
             return res.json(reply);
         }
-        const token = crypto.randomBytes(32).toString('hex');
-        user.resetTokenHash = sha256(token);
-        user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
-        await user.save();
-        const link = `${SITE}/reset-password?email=${encodeURIComponent(user.email)}&token=${token}`;
-        const sent = await sendMail({
-            to: user.email,
-            subject: 'Reset your Aicardly password',
-            text: `Hi ${user.firstName || user.name},\n\nReset your password with this link (valid for 1 hour):\n${link}\n\nIf you didn't ask for this, ignore this email.\n\n– Team Aicardly`,
-            html: emailHtml({
-                heading: 'Reset your password',
-                paragraphs: [`Hi ${user.firstName || user.name}, we got a request to reset your Aicardly password.`, 'This link works for 1 hour.'],
-                button: { label: 'Set a new password', url: link },
-                footer: "Didn't ask for this? Ignore this email and your password stays the same.",
-            }),
-        });
+        const sent = await sendResetLink(user);
         logEvent(req, 'auth.forgot', sent ? 'Reset link emailed' : 'Reset link created but the email was not sent', { level: sent ? 'info' : 'warn', userId: user._id, email: user.email });
         res.json(reply);
     } catch (err) {
@@ -253,12 +222,35 @@ router.post('/reset-password', forgotLimiter, async (req, res) => {
         user.password = await bcrypt.hash(password, 10);
         user.resetTokenHash = '';
         user.resetTokenExpiry = null;
+        // Signs out sessions that used the old password (other devices).
+        user.tokensValidAfter = new Date();
         await user.save();
+        forgetAccountStatus(user._id);
         logEvent(req, 'auth.reset', 'Password changed with a reset link', { userId: user._id, email: user.email });
         res.json({ msg: 'Password updated. You can sign in now.' });
     } catch (err) {
         logEvent(req, 'auth.reset.error', err.message, { level: 'error', email });
         res.status(500).json({ msg: 'Could not reset the password. Please try again.' });
+    }
+});
+
+// "Sign in as this user" from the admin panel: the panel creates a one-time code (valid for a
+// minute, stored hashed) and opens the site with it in the URL fragment; this swaps it for a
+// short session. The token carries imp (the admin's id), so the dashboard shows a banner.
+router.post('/impersonate', authLimiter, async (req, res) => {
+    try {
+        const code = typeof req.body.code === 'string' ? req.body.code : '';
+        if (!/^[a-f0-9]{64}$/.test(code)) return res.status(400).json({ msg: 'This link is invalid or has expired.' });
+        const handoff = await AdminHandoff.findOneAndDelete({ codeHash: sha256(code), expiresAt: { $gt: new Date() } }).lean();
+        if (!handoff) return res.status(400).json({ msg: 'This link is invalid or has expired. Open it again from the admin panel.' });
+        const user = await User.findById(handoff.user).select('name email deletedAt').lean();
+        if (!user || user.deletedAt) return res.status(404).json({ msg: 'This account no longer exists.' });
+        const token = jwt.sign({ userId: String(user._id), imp: String(handoff.admin) }, process.env.JWT_SECRET, { expiresIn: '2h' });
+        logEvent(req, 'auth.impersonate', `Admin signed in as ${user.email}`, { level: 'warn', userId: user._id, email: user.email });
+        res.json({ token, user: { name: user.name, email: user.email } });
+    } catch (err) {
+        logEvent(req, 'auth.impersonate.error', err.message, { level: 'error' });
+        res.status(500).json({ msg: 'Could not sign in. Please try again.' });
     }
 });
 

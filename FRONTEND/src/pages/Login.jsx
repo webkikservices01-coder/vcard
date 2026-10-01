@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import { setImpersonating } from '../utils/impersonation';
+import { clearThemeCache } from '../utils/themeStudioCache';
 import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import BackButton from '../components/BackButton';
@@ -77,6 +79,8 @@ export const Login = () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email: form.email.trim().toLowerCase(), password: form.password });
       localStorage.setItem('token', res.data.token);
+      setImpersonating(null);
+      clearThemeCache();
       navigate('/dashboard');
     } catch (err) {
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {

@@ -1,29 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  CoverImage,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  scrollToSection,
-  enquire,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -104,7 +82,7 @@ class Logic extends DCLogic {
           ['Profile', 'profile.md'],
           ['Services', 'services.ts'],
           ['Projects', 'projects/'],
-          ['Reels', 'reels.mp4'],
+          ['Videos', 'videos.mp4'],
           ['Portfolio', 'portfolio/'],
           ['Contact', 'contact.sh'],
           ['QR', 'qr.png'],
@@ -688,63 +666,7 @@ export function DevTerminal(props) {
                 <span style={{ color: '#8B949E' }}>{'## '}</span>
                 {'Services'}
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px' }}>
-                {(V.services || []).map((sv, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        padding: '12px 12px 8px',
-                        borderRadius: '8px',
-                        background: '#161B22',
-                        border: '1px solid #30363D',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span dangerouslySetInnerHTML={sv?.icon} style={{ display: 'flex', color: '#58A6FF' }}></span>
-                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '11.5px', color: '#8B949E' }}>{sv?.n}</span>
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: '600', marginTop: '2px' }}>{sv?.title}</div>
-                      <div style={{ fontSize: '13.5px', lineHeight: '1.4', color: '#8B949E' }}>{sv?.desc}</div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px',
-                          marginTop: 'auto',
-                          fontFamily: "'JetBrains Mono',monospace",
-                          fontSize: '12.5px',
-                        }}
-                      >
-                        <span
-                          role="button"
-                          onClick={enquire(sv)}
-                          style={{ position: 'relative', minHeight: '28px', display: 'flex', alignItems: 'center', color: '#3FB950' }}
-                          className="dcp-d5"
-                        >
-                          {'enquire() →'}
-                        </span>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#C9D1D9' }}
-                            className="dcp-d6"
-                          >
-                            <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-                            {'ask_ai()'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -860,7 +782,7 @@ export function DevTerminal(props) {
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'JetBrains Mono',monospace", fontSize: '18px', fontWeight: '700' }}>
                 <span style={{ color: '#8B949E' }}>{'## '}</span>
-                {'Reels'}
+                {'Featured Videos'}
               </h3>
               <div
                 data-wc-reels="1"
@@ -929,26 +851,7 @@ export function DevTerminal(props) {
                 <span style={{ color: '#8B949E' }}>{'## '}</span>
                 {'Portfolio'}
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '6px' }}>
-                {(V.grid6 || []).map((g, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(g?.src)}
-                      role="button"
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        aspectRatio: '1',
-                        borderRadius: '6px',
-                        border: '1px solid #30363D',
-                        background: 'repeating-linear-gradient(135deg,#161B22 0 10px,#1C2129 10px 11px)',
-                      }}
-                    >
-                      <Fill src={g?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
           {CARD.showEnquiry ? (
@@ -1379,7 +1282,7 @@ export function DevTerminal(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1426,6 +1329,7 @@ export function DevTerminal(props) {
                 }}
               >
                 <span style={{ color: '#3FB950', marginRight: '8px' }}>{'$'}</span>
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

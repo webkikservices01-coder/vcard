@@ -96,7 +96,7 @@ export function PublicFooter() {
   return (
     <footer 
       ref={footerRef}
-      className={`relative overflow-hidden border-t backdrop-blur-2xl transition-colors duration-500 pb-12 ${
+      className={`cv-auto relative overflow-hidden border-t backdrop-blur-2xl transition-colors duration-500 pb-12 ${
         isDark 
           ? "border-white/10 bg-[#07090E] text-slate-100" 
           : "border-pink-100/80 bg-white text-slate-900"

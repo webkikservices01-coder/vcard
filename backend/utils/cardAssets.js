@@ -3,8 +3,7 @@
 //  - image: 2400x1260 JPG built by Cloudinary from the card photo (when the photo is on Cloudinary)
 // The PDF is uploaded to Cloudinary so WhatsApp and email can fetch it by URL.
 const axios = require('axios');
-const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
+// pdfkit and qrcode load on first use (after a payment), not when the server starts.
 const { cardImage } = require('./cardImage');
 const { useCloudinary } = require('./upload');
 
@@ -50,9 +49,10 @@ async function buildPdf(card, user) {
   const c = contactsOf(card, user);
   const [photo, qr] = await Promise.all([
     photoBuffer(p.profilePic),
-    QRCode.toBuffer(url, { margin: 1, width: 400, color: { dark: '#111111', light: '#FFFFFF' } }),
+    require('qrcode').toBuffer(url, { margin: 1, width: 400, color: { dark: '#111111', light: '#FFFFFF' } }),
   ]);
 
+  const PDFDocument = require('pdfkit');
   const doc = new PDFDocument({ size: [W, H], margin: 0, info: { Title: `${name} – Aicardly card`, Author: 'Aicardly' } });
   const chunks = [];
   doc.on('data', (d) => chunks.push(d));

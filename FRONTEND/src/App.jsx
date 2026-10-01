@@ -4,8 +4,7 @@ import { PRICING_ENABLED } from './utils/plan';
 import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
-const AdminLayout = lazy(() => import('./components/AdminLayout'));
-import AdminRoute from './components/AdminRoute';
+import { ADMIN_URL } from './utils/adminUrl';
 import ScrollToTop from './components/ScrollToTop';
 import Seo from './components/Seo';
 const PlatformChatWidget = lazy(() => import('./components/platformChat/PlatformChatWidget'));
@@ -19,6 +18,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Impersonate = lazy(() => import('./pages/Impersonate'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Dashboard
@@ -48,14 +48,6 @@ const AdvancedSettings = lazy(() => import('./pages/vCard/AdvancedSettings'));
 const AiPersona = lazy(() => import('./pages/vCard/AiPersona'));
 const AiInsights = lazy(() => import('./pages/vCard/AiInsights'));
 
-// Admin
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
-const AdminTransactions = lazy(() => import('./pages/admin/AdminTransactions'));
-const AdminSupport = lazy(() => import('./pages/admin/AdminSupport'));
-const AdminCards = lazy(() => import('./pages/admin/AdminCards'));
-const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
-const AdminCardOrders = lazy(() => import('./pages/admin/AdminCardOrders'));
 
 // Public
 const PublicVcard = lazy(() => import('./pages/PublicVcard'));
@@ -90,6 +82,13 @@ function DeferredChatWidget() {
       <PlatformChatWidget />
     </Suspense>
   ) : null;
+}
+
+function GoToAdmin() {
+  useEffect(() => {
+    window.location.replace(ADMIN_URL);
+  }, []);
+  return null;
 }
 
 // Each page loads as its own chunk; this shows while one is fetched.
@@ -157,6 +156,7 @@ export function AppRoutes() {
         <Route path="/forgot-password" element={page(<ForgotPassword />)} />
         <Route path="/reset-password" element={page(<ForgotPassword />)} />
         <Route path="/verify-email" element={page(<VerifyEmail />)} />
+        <Route path="/impersonate" element={page(<Impersonate />)} />
 
         <Route path="/metal-nfc-card" element={page(<MetalNfcCard />)} />
         <Route path="/features" element={page(<FeaturesPage />)} />
@@ -188,7 +188,8 @@ export function AppRoutes() {
           <Route path="vcard/theme"      element={page(<Theme />)} />
           <Route path="vcard/profile"    element={page(<VcardProfile />)} />
           <Route path="vcard/contact"    element={page(<ContactDetails />)} />
-          <Route path="vcard/products"   element={page(<Products />)} />
+          <Route path="vcard/services"   element={page(<Products key="service" kind="service" />)} />
+          <Route path="vcard/products"   element={page(<Products key="product" kind="product" />)} />
           <Route path="vcard/portfolio"  element={page(<Portfolio />)} />
           <Route path="vcard/gallery"    element={page(<Gallery />)} />
           <Route path="vcard/highlights" element={page(<Highlights />)} />
@@ -208,16 +209,8 @@ export function AppRoutes() {
           <Route path="profile"          element={page(<UserProfile />)} />
         </Route>
 
-        {/* Admin panel */}
-        <Route path="/admin" element={<AdminRoute>{page(<AdminLayout />)}</AdminRoute>}>
-          <Route index element={page(<AdminDashboard />)} />
-          <Route path="users"        element={page(<AdminUsers />)} />
-          <Route path="transactions" element={page(<AdminTransactions />)} />
-          <Route path="support"      element={page(<AdminSupport />)} />
-          <Route path="cards"        element={page(<AdminCards />)} />
-          <Route path="logs"         element={page(<AdminLogs />)} />
-          <Route path="card-orders"  element={page(<AdminCardOrders />)} />
-        </Route>
+        {/* The admin panel moved to its own app (ADMIN/, served by the backend); old links go there. */}
+        <Route path="/admin/*" element={<GoToAdmin />} />
 
         <Route path="*" element={page(<NotFound />)} />
       </Routes>

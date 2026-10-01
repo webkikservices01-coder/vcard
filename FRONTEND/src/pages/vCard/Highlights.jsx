@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Save, Plus, X, Clapperboard, Users, BarChart3, Sparkles, Briefcase, Clock, Languages, Award, ExternalLink } from 'lucide-react';
+import { Save, Plus, X, Clapperboard, Users, BarChart3, Sparkles, Briefcase, Clock, Languages, Award, ExternalLink, SquarePlay } from 'lucide-react';
+import ImportFromWeb from './ImportFromWeb';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
 import MeshBackground from '../../components/ui/MeshBackground';
@@ -155,10 +156,25 @@ const Highlights = () => {
 
   const set = (key) => (value) => setExtras((x) => ({ ...x, [key]: value }));
 
-  const handleSave = async () => {
+  const [showImport, setShowImport] = useState(false);
+  // Videos from a YouTube channel: added to the reels and saved straight away.
+  const importVideos = async (videos) => {
+    const idOf = (u) => /(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/.exec(u || '')?.[1];
+    const have = new Set(extras.reels.map((r) => idOf(r.url)).filter(Boolean));
+    const fresh = videos.filter((v) => !have.has(idOf(v.url))).map((v) => ({ url: v.url, title: v.title }));
+    const room = Math.max(0, 20 - extras.reels.filter((r) => r.url).length);
+    const next = { ...extras, reels: [...extras.reels.filter((r) => r.url), ...fresh.slice(0, room)] };
+    setExtras(next);
+    await handleSave(next);
+    const added = Math.min(fresh.length, room);
+    return `${added} video${added === 1 ? '' : 's'} added to your reels${fresh.length > room ? ' (20 reels max)' : ''}`;
+  };
+
+  const handleSave = async (override) => {
+    const toSave = override && override.reels ? override : extras;
     setSaving(true);
     try {
-      const { data } = await axios.post(`${API}/api/vcard`, { extras }, { headers: headers() });
+      const { data } = await axios.post(`${API}/api/vcard`, { extras: toSave }, { headers: headers() });
       // An outdated backend silently drops unknown fields; don't claim success then.
       if (!data.card?.extras) {
         toast.error('Server did not save these fields. Please restart / redeploy the backend and try again.');
@@ -210,10 +226,19 @@ const Highlights = () => {
 
       <Section
         icon={Clapperboard}
-        title="Reels"
-        hint="Paste Instagram, Facebook or YouTube reel links (or a direct .mp4). They play right on your card."
+        title="Featured Videos (reels)"
+        hint="Paste Instagram, Facebook or YouTube reel links (or a direct .mp4), or bring your latest YouTube videos in one go. They play right on your card, mixed in one row."
         delay={0.04}
       >
+        <button
+          type="button"
+          onClick={() => setShowImport(true)}
+          className="mb-3 inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-600/10"
+          style={{ border: '1px solid var(--surface-border)' }}
+        >
+          <SquarePlay className="h-4 w-4" /> Import from YouTube channel
+        </button>
+        <ImportFromWeb kind="videos" open={showImport} onClose={() => setShowImport(false)} onSave={importVideos} />
         <RowList
           rows={extras.reels}
           onChange={set('reels')}

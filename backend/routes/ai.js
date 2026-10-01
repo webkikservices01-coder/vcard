@@ -9,7 +9,7 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
-const { hasChatFill, hasVoiceFill } = require('../constants/plans');
+const { hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi } = require('../constants/plans');
 const { logUsage } = require('../utils/usageLogger');
 const { buildCardySystemPrompt, COMPANY } = require('../constants/chatbotKnowledge');
 const { platformChatLimiter, platformLeadLimiter, themeLimiter, cardChatLimiter, feedbackLimiter } = require('../middleware/rateLimiter');
@@ -90,6 +90,41 @@ const offerOf = (persona) => {
   return { title: n.title || '', url: '', cta: n.cta || n.title || '' };
 };
 
+const splitProducts = (products) => ({
+  services: products.filter(p => p.kind === 'service'),
+  goods: products.filter(p => p.kind !== 'service'),
+});
+
+// Turns the AI's [[PROJECTS:1,3]] / [[SERVICES:..]] / [[PRODUCTS:..]] markers into the items
+// themselves (shown as photo cards in the chat) and removes them from the text.
+const MARKER_RE = /\[\[\s*(PROJECTS?|SERVICES?|PRODUCTS?)\s*:\s*([\d\s,]*)\]\]/gi;
+const cardsFor = (reply, { products, portfolio }) => {
+  const { services, goods } = splitProducts(products);
+  const lists = { PROJECT: portfolio, SERVICE: services, PRODUCT: goods };
+  const cards = [];
+  const seen = new Set();
+  for (const m of reply.matchAll(MARKER_RE)) {
+    const kind = m[1].toUpperCase().replace(/S$/, '');
+    for (const n of m[2].split(',').map(x => parseInt(x, 10)).filter(Boolean)) {
+      const item = lists[kind]?.[n - 1];
+      if (!item || seen.has(String(item._id)) || cards.length >= 10) continue;
+      seen.add(String(item._id));
+      cards.push({
+        kind: kind.toLowerCase(),
+        id: String(item._id),
+        title: item.title,
+        desc: String(item.description || '').slice(0, 160),
+        image: item.coverImage || '',
+        link: kind === 'PROJECT' ? item.url || (/^https?:\/\//.test(item.file || '') ? item.file : '') : item.link || '',
+        price: kind === 'PROJECT' ? '' : item.price || '',
+      });
+    }
+  }
+  // Also drop any half-written marker, so it never shows as text.
+  const text = reply.replace(MARKER_RE, '').replace(/\[\[[^\]]*\]?\]?\s*$/, '').replace(/\n{3,}/g, '\n\n').trim();
+  return { text: text || (cards.length ? 'Here you go:' : reply), cards };
+};
+
 // ─── Build rich system prompt from ALL vCard data ─────────────────────────────
 const buildSystemPrompt = (persona, card, products, portfolio, testimonials, gallery, customSections) => {
   const p = card.personalInfo || {};
@@ -113,27 +148,26 @@ ${links.map(fmtLink).join('\n')}
 IMPORTANT: When sharing contact info, ALWAYS use the exact markdown format above so links are clickable. Never write a raw URL — always wrap it as [label](url).`);
   }
 
-  // Products
-  if (products.length > 0) {
-    const items = products.map((item, i) => {
-      let block = `${i + 1}. **${item.title}**`;
-      if (item.description) block += `\n   ${item.description}`;
-      if (item.price) block += `\n   💰 Price: ₹${item.price}`;
-      if (item.link) block += `\n   🛒 [Buy / View Details](${item.link})`;
-      if (item.coverImage) block += `\n   ![${item.title}](${item.coverImage})`;
-      return block;
-    }).join('\n\n');
-    sections.push(`=== PRODUCTS & SERVICES (${products.length}) ===\n${items}`);
-  }
+  // Services and products: numbered lists the AI points at with [[SERVICES:..]] / [[PRODUCTS:..]]
+  // (see cardsFor); the visitor then sees them as photo cards in the chat.
+  const { services, goods } = splitProducts(products);
+  const listOf = (list, linkLabel) => list.map((item, i) => {
+    let block = `${i + 1}. **${item.title}**`;
+    if (item.description) block += `\n   ${String(item.description).slice(0, 300)}`;
+    if (item.price) block += `\n   💰 Price: ₹${item.price}`;
+    if (item.link) block += `\n   🔗 [${linkLabel}](${item.link})`;
+    return block;
+  }).join('\n\n');
+  if (services.length > 0) sections.push(`=== SERVICES (${services.length}) ===\n${listOf(services, 'Service page')}`);
+  if (goods.length > 0) sections.push(`=== PRODUCTS (${goods.length}) ===\n${listOf(goods, 'Buy / View Details')}`);
 
   // Portfolio
   if (portfolio.length > 0) {
     const items = portfolio.map((item, i) => {
       let block = `${i + 1}. **${item.title}**`;
-      if (item.description) block += `\n   ${item.description}`;
+      if (item.description) block += `\n   ${String(item.description).slice(0, 300)}`;
       if (item.url) block += `\n   🔗 [View Project](${item.url})`;
       if (item.file && /^https?:\/\//.test(item.file)) block += `\n   📄 [View PDF](${item.file})`;
-      if (item.coverImage) block += `\n   ![${item.title}](${item.coverImage})`;
       return block;
     }).join('\n\n');
     sections.push(`=== PORTFOLIO / PROJECTS (${portfolio.length}) ===\n${items}`);
@@ -213,7 +247,10 @@ Tone: ${toneDesc[persona.tone] || 'warm and friendly'}
   - If they write in Hinglish (Hindi in Roman letters, e.g. "aap kaise ho"), reply in natural Hinglish (Roman script).
   - Match their language on every turn — if they switch language mid-conversation, switch with them.
 - When sharing a link, use markdown format: [label](url). Never write a bare URL.
-- When showing an image use: ![title](imageUrl)
+- VISUAL CARDS: the chat shows projects, services and products as photo cards with their own buttons. So when the visitor asks about work / projects / portfolio, services, or products, do NOT list them as text or links. Write ONE short line, then on a new line add the card marker with the item numbers from the lists above (most relevant first, at most 8):
+  [[PROJECTS:1,2,3]] for PORTFOLIO / PROJECTS, [[SERVICES:2,5]] for SERVICES, [[PRODUCTS:1]] for PRODUCTS.
+  "Show your work / all projects" → the first 6 projects. A question about one item → that item's number, plus a one-line answer.
+  Use only numbers that exist in those lists; if a list is missing, there are no such items — say so simply.
 - If you don't have the answer, say so simply (in the visitor's language).${persona.consultingMode ? '' : ' Do not add calls to action or redirect suggestions.'}
 - Never make up facts, prices, or contact details not listed above.${consulting}
 
@@ -234,7 +271,7 @@ router.get('/persona', auth, async (req, res) => {
 router.post('/persona', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!hasChatFill(user)) {
+    if (!hasCardAi(user)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use AI features.' });
     }
     const vcardId = await getCardId(req.user.userId);
@@ -293,7 +330,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     if (!card) return res.status(404).json({ msg: 'Card not found' });
 
     const owner = await User.findById(card.userId);
-    if (!hasChatFill(owner)) {
+    if (!owner || owner.deletedAt || !hasCardAi(owner)) {
       return res.status(403).json({ msg: 'AI chat is not enabled for this card.' });
     }
 
@@ -353,7 +390,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
 
     const completion = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 300,
+      max_tokens: 350,
       system: systemPrompt,
       messages,
     });
@@ -363,8 +400,9 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     let reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
     const bad = checkOutput(reply, guard);
     if (bad) reply = bad.reply;
+    const { text, cards } = bad ? { text: reply, cards: [] } : cardsFor(reply, { products, portfolio });
     await track({ messages: 1, blocked: bad ? 1 : 0 }, showOffer ? { offerShown: true } : {});
-    res.json({ reply, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
+    res.json({ reply: text, cards, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
   } catch (err) {
     logEvent(req, 'ai.chat.error', err.message, { level: 'error' });
     res.status(500).json({ msg: 'AI response failed. Please try again.' });
@@ -638,7 +676,7 @@ router.post('/jarvis', auth, async (req, res) => {
     if (!message || !message.trim()) return res.status(400).json({ msg: 'No speech detected' });
 
     const user = await User.findById(req.user.userId);
-    if (!hasChatFill(user)) {
+    if (!hasDashboardAi(user)) {
       return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use the AI Assistant.' });
     }
 
@@ -712,7 +750,7 @@ router.get('/public/:username', async (req, res) => {
     if (!card) return res.json({ enabled: false });
 
     const owner = await User.findById(card.userId);
-    if (!hasChatFill(owner)) return res.json({ enabled: false });
+    if (!owner || owner.deletedAt || !hasCardAi(owner)) return res.json({ enabled: false });
 
     const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
     if (!persona.enabled) return res.json({ enabled: false });
@@ -949,6 +987,21 @@ router.post('/platform-chat', platformChatLimiter, async (req, res) => {
   }
 });
 
+// ─── POST /api/ai/platform-feedback { rating: 'up'|'down', question, answer } ───
+// 👍 / 👎 on one of Cardy's answers. Saved as an app event (admin panel → App logs, "Cardy"),
+// so the team can see which answers miss.
+router.post('/platform-feedback', feedbackLimiter, (req, res) => {
+  const rating = req.body?.rating;
+  if (!['up', 'down'].includes(rating)) return res.status(400).json({ msg: 'Invalid rating.' });
+  const question = String(req.body.question || '').trim().slice(0, 500);
+  const answer = String(req.body.answer || '').trim().slice(0, 1500);
+  logEvent(req, 'cardy.feedback', `${rating === 'up' ? '👍 Helpful' : '👎 Not helpful'}: ${question.slice(0, 120) || '(no question)'}`, {
+    level: rating === 'down' ? 'warn' : 'info',
+    meta: { rating, question, answer },
+  });
+  res.json({ msg: 'Thanks for the feedback!' });
+});
+
 // ─── POST /api/ai/platform-lead ────────────────────────────────────────────────
 router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
   try {
@@ -987,3 +1040,4 @@ router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.cardsFor = cardsFor;

@@ -20,6 +20,16 @@ export const PRICING_ENABLED = import.meta.env.VITE_PRICING_ENABLED === 'true';
 export const hasChatFill = (plan) => !PRICING_ENABLED || CHAT_FILL_PLANS.includes(plan);
 export const hasVoiceFill = (plan) => !PRICING_ENABLED || VOICE_FILL_PLANS.includes(plan);
 
+// The AI chat on public cards and its settings page are on for every user (same switch as the
+// backend's CARD_AI_FOR_ALL). Set VITE_CARD_AI_FOR_ALL=false to make them plan-only again.
+export const CARD_AI_FOR_ALL = import.meta.env.VITE_CARD_AI_FOR_ALL !== 'false';
+export const hasCardAi = (plan) => CARD_AI_FOR_ALL || hasChatFill(plan);
+
+// The dashboard's AI assistant (Jarvis, chat + voice) is on for every user (same switch as the
+// backend's DASHBOARD_AI_FOR_ALL). Set VITE_DASHBOARD_AI_FOR_ALL=false to make it plan-only again.
+export const DASHBOARD_AI_FOR_ALL = import.meta.env.VITE_DASHBOARD_AI_FOR_ALL !== 'false';
+export const hasDashboardAi = (plan) => DASHBOARD_AI_FOR_ALL || hasChatFill(plan);
+
 // Fetches the logged-in user's plan for pages that need to gate a single
 // feature (e.g. the voice-fill button) without pulling in the full dashboard layout.
 export const usePlan = () => {

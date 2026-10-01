@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink, ShieldCheck, BookOpen, Briefcase, Target, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { hasChatFill } from '../../utils/plan';
+import { hasCardAi } from '../../utils/plan';
 import { getVideoRoomUrl } from '../../utils/videoRoom';
 import GlassCard from '../../components/ui/GlassCard';
 import Toggle from '../../components/ui/Toggle';
@@ -151,7 +151,7 @@ const AiPersona = () => {
 
   if (loading) return <div className="p-8 text-center text-sm" style={{ color: 'var(--surface-text-2)' }}>Loading...</div>;
 
-  if (!hasChatFill(plan)) {
+  if (!hasCardAi(plan)) {
     return (
       <div className="max-w-lg space-y-5">
         <motion.div {...fadeUp(0)} className="relative rounded-2xl overflow-hidden p-8 text-center">

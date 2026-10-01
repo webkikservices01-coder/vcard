@@ -5,9 +5,11 @@ import {
   Home, UserCircle, LifeBuoy, CreditCard, Receipt, LogOut,
   ChevronDown, Bot, X, Send
 } from 'lucide-react';
-import { hasChatFill, PRICING_ENABLED } from '../utils/plan';
+import { hasCardAi, PRICING_ENABLED } from '../utils/plan';
 import Logo from './ui/Logo';
 import IconButton from './ui/IconButton';
+import { setImpersonating } from '../utils/impersonation';
+import { clearThemeCache } from '../utils/themeStudioCache';
 
 const aiSubItems = [
   { name: 'AI Persona Setup', icon: Bot, path: '/dashboard/vcard/ai-persona' },
@@ -63,13 +65,15 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setImpersonating(null);
+    clearThemeCache();
     navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
   const isVcardActive = location.pathname.includes('/dashboard/vcard') && !location.pathname.includes('/dashboard/vcard/ai');
   const isAiActive = location.pathname.includes('ai-persona');
-  const hasAi = hasChatFill(userPlan);
+  const hasAi = hasCardAi(userPlan);
 
   return (
     <>

@@ -1,28 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  CoverImage,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  scrollToSection,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -116,7 +95,7 @@ class Logic extends DCLogic {
         { label: 'Location', icon: ic.pin },
       ]),
       socials: CARD.socialsFrom(),
-      nav: CARD.navFrom(['Profile', 'Services', 'Projects', 'Reels', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           bg: i === 0 ? '#ED2460' : 'rgba(237,36,96,.08)',
@@ -571,92 +550,7 @@ export function WebkikSignature(props) {
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>
                 {'Services'}
               </h3>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  overflowX: 'auto',
-                  scrollSnapType: 'x mandatory',
-                  scrollbarWidth: 'none',
-                  padding: '0 16px 4px',
-                  scrollPadding: '0 16px',
-                }}
-              >
-                {(V.services || []).map((sv, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      style={{
-                        flex: '0 0 72%',
-                        scrollSnapAlign: 'start',
-                        boxSizing: 'border-box',
-                        padding: '16px',
-                        borderRadius: '20px',
-                        background: sv?.bg,
-                        color: sv?.fg,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      <span
-                        dangerouslySetInnerHTML={sv?.icon}
-                        style={{
-                          width: '44px',
-                          height: '44px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: sv?.icBg,
-                          color: sv?.icFg,
-                        }}
-                      ></span>
-                      <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: '17px', fontWeight: '700', marginTop: '6px' }}>
-                        {sv?.title}
-                      </div>
-                      <div style={{ fontSize: '14px', lineHeight: '1.45', opacity: '.9' }}>{sv?.desc}</div>
-                      {sv?.price ? <div style={{ fontSize: '15px', fontWeight: '700' }}>{sv.price}</div> : null}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          minHeight: '40px',
-                          marginTop: 'auto',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                        }}
-                      >
-                        <span
-                          role="button"
-                          onClick={sv?.link ? openLink(sv.link) : () => scrollToSection(CARD.showEnquiry ? 'Contact' : 'QR')}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {sv?.link ? 'View →' : 'Enquire →'}
-                        </span>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={openChat}
-                            style={{
-                              position: 'relative',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                            }}
-                            className="dcp-g6"
-                          >
-                            <span dangerouslySetInnerHTML={sv?.spark} style={{ display: 'flex' }}></span>
-                            {'Ask AI'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <ServiceSlides items={CARD.services} pad={0} />
             </div>
           )}
           {CARD.projects.length > 0 && (
@@ -753,7 +647,7 @@ export function WebkikSignature(props) {
           )}
           {CARD.reels.length > 0 && (
             <div style={{ padding: '28px 0 0' }}>
-              <h3 style={{ margin: '0 16px 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>{'Reels'}</h3>
+              <h3 style={{ margin: '0 16px 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>{'Featured Videos'}</h3>
               <div
                 data-wc-reels="1"
                 style={{
@@ -841,34 +735,7 @@ export function WebkikSignature(props) {
           {CARD.photos.length > 0 && (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>{'Portfolio'}</h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(56px,17cqi,70px)',
-                  gridAutoFlow: 'dense',
-                  gap: '6px',
-                }}
-              >
-                {(V.portfolio || []).map((pf, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(pf?.src)}
-                      style={{
-                        position: 'relative',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        gridRow: `span ${pf?.r}`,
-                        gridColumn: `span ${pf?.c}`,
-                        borderRadius: '12px',
-                        background: pf?.bg,
-                      }}
-                    >
-                      <Fill src={pf?.src} />
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           )}
           {CARD.showEnquiry && (
@@ -1363,7 +1230,7 @@ export function WebkikSignature(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 16px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1403,6 +1270,7 @@ export function WebkikSignature(props) {
                   boxSizing: 'border-box',
                 }}
               >
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

@@ -98,7 +98,7 @@ const Dashboard = () => {
 
   const quickActions = [
     { label: 'Edit Profile', desc: 'Identity, visuals & bio', path: '/dashboard/vcard/profile', icon: Pencil },
-    { label: 'Add Offerings', desc: 'Products, services & links', path: '/dashboard/vcard/products', icon: Package },
+    { label: 'Add Offerings', desc: 'Services with your website link', path: '/dashboard/vcard/services', icon: Package },
     { label: 'Branded QR', desc: 'Download smart matrix', path: '/dashboard/vcard/qr', icon: QrCode },
     PRICING_ENABLED
       ? { label: 'Upgrade Tier', desc: 'Unlock voice & AI agents', path: '/dashboard/plans', icon: Zap }

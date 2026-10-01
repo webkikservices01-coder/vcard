@@ -1,28 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import {
-  DCLogic,
-  useDC,
-  useLive,
-  liveFrame,
-  ImageSlot,
-  Fill,
-  CardQR,
-  EnquiryForm,
-  CustomSections,
-  downloadQR,
-  openLink,
-  saveContact,
-  shareCard,
-  scrollToSection,
-  enquire,
-  ReelMedia,
-  useChat,
-  ChatThread,
-  ChatText,
-  SwipeRow,
-} from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -69,7 +48,7 @@ class Logic extends DCLogic {
         { key: 'Location', label: 'Studio', icon: ic.pin },
       ]),
       socials: CARD.socialsFrom(),
-      nav: CARD.navFrom(['Portfolio', 'Profile', 'Services', 'Projects', 'Reels', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Portfolio', 'Profile', 'Services', 'Projects', 'Videos', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           fg: i === 0 ? '#A14A30' : '#5E5850',
@@ -477,47 +456,7 @@ export function EditorialArchitect(props) {
                   {CARD.photos.length + (CARD.photos.length === 1 ? ' image' : ' images')}
                 </span>
               </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(6,minmax(0,1fr))',
-                  gridAutoRows: 'clamp(30px, 9.5cqi, 38px)',
-                  gap: '6px',
-                }}
-              >
-                {(V.masonry || []).map((m, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      onClick={openLink(m?.src)}
-                      role="button"
-                      style={{
-                        gridColumn: m?.c,
-                        gridRow: m?.r,
-                        position: 'relative',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        background: m?.bg,
-                      }}
-                    >
-                      <Fill src={m?.src} />
-                      <span
-                        style={{
-                          position: 'absolute',
-                          left: '6px',
-                          bottom: '5px',
-                          fontSize: '10.5px',
-                          letterSpacing: '.1em',
-                          color: '#1C1C1C',
-                          background: '#F4F1EC',
-                          padding: '1px 5px',
-                        }}
-                      >
-                        {m?.n}
-                      </span>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
+              <PhotoSlides items={CARD.photos} />
             </div>
           ) : null}
         </>
@@ -592,60 +531,7 @@ export function EditorialArchitect(props) {
               <h3 style={{ margin: '0 0 4px', fontFamily: "'DM Serif Display',serif", fontWeight: '400', fontSize: '28px' }}>
                 {'Services'}
               </h3>
-              {(V.services || []).map((sv, $index) => (
-                <React.Fragment key={$index}>
-                  <div style={{ display: 'flex', gap: '14px', padding: '16px 0', borderBottom: '1px solid #D9D2C7' }}>
-                    <span
-                      style={{
-                        width: '28px',
-                        flexShrink: '0',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        letterSpacing: '.1em',
-                        color: '#A14A30',
-                        paddingTop: '6px',
-                      }}
-                    >
-                      {sv?.n}
-                    </span>
-                    <div style={{ flex: '1', minWidth: '0' }}>
-                      <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: '22px' }}>{sv?.title}</div>
-                      <div style={{ fontSize: '14.5px', lineHeight: '1.5', color: '#5E5850' }}>{sv?.desc}</div>
-                      <div style={{ display: 'flex', gap: '18px', marginTop: '6px', fontSize: '13.5px', fontWeight: '600' }}>
-                        <a
-                          role="button"
-                          onClick={enquire(sv)}
-                          href={'#contact'}
-                          style={{
-                            position: 'relative',
-                            minHeight: '32px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            textDecoration: 'underline',
-                            textUnderlineOffset: '4px',
-                          }}
-                          className="dcp-e4"
-                        >
-                          {'Enquire'}
-                        </a>
-                        {CARD.ai.enabled ? (
-                          <span
-                            role="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openChat();
-                            }}
-                            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#A14A30' }}
-                            className="dcp-e5"
-                          >
-                            {'Ask AI ✦'}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
+              <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -756,7 +642,7 @@ export function EditorialArchitect(props) {
           ) : null}
           {CARD.reels.length > 0 ? (
             <div style={{ padding: '8px 16px 0' }}>
-              <h3 style={{ margin: '0 0 12px', fontFamily: "'DM Serif Display',serif", fontWeight: '400', fontSize: '28px' }}>{'Reels'}</h3>
+              <h3 style={{ margin: '0 0 12px', fontFamily: "'DM Serif Display',serif", fontWeight: '400', fontSize: '28px' }}>{'Featured Videos'}</h3>
               <div
                 data-wc-reels="1"
                 style={{ display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none', marginRight: '-16px' }}
@@ -1228,7 +1114,7 @@ export function EditorialArchitect(props) {
                 }
               />
             </div>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', padding: '8px 18px 4px' }}>
+            <div data-wc-chips="" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 18px 4px' }}>
               {chat.chips.map((c, $index) => (
                 <React.Fragment key={$index}>
                   <span
@@ -1254,6 +1140,7 @@ export function EditorialArchitect(props) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px 30px 18px' }}>
               <div style={{ flex: '1', height: '48px', borderBottom: '1px solid #1C1C1C', display: 'flex', alignItems: 'center' }}>
+                <ChatMic chat={chat} />
                 <input
                   value={chat.input}
                   onChange={(e) => chat.setInput(e.target.value)}

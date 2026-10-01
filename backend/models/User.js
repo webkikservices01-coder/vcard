@@ -22,7 +22,20 @@ const UserSchema = new mongoose.Schema({
     verifyTokenExpiry: { type: Date, default: null },
     // Password reset: SHA-256 of the emailed token (never the token itself) and when it expires.
     resetTokenHash:   { type: String, default: '' },
-    resetTokenExpiry: { type: Date, default: null }
+    resetTokenExpiry: { type: Date, default: null },
+    // Set from the admin panel. Blocked or removed (soft delete): can't sign in or use the app.
+    // A removed user's public card is no longer shown.
+    isBlocked:     { type: Boolean, default: false },
+    blockedAt:     { type: Date, default: null },
+    blockedReason: { type: String, default: '' },
+    deletedAt:     { type: Date, default: null },
+    // Free card deliveries granted by an admin: the next "Get my card" order skips the payment link.
+    freeCardCredits: { type: Number, default: 0, min: 0 },
+    // Sign-in tokens issued before this time stop working (password changed / reset, or an
+    // admin signed the user out everywhere).
+    tokensValidAfter: { type: Date, default: null }
 }, { timestamps: true });
+
+UserSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -60,7 +60,11 @@ const Theme = () => {
         setAiPersona(ai);
         setPayload(full);
       } catch {
-        /* no card yet: the preview shows sample content */
+        // No card yet: the preview shows sample content (never another account's card).
+        setPayload(null);
+        setAiPersona(null);
+        setSlug('');
+        setSaved(null);
       } finally {
         setLoading(false);
       }

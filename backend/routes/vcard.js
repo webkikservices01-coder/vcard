@@ -1,4 +1,6 @@
 const express = require('express');
+const { fillShotsLater } = require('../utils/siteShot');
+const { youtubeVideos } = require('../services/websiteImport');
 const { CardPresence, CardDayView } = require('../models/CardVisit');
 const { logEvent } = require('../utils/logger');
 const router = express.Router();
@@ -13,7 +15,9 @@ const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
 const User = require('../models/User');
-const { sendMail } = require('../utils/mailer');
+const { accountStatus } = require('../utils/accountStatus');
+const { sendMail, emailHtml } = require('../utils/mailer');
+const background = require('../utils/background');
 const { enquiryLimiter } = require('../middleware/rateLimiter');
 
 const { upload, fileUrl } = require('../utils/upload');
@@ -177,10 +181,42 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
+// Reels from the owner's YouTube channel: preview the latest videos, then add the chosen ones
+// to the card's reels (at most 20 in all; ones already there are skipped).
+router.post('/reels/import/preview', auth, async (req, res) => {
+    try {
+        res.json(await youtubeVideos(req.body?.url));
+    } catch (err) {
+        res.status(err.status || 500).json({ msg: err.status ? err.message : "Couldn't read that channel. Please try again." });
+    }
+});
+
+router.post('/reels/import', auth, async (req, res) => {
+    try {
+        const items = (Array.isArray(req.body?.items) ? req.body.items : [])
+            .map((r) => ({ url: String(r?.url || '').trim(), title: String(r?.title || '').trim().slice(0, 120) }))
+            .filter((r) => /^https:\/\/(www\.)?youtube\.com\/(watch\?v=|shorts\/)[\w-]{11}/.test(r.url));
+        if (!items.length) return res.status(400).json({ msg: 'Choose at least one video.' });
+        const card = await vCard.findOne({ userId: req.user.userId });
+        if (!card) return res.status(404).json({ msg: 'Create your card first.' });
+        const reels = card.extras?.reels || [];
+        const idOf = (u) => /(?:v=|shorts\/)([\w-]{11})/.exec(u)?.[1];
+        const have = new Set(reels.map((r) => idOf(r.url)).filter(Boolean));
+        const fresh = items.filter((r) => !have.has(idOf(r.url))).slice(0, Math.max(0, 20 - reels.length));
+        card.set('extras.reels', [...reels, ...fresh]);
+        await card.save();
+        res.json({ added: fresh.length, skipped: items.length - fresh.length, full: reels.length + fresh.length >= 20 });
+    } catch (err) {
+        console.error('Reels import error:', err);
+        res.status(500).json({ msg: 'Could not add the videos. Please try again.' });
+    }
+});
+
 router.get('/public/:username', async (req, res) => {
     try {
         const card = await vCard.findOne({ username: req.params.username });
-        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        // A user removed in the admin panel no longer has a public card.
+        if (!card || (await accountStatus(card.userId)) === 'removed') return res.status(404).json({ msg: 'Card not found' });
 
         const [products, portfolio, testimonials, gallery, customSections, settings] = await Promise.all([
             Product.find({ vcardId: card._id }).sort('order'),
@@ -192,6 +228,9 @@ router.get('/public/:username', async (req, res) => {
         ]);
 
         res.json({ card, products, portfolio, testimonials, gallery, customSections, settings: settings || {} });
+        // Services / projects with a website but no picture get a saved screenshot of that page.
+        fillShotsLater(Product, products, 'link', `p${card._id}`);
+        fillShotsLater(Portfolio, portfolio, 'url', `f${card._id}`);
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
@@ -252,19 +291,37 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
         const enquiry = await Enquiry.create({ vcardId: card._id, name, email, mobile, message, consentAt: new Date(), cohort });
         logEvent(req, 'enquiry.new', `Enquiry on /${card.username} from ${name}`, { userId: card.userId, email });
 
-        // Best-effort email to the owner (settings' enquiry email, else their account email).
-        const [settings, owner] = await Promise.all([
-            VcardSettings.findOne({ vcardId: card._id }).select('enquiryEmail'),
-            User.findById(card.userId).select('email'),
-        ]);
-        const to = settings?.enquiryEmail || owner?.email;
-        if (to) {
-            sendMail({
-                to,
-                subject: `New enquiry on your Aicardly card from ${name}`,
-                text: `Name: ${name}\nEmail: ${email || '—'}\nPhone: ${mobile || '—'}\n\nMessage:\n${message}\n\nSee all enquiries in your dashboard → Enquiries.`,
+        // Email to the card owner: the email they sign in with, plus the enquiry email set in
+        // Settings when that is a different address. Sent after the reply and kept alive on Vercel
+        // (background), so the visitor doesn't wait and the email isn't cut off.
+        background((async () => {
+            const [settings, owner] = await Promise.all([
+                VcardSettings.findOne({ vcardId: card._id }).select('enquiryEmail').lean(),
+                User.findById(card.userId).select('email name firstName').lean(),
+            ]);
+            const to = [...new Set([owner?.email, settings?.enquiryEmail].map((e) => String(e || '').trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
+            if (!to.length) return;
+            const esc = (v) => String(v || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const site = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
+            const row = (label, value) => `<b>${label}:</b> ${value}`;
+            const sent = await sendMail({
+                to: to.join(', '),
+                replyTo: email || undefined,
+                subject: `New enquiry from ${name} on your AiCardly card`,
+                text: `Hi ${owner?.firstName || owner?.name || ''},\n\nSomeone filled the contact form on your card aicardly.com/${card.username}.\n\nName: ${name}\nEmail: ${email || '—'}\nPhone: ${mobile || '—'}\n\nMessage:\n${message}\n\n${email ? 'Reply to this email to answer them.' : 'They left no email; call or WhatsApp them.'}\nAll enquiries: ${site}/dashboard/vcard/enquiries\n\n– Team AiCardly`,
+                html: emailHtml({
+                    heading: `New enquiry from ${esc(name)}`,
+                    paragraphs: [
+                        `Someone filled the contact form on your card <a href="${site}/${esc(card.username)}" style="color:#E70C65">aicardly.com/${esc(card.username)}</a>.`,
+                        [row('Name', esc(name)), row('Email', email ? `<a href="mailto:${esc(email)}" style="color:#E70C65">${esc(email)}</a>` : '—'), row('Phone', mobile ? `<a href="tel:${esc(mobile.replace(/[^\d+]/g, ''))}" style="color:#E70C65">${esc(mobile)}</a>` : '—')].join('<br>'),
+                        `<b>Message:</b><br>${esc(message).replace(/\n/g, '<br>')}`,
+                        email ? 'Just reply to this email to answer them.' : 'They left no email address, so call or WhatsApp them.',
+                    ],
+                    button: { label: 'Open my enquiries', url: `${site}/dashboard/vcard/enquiries` },
+                }),
             });
-        }
+            logEvent(req, sent ? 'enquiry.emailed' : 'enquiry.email_failed', `Enquiry on /${card.username} ${sent ? 'emailed to' : 'NOT emailed to'} ${to.join(', ')}`, { level: sent ? 'info' : 'warn', userId: card.userId });
+        })());
         res.json({ msg: 'Enquiry submitted', enquiry });
     } catch (err) { res.status(500).json({ msg: 'Could not send your message. Please try again.' }); }
 });

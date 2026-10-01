@@ -44,4 +44,15 @@ const planOf = (u) => (u && typeof u === 'object' ? activePlan(u) : u);
 const hasChatFill = (u) => !PRICING_ENABLED || CHAT_FILL_PLANS.includes(planOf(u));
 const hasVoiceFill = (u) => !PRICING_ENABLED || VOICE_FILL_PLANS.includes(planOf(u));
 
-module.exports = { PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, hasChatFill, hasVoiceFill };
+// The AI chat on public cards (and its settings page) is on for every card, whatever the owner's
+// plan. Set CARD_AI_FOR_ALL=false to make it a Smart AI Card / AI Agent Pro feature again.
+// (Dashboard tools — Jarvis assistant, AI theme designer — still follow hasChatFill.)
+const CARD_AI_FOR_ALL = process.env.CARD_AI_FOR_ALL !== 'false';
+const hasCardAi = (u) => CARD_AI_FOR_ALL || hasChatFill(u);
+
+// The AI assistant inside the user's dashboard (Jarvis: chat + voice, fills in the card) is on for
+// every user. Set DASHBOARD_AI_FOR_ALL=false to make it Smart AI Card / AI Agent Pro only again.
+const DASHBOARD_AI_FOR_ALL = process.env.DASHBOARD_AI_FOR_ALL !== 'false';
+const hasDashboardAi = (u) => DASHBOARD_AI_FOR_ALL || hasChatFill(u);
+
+module.exports = { PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi };

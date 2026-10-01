@@ -3,6 +3,13 @@
 const CLOUDINARY_RE = /^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/;
 export const optimizeImage = (url) => (CLOUDINARY_RE.test(url) ? url.replace(CLOUDINARY_RE, '$1f_auto,q_auto,c_limit,w_1200/$2') : url);
 
+// Cover / banner images: also trims a plain border (white or black padding around a banner),
+// so the picture itself fills the cover. Same rewrite in index.html (card prefetch).
+export const coverImageUrl = (imgPath) => {
+  const url = getImageUrl(imgPath);
+  return url && CLOUDINARY_RE.test(imgPath) ? url.replace('/image/upload/f_auto,', '/image/upload/e_trim:10/f_auto,') : url;
+};
+
 export const getImageUrl = (imgPath) => {
   if (!imgPath) return null;
   if (imgPath.startsWith('http')) return optimizeImage(imgPath);

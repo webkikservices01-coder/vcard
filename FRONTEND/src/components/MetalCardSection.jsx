@@ -49,7 +49,7 @@ export default function MetalCardSection() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   return (
-    <section id="metal-nfc-card" aria-labelledby="metal-card-heading" className="relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
+    <section id="metal-nfc-card" aria-labelledby="metal-card-heading" className="cv-auto relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
       <div className="grid gap-14 lg:grid-cols-2 lg:items-center">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6b9d]">Metal NFC Card</p>

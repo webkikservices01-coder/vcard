@@ -19,5 +19,7 @@ const ChatSessionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 ChatSessionSchema.index({ vcardId: 1, sessionId: 1 }, { unique: true });
+// Admin dashboard: chats per day.
+ChatSessionSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('ChatSession', ChatSessionSchema);

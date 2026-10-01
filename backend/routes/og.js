@@ -6,6 +6,7 @@ const router = express.Router();
 const vCard = require('../models/vCard');
 const VcardSettings = require('../models/VcardSettings');
 const { cardImage } = require('../utils/cardImage');
+const { accountStatus } = require('../utils/accountStatus');
 
 const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
 const DEFAULT_IMAGE = `${SITE}/og-image.jpg`;
@@ -44,8 +45,8 @@ router.get('/_sitemap', async (req, res) => {
 router.get('/:username', async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
-    const card = await vCard.findOne({ username }).select('username personalInfo').lean();
-    if (!card) return res.status(404).json({ msg: 'Card not found' });
+    const card = await vCard.findOne({ username }).select('username personalInfo userId').lean();
+    if (!card || (await accountStatus(card.userId)) === 'removed') return res.status(404).json({ msg: 'Card not found' });
     // Owner's "Search Engine Indexing" switch (Advanced Settings).
     const settings = await VcardSettings.findOne({ vcardId: card._id }).select('seoIndexing').lean();
     const indexable = settings?.seoIndexing !== false;

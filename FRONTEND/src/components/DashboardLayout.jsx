@@ -1,15 +1,18 @@
+import { ADMIN_URL } from '../utils/adminUrl';
 import { lazy, Suspense, useCallback, useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles, Clapperboard, Inbox, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Eye, Menu, Bell, User, ChevronDown, Settings, LogOut, Palette, Phone, ShoppingBag, Briefcase, Image as ImageIcon, Star, QrCode, Layout, ListOrdered, Settings2, FolderOpen, ShieldCheck, X, Sparkles, Clapperboard, Inbox, BarChart3, Wrench } from 'lucide-react';
 import Sidebar from './Sidebar';
 import JarvisWidget from './JarvisWidget';
 import ThemeToggle from './ui/ThemeToggle';
 import MeshBackground from './ui/MeshBackground';
 import IconButton from './ui/IconButton';
 import axios from 'axios';
-import { hasChatFill, PRICING_ENABLED } from '../utils/plan';
+import { hasDashboardAi, PRICING_ENABLED } from '../utils/plan';
 import { warmThemeStudio } from '../utils/themeStudioCache';
+import { getImpersonating, setImpersonating, restoreOwnSession } from '../utils/impersonation';
+import { clearThemeCache } from '../utils/themeStudioCache';
 
 const CardPreviewPanel = lazy(() => import('./CardPreviewPanel'));
 
@@ -19,7 +22,8 @@ const breadcrumbMap = {
   '/dashboard/vcard/theme': 'Theme',
   '/dashboard/vcard/profile': 'Profile',
   '/dashboard/vcard/contact': 'Contact Details',
-  '/dashboard/vcard/products': 'Products & Services',
+  '/dashboard/vcard/products': 'Products',
+  '/dashboard/vcard/services': 'Services',
   '/dashboard/vcard/portfolio': 'Portfolio',
   '/dashboard/vcard/gallery': 'Gallery',
   '/dashboard/vcard/highlights': 'Highlights & Reels',
@@ -43,7 +47,8 @@ const primaryVcardTabs = [
   { name: 'Profile',         icon: User,        path: '/dashboard/vcard/profile' },
   { name: 'Theme',           icon: Palette,     path: '/dashboard/vcard/theme' },
   { name: 'Contact Details', icon: Phone,       path: '/dashboard/vcard/contact' },
-  { name: 'Products & Services', icon: ShoppingBag, path: '/dashboard/vcard/products' },
+  { name: 'Services',        icon: Wrench,      path: '/dashboard/vcard/services' },
+  { name: 'Products',        icon: ShoppingBag, path: '/dashboard/vcard/products' },
   { name: 'Portfolio',       icon: Briefcase,   path: '/dashboard/vcard/portfolio' },
   { name: 'Gallery',         icon: ImageIcon,   path: '/dashboard/vcard/gallery' },
   { name: 'Highlights & Reels', icon: Clapperboard, path: '/dashboard/vcard/highlights' },
@@ -129,7 +134,23 @@ const DashboardLayout = () => {
   }, []);
 
   const handleLogout = () => {
+    if (impersonating) return exitImpersonation();
     localStorage.removeItem('token');
+    setImpersonating(null);
+    clearThemeCache();
+    navigate('/login');
+  };
+  // Opened from the admin panel with "Sign in as user".
+  const [impersonating] = useState(getImpersonating);
+  const exitImpersonation = () => {
+    setImpersonating(null);
+    clearThemeCache();
+    // Back to the admin's own account, if they were signed in to the site before.
+    if (restoreOwnSession()) {
+      window.location.assign('/dashboard');
+      return;
+    }
+    window.close();
     navigate('/login');
   };
 
@@ -222,7 +243,7 @@ const DashboardLayout = () => {
             <ThemeToggle />
             {user.isAdmin && (
               <a
-                href="/admin"
+                href={ADMIN_URL}
                 className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white text-xs font-bold rounded-lg hover:opacity-90 fast-transition"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -284,7 +305,7 @@ const DashboardLayout = () => {
                       <>
                         <div style={{ borderTop: '1px solid var(--surface-border)' }} className="my-1" />
                         <a
-                          href="/admin"
+                          href={ADMIN_URL}
                           className="flex items-center space-x-2 px-4 py-2.5 text-sm text-purple-500 hover:bg-purple-500/10 fast-transition"
                         >
                           <ShieldCheck className="w-4 h-4" />
@@ -437,6 +458,17 @@ const DashboardLayout = () => {
         )}
 
         {/* Main Content scrollable area */}
+        {impersonating && (
+          <div role="status" className="relative z-20 flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm font-medium text-white" style={{ background: 'linear-gradient(90deg,#be123c,#db2777)' }}>
+            <span className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Admin view: signed in as {impersonating.name} ({impersonating.email}). Changes are saved to their account.
+            </span>
+            <button type="button" onClick={exitImpersonation} className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold hover:bg-white/30">
+              Exit admin view
+            </button>
+          </div>
+        )}
         <main className="flex-1 p-4 md:p-6 z-10 animate-lighting-right-to-left">
           <AnimatePresence mode="wait">
             <motion.div
@@ -452,7 +484,7 @@ const DashboardLayout = () => {
         </main>
       </div>
 
-      {hasChatFill(user.plan) && <JarvisWidget plan={user.plan} />}
+      {hasDashboardAi(user.plan) && <JarvisWidget plan={user.plan} />}
 
       {/* Floating "Live preview" tab on the card-editing pages, so every step can be checked. */}
       {cardSlug && location.pathname.startsWith('/dashboard/vcard/') && !previewOpen && (

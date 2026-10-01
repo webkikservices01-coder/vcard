@@ -21,6 +21,12 @@
       var api='%VITE_API_URL%',j=function(u){return fetch(u).then(function(r){return r.ok?r.json():Promise.reject(r.status);});};
       var pre={slug:m[1],data:j(api+'/api/vcard/public/'+m[1]),ai:j(api+'/api/ai/public/'+m[1])};
       pre.data.catch(function(){});pre.ai.catch(function(){});window.__cardPrefetch=pre;
+      // The card's cover and photo start downloading as soon as the data arrives (same URL
+      // rewrite as src/utils/media.js optimizeImage), so they're ready when the card renders.
+      pre.data.then(function(d){var pi=(d&&d.card&&d.card.personalInfo)||{};[pi.bannerImage,pi.profilePic].forEach(function(u,i){
+        if(!u||u.indexOf('https://')!==0)return;
+        u=u.replace(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/,i?'$1f_auto,q_auto,c_limit,w_1200/$2':'$1e_trim:10/f_auto,q_auto,c_limit,w_1200/$2');
+        var l=document.createElement('link');l.rel='preload';l.as='image';l.href=u;l.fetchPriority='high';document.head.appendChild(l);});}).catch(function(){});
     }catch(e){}})();</script>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />

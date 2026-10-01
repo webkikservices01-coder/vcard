@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Star, Globe } from 'lucide-react';
+import ImportFromWeb from './ImportFromWeb';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +44,13 @@ const Testimonials = () => {
   const [form, setForm] = useState(emptyForm);
   const [photoPreview, setPhotoPreview] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const importReviews = async (reviews) => {
+    const res = await axios.post(`${API}/import`, { items: reviews.map(({ name, review, rating }) => ({ name, review, rating })) }, { headers: headers() });
+    fetch();
+    const { added, skipped } = res.data;
+    return `${added} review${added === 1 ? '' : 's'} added${skipped ? ` (${skipped} already there)` : ''}`;
+  };
 
   const fetch = async () => {
     try { 
@@ -160,6 +168,14 @@ const Testimonials = () => {
                   placeholder="Search..."
                 />
               </div>
+              <Button
+            variant="ghost"
+            onClick={() => setShowImport(true)}
+            style={{ border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+            className="hover:border-brand-500 hover:text-brand-500 shrink-0"
+          >
+            <Globe className="w-4 h-4" /><span>From website</span>
+          </Button>
               <GradientButton onClick={openCreate} className="!w-auto !py-2.5 !px-4 shrink-0">
                 <Plus className="w-4 h-4" /><span>Add</span>
               </GradientButton>
@@ -279,6 +295,7 @@ const Testimonials = () => {
  document.body)}
       </div>
 
+      <ImportFromWeb kind="reviews" open={showImport} onClose={() => setShowImport(false)} onSave={importReviews} />
       <ActionPopup
         isOpen={showPopup}
         onClose={() => setShowPopup(false)}

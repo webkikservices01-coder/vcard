@@ -9,6 +9,7 @@ const { sendTemplate, isWhatsAppConfigured } = require('../utils/whatsapp');
 const { sendMail, emailHtml } = require('../utils/mailer');
 const { buildCardAssets } = require('../utils/cardAssets');
 const { logEvent } = require('../utils/logger');
+const background = require('../utils/background');
 
 const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
 const PRICE_INR = () => Number(process.env.CARD_PRICE_INR) || 999;
@@ -30,6 +31,7 @@ const publicOrder = (o) =>
     paymentLinkUrl: o.status === 'PENDING_PAYMENT' ? o.paymentLinkUrl : '',
     expiresAt: o.expiresAt,
     paidAt: o.paidAt,
+    complimentary: !!o.complimentary,
     phone: o.phone,
     email: o.email,
     createdAt: o.createdAt,
@@ -110,12 +112,17 @@ async function expireIfDue(order) {
 // Latest order for the user's card, or a new one with a fresh link and notifications.
 // Returns { order, created }. An open (unexpired, unpaid) order is reused, never duplicated.
 async function getOrCreateOrder(user, { forceNew = false } = {}) {
-  if (!isRazorpayConfigured()) throw Object.assign(new Error('Payments are not set up yet. Please try again later.'), { status: 503 });
   const card = await vCard.findOne({ userId: user._id });
   if (!card) throw Object.assign(new Error('Create your card first, then get it delivered.'), { status: 400 });
 
   const latest = await expireIfDue(await CardOrder.findOne({ user: user._id, card: card._id }).sort({ createdAt: -1 }));
   if (latest && latest.status === 'PAID') return { order: latest, created: false };
+
+  // A free card credit from the admin panel: the order is paid at once and delivered, no link.
+  const comp = await createComplimentaryOrder(user, card, latest);
+  if (comp) return { order: comp, created: true };
+
+  if (!isRazorpayConfigured()) throw Object.assign(new Error('Payments are not set up yet. Please try again later.'), { status: 503 });
   if (latest && latest.status === 'PENDING_PAYMENT' && !forceNew) return { order: latest, created: false };
 
   const now = new Date();
@@ -154,6 +161,44 @@ async function getOrCreateOrder(user, { forceNew = false } = {}) {
   logEvent(null, 'card_order.created', `Payment link created (₹${rupees(order.amount)})`, { userId: user._id, email: user.email, meta: { orderId: String(order._id) } });
   await sendPaymentLink(order, user);
   return { order, created: true };
+}
+
+// Uses one of the user's free card credits (granted in the admin panel), if any: creates a PAID
+// order for ₹0, cancels an open payment link, and starts the delivery. Returns null without credits.
+async function createComplimentaryOrder(user, card, latest) {
+  const claimed = await User.findOneAndUpdate(
+    { _id: user._id, freeCardCredits: { $gt: 0 } },
+    { $inc: { freeCardCredits: -1 } },
+    { returnDocument: 'after' }
+  );
+  if (!claimed) return null;
+  const now = new Date();
+  let order;
+  try {
+    order = await CardOrder.create({
+      user: user._id,
+      card: card._id,
+      amount: 0,
+      status: 'PAID',
+      complimentary: true,
+      paidAt: now,
+      phone: user.phone || '',
+      email: user.email,
+      expiresAt: now,
+      delivery: { status: 'PENDING' },
+    });
+  } catch (err) {
+    await User.updateOne({ _id: user._id }, { $inc: { freeCardCredits: 1 } });
+    throw err;
+  }
+  if (latest && latest.status === 'PENDING_PAYMENT') {
+    if (latest.paymentLinkId) await cancelPaymentLink(latest.paymentLinkId).catch(() => {});
+    latest.status = 'CANCELLED';
+    await latest.save();
+  }
+  logEvent(null, 'card_order.complimentary', 'Free card order (admin credit used)', { userId: user._id, email: user.email, meta: { orderId: String(order._id), creditsLeft: claimed.freeCardCredits } });
+  background(deliverCard(order._id));
+  return order;
 }
 
 // Idempotent: only the first call for an order flips it to PAID and returns it; repeats return null.
@@ -293,4 +338,4 @@ async function runJobs() {
   return { expired: expired.modifiedCount || 0, reminders, deliveries };
 }
 
-module.exports = { publicOrder, getOrCreateOrder, sendPaymentLink, expireIfDue, markPaid, deliverCard, syncWithRazorpay, runJobs, PRICE_INR };
+module.exports = { publicOrder, createComplimentaryOrder, getOrCreateOrder, sendPaymentLink, expireIfDue, markPaid, deliverCard, syncWithRazorpay, runJobs, PRICE_INR };

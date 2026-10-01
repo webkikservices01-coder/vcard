@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Bot, X, MessageCircle, ArrowUpRight, Calendar, Layers, ListChecks, Sparkles, IndianRupee, Rocket, ChevronRight } from 'lucide-react';
+import { Bot, X, MessageCircle, ArrowUpRight, Calendar, Layers, ListChecks, Sparkles, IndianRupee, Rocket, ChevronRight, History, Mic, Square, Volume2, VolumeX, Copy, Check, ThumbsUp, ThumbsDown, RotateCcw, Pencil, ChevronDown } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import IconButton from '../ui/IconButton';
 import Button from '../ui/Button';
@@ -16,6 +16,10 @@ import {
   recommendFromAnswers, getKeyHighlights, PLAN_CHIP,
 } from './config';
 import { PRICING_ENABLED } from '../../utils/plan';
+import HistoryPanel from './HistoryPanel';
+import { loadChats, saveChats, getActiveId, setActiveId, newChatId, upsertChat } from './history';
+import { useSpeechInput, speak, stopSpeaking, canSpeak, VOICE_LANGS } from './speech';
+import { followUps, offlineAnswer } from './replies';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const PULSE_SEEN_KEY = 'webcard_platform_chat_pulsed';
@@ -46,13 +50,67 @@ const usePrefersReducedMotion = () => {
 
 const AUTH_PATHS = ['/login', '/register', '/forgot-password'];
 
+// A new answer appears word by word (like typing) instead of all at once.
+function RevealText({ text, onDone }) {
+  const words = useMemo(() => text.split(/(\s+)/), [text]);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (n >= words.length) { onDone?.(); return; }
+    const t = setTimeout(() => setN((x) => Math.min(words.length, x + 3)), 28);
+    return () => clearTimeout(t);
+  }, [n, words.length, onDone]);
+  return <CardyMessage text={words.slice(0, n).join('')} />;
+}
+
+// Copy / read aloud / helpful? / regenerate, under one of Cardy's answers.
+function AnswerActions({ msg, isLast, feedback, onFeedback, onRegenerate, speakingId, onSpeak, busy }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard blocked */ }
+  };
+  const btn = 'grid h-7 w-7 place-items-center rounded-lg transition-colors hover:bg-black/5 disabled:opacity-40';
+  const tone = { color: 'var(--surface-text-2)' };
+  return (
+    <div className="mt-1 flex items-center gap-0.5 pl-1" aria-label="Answer actions">
+      <button type="button" onClick={copy} className={btn} style={tone} title={copied ? 'Copied' : 'Copy answer'} aria-label="Copy answer">
+        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+      {canSpeak() && (
+        <button type="button" onClick={() => onSpeak(msg)} className={btn} style={tone} title={speakingId === msg.id ? 'Stop reading' : 'Read aloud'} aria-label={speakingId === msg.id ? 'Stop reading' : 'Read answer aloud'}>
+          {speakingId === msg.id ? <VolumeX className="h-3.5 w-3.5 text-crimson-500" /> : <Volume2 className="h-3.5 w-3.5" />}
+        </button>
+      )}
+      <button type="button" onClick={() => onFeedback(msg, 'up')} disabled={!!feedback} className={btn} style={tone} title="Helpful" aria-label="Helpful answer" aria-pressed={feedback === 'up'}>
+        <ThumbsUp className={`h-3.5 w-3.5 ${feedback === 'up' ? 'fill-current text-emerald-500' : ''}`} />
+      </button>
+      <button type="button" onClick={() => onFeedback(msg, 'down')} disabled={!!feedback} className={btn} style={tone} title="Not helpful" aria-label="Not helpful answer" aria-pressed={feedback === 'down'}>
+        <ThumbsDown className={`h-3.5 w-3.5 ${feedback === 'down' ? 'fill-current text-crimson-500' : ''}`} />
+      </button>
+      {isLast && (
+        <button type="button" onClick={onRegenerate} disabled={busy} className={btn} style={tone} title="Answer again" aria-label="Answer again">
+          <RotateCcw className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {feedback && <span className="ml-1 text-[10.5px]" style={tone}>Thanks for the feedback!</span>}
+    </div>
+  );
+}
+
 const PlatformChatWidget = () => {
   const location = useLocation();
   const allowed = ALLOWED_PATHS.includes(location.pathname);
   const reducedMotion = usePrefersReducedMotion();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  // The last chat comes back after a reload or a visit to another page.
+  const [messages, setMessages] = useState(() => {
+    const saved = loadChats().find((c) => c.id === getActiveId());
+    return saved?.messages?.length ? saved.messages : [WELCOME_MESSAGE];
+  });
   const [input, setInput] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [showGreeting, setShowGreeting] = useState(false);
@@ -65,6 +123,21 @@ const PlatformChatWidget = () => {
   const [leadContext, setLeadContext] = useState(null);
   const [leadError, setLeadError] = useState('');
 
+  // Saved chats (this browser only) and the one on screen.
+  const [chats, setChats] = useState(() => loadChats());
+  const [chatId, setChatId] = useState(() => {
+    const saved = getActiveId();
+    return saved && loadChats().some((c) => c.id === saved) ? saved : newChatId();
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  const [revealId, setRevealId] = useState(null); // answer currently "typing"
+  const [quick, setQuick] = useState([]); // follow-up buttons under the latest answer
+  const [feedback, setFeedback] = useState({}); // message id → 'up' | 'down'
+  const [speakingId, setSpeakingId] = useState(null);
+  const [voiceLang, setVoiceLang] = useState('en-IN');
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const scrollRef = useRef(null);
+
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
@@ -72,7 +145,21 @@ const PlatformChatWidget = () => {
   // Opened by itself on the homepage (see below) and not touched yet by the visitor.
   const autoOpen = useRef(false);
 
+  // Save the conversation as it grows (the history panel reads the saved list when opened).
+  useEffect(() => {
+    if (!messages.some((m) => m.role === 'user')) return;
+    saveChats(upsertChat(loadChats(), chatId, messages));
+    setActiveId(chatId);
+  }, [messages, chatId]);
+
+  useEffect(() => () => stopSpeaking(), []);
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }); }, [messages, isBusy, flow, leadState, reducedMotion]);
+
+  const onScrollMessages = () => {
+    const el = scrollRef.current;
+    if (el) setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 160);
+  };
 
   useEffect(() => {
     // No focus when it opened by itself: that would pop up the phone keyboard and scroll the page.
@@ -149,13 +236,18 @@ const PlatformChatWidget = () => {
     setMessages(prev => [...prev, { id: genId(), role, type: 'text', content, ...extra }]);
   }, []);
 
-  const sendMessage = useCallback(async (text) => {
+  // history: the conversation to continue from (regenerate / edit pass a trimmed one).
+  const sendMessage = useCallback(async (text, history) => {
     const userText = text.trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!userText || isBusy) return;
-    const updated = [...messages, { id: genId(), role: 'user', type: 'text', content: userText }];
+    const base = history || messages;
+    const updated = [...base, { id: genId(), role: 'user', type: 'text', content: userText }];
     setMessages(updated);
     setInput('');
+    setQuick([]);
     setIsBusy(true);
+    stopSpeaking();
+    setSpeakingId(null);
     try {
       const res = await axios.post(`${API_URL}/api/ai/platform-chat`, {
         messages: updated.filter(m => m.type === 'text').slice(-12).map(({ role, content }) => ({
@@ -163,18 +255,64 @@ const PlatformChatWidget = () => {
           content: role === 'user' ? content.slice(0, MAX_MESSAGE_LENGTH) : content,
         })),
       });
-      appendMessage('assistant', res.data.reply);
+      const id = genId();
+      setMessages(prev => [...prev, { id, role: 'assistant', type: 'text', content: res.data.reply }]);
+      if (!reducedMotion) setRevealId(id);
+      setQuick(followUps(res.data.reply, updated.filter(m => m.role === 'user').map(m => m.content)));
       if (res.data.showLeadForm && leadState !== 'done') {
         setLeadContext(null);
         setLeadError('');
         setLeadState('form');
       }
     } catch (err) {
-      appendMessage('assistant', err.response?.data?.msg || "Sorry, I'm having trouble responding right now. You can reach our team on WhatsApp or email instead — see the buttons above.");
+      // Too many messages: say so. AI unreachable: answer from the published FAQ instead.
+      const limited = err.response?.status === 429;
+      appendMessage('assistant', limited ? (err.response?.data?.msg || 'Too many messages. Please wait a few minutes and try again.') : offlineAnswer(userText));
+      setQuick(['Can I get a demo or talk to your team?']);
     } finally {
       setIsBusy(false);
     }
-  }, [messages, isBusy, appendMessage, leadState]);
+  }, [messages, isBusy, appendMessage, leadState, reducedMotion]);
+
+  // Ask the last question again (drops the last answer).
+  const regenerate = useCallback(() => {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user' && m.type === 'text');
+    if (!lastUser || isBusy) return;
+    const idx = messages.findIndex(m => m.id === lastUser.id);
+    sendMessage(lastUser.content, messages.slice(0, idx));
+  }, [messages, isBusy, sendMessage]);
+
+  // Edit your last question: it goes back into the box and the chat continues from before it.
+  const editLast = useCallback((msg) => {
+    if (isBusy) return;
+    const idx = messages.findIndex(m => m.id === msg.id);
+    if (idx < 0) return;
+    setMessages(messages.slice(0, idx));
+    setInput(msg.content);
+    setQuick([]);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [messages, isBusy]);
+
+  // 👍 / 👎 on an answer: shown to the team in the admin panel's App logs.
+  const sendFeedback = useCallback((msg, rating) => {
+    setFeedback(f => ({ ...f, [msg.id]: rating }));
+    const i = messages.findIndex(m => m.id === msg.id);
+    const question = [...messages.slice(0, i)].reverse().find(m => m.role === 'user')?.content || '';
+    axios.post(`${API_URL}/api/ai/platform-feedback`, { rating, question: question.slice(0, 500), answer: msg.content.slice(0, 1500) }).catch(() => {});
+  }, [messages]);
+
+  const toggleSpeak = useCallback((msg) => {
+    if (speakingId === msg.id) { stopSpeaking(); setSpeakingId(null); return; }
+    setSpeakingId(msg.id);
+    speak(msg.content, () => setSpeakingId(id => (id === msg.id ? null : id)));
+  }, [speakingId]);
+
+  // Voice typing into the message box; sends by itself when the visitor stops talking.
+  const onVoiceText = useCallback((text, final) => {
+    setInput(text);
+    if (final && text.trim()) setTimeout(() => sendMessage(text), 250);
+  }, [sendMessage]);
+  const voice = useSpeechInput(onVoiceText);
 
   const startFlow = useCallback(() => {
     appendMessage('user', FLOW_TRIGGER_CHIP);
@@ -230,12 +368,45 @@ const PlatformChatWidget = () => {
   };
 
   const startNewChat = () => {
+    setChatId(newChatId());
     setMessages([WELCOME_MESSAGE]);
     setFlow(null);
     setLeadState(null);
     setLeadContext(null);
     setLeadError('');
+    setQuick([]);
+    setShowHistory(false);
+    stopSpeaking();
+    setSpeakingId(null);
   };
+
+  const openChat = (id) => {
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+    setChatId(id);
+    setActiveId(id);
+    setMessages(chat.messages.length ? chat.messages : [WELCOME_MESSAGE]);
+    setFlow(null);
+    setLeadState(null);
+    setQuick([]);
+    setShowHistory(false);
+  };
+
+  const deleteChat = (id) => {
+    const next = chats.filter(c => c.id !== id);
+    setChats(next);
+    saveChats(next);
+    if (id === chatId) startNewChat();
+  };
+
+  const pinChat = (id) => {
+    const next = chats.map(c => (c.id === id ? { ...c, pinned: !c.pinned } : c));
+    setChats(next);
+    saveChats(next);
+  };
+
+  const lastUserId = useMemo(() => [...messages].reverse().find(m => m.role === 'user')?.id, [messages]);
+  const lastAnswerId = useMemo(() => [...messages].reverse().find(m => m.role === 'assistant' && m.type === 'text')?.id, [messages]);
 
   const showFaqChips = useMemo(
     () => !isBusy && !flow && !leadState && messages.length === 1,
@@ -267,7 +438,21 @@ const PlatformChatWidget = () => {
               boxShadow: 'var(--shadow-premium-lg)',
             }}
           >
-            <div className="flex h-full flex-col">
+            <div className="relative flex h-full flex-col">
+              <AnimatePresence>
+                {showHistory && (
+                  <HistoryPanel
+                    chats={chats}
+                    activeId={chatId}
+                    onOpen={openChat}
+                    onNew={startNewChat}
+                    onDelete={deleteChat}
+                    onPin={pinChat}
+                    onClose={() => setShowHistory(false)}
+                    reducedMotion={reducedMotion}
+                  />
+                )}
+              </AnimatePresence>
               {/* Header */}
               <div
                 className="flex shrink-0 items-center justify-between px-4 py-3.5"
@@ -284,6 +469,9 @@ const PlatformChatWidget = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <IconButton variant="bare" size="sm" onClick={() => { setChats(loadChats()); setShowHistory(true); }} title="Your previous chats" className="text-white/80 hover:bg-white/15 hover:text-white">
+                    <History className="h-4 w-4" />
+                  </IconButton>
                   <IconButton variant="bare" size="sm" onClick={startNewChat} title="Start new chat" className="text-white/80 hover:bg-white/15 hover:text-white">
                     <MessageCircle className="h-4 w-4" />
                   </IconButton>
@@ -310,7 +498,8 @@ const PlatformChatWidget = () => {
               </div>
 
               {/* Messages */}
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+              <div className="relative flex min-h-0 flex-1 flex-col">
+              <div ref={scrollRef} onScroll={onScrollMessages} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" style={{ overscrollBehavior: 'contain' }}>
                 {messages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.type === 'recommendation' ? (
@@ -338,14 +527,34 @@ const PlatformChatWidget = () => {
                           </div>
                         </GlassCard>
                       </div>
+                    ) : msg.role === 'user' ? (
+                      <div className="group flex max-w-[85%] items-end gap-1">
+                        {msg.id === lastUserId && !isBusy && !flow && (
+                          <button type="button" onClick={() => editLast(msg)} className="mb-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg opacity-60 transition-opacity hover:bg-black/5 hover:opacity-100" style={{ color: 'var(--surface-text-2)' }} title="Edit your question" aria-label="Edit your question">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <div className="rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm font-medium" style={{ backgroundImage: 'var(--background-image-gradient-crimson)', color: '#fff' }}>
+                          <span className="whitespace-pre-wrap">{msg.content}</span>
+                        </div>
+                      </div>
                     ) : (
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm ${msg.role === 'user' ? 'rounded-br-sm font-medium' : 'rounded-bl-sm'}`}
-                        style={msg.role === 'user'
-                          ? { backgroundImage: 'var(--background-image-gradient-crimson)', color: '#fff' }
-                          : { background: 'var(--surface-2)', color: 'var(--surface-text)' }}
-                      >
-                        {msg.role === 'user' ? <span className="whitespace-pre-wrap">{msg.content}</span> : <CardyMessage text={msg.content} />}
+                      <div className="max-w-[85%]">
+                        <div className="rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm" style={{ background: 'var(--surface-2)', color: 'var(--surface-text)' }}>
+                          {revealId === msg.id ? <RevealText text={msg.content} onDone={() => setRevealId(null)} /> : <CardyMessage text={msg.content} />}
+                        </div>
+                        {msg.id !== 'welcome' && revealId !== msg.id && (
+                          <AnswerActions
+                            msg={msg}
+                            isLast={msg.id === lastAnswerId}
+                            feedback={feedback[msg.id]}
+                            onFeedback={sendFeedback}
+                            onRegenerate={regenerate}
+                            speakingId={speakingId}
+                            onSpeak={toggleSpeak}
+                            busy={isBusy}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -413,7 +622,41 @@ const PlatformChatWidget = () => {
                   </div>
                 )}
 
+                {quick.length > 0 && !isBusy && !flow && !leadState && !revealId && !showFaqChips && (
+                  <div className="flex flex-wrap gap-1.5 pt-1" aria-label="Suggested questions">
+                    {quick.map(q => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => sendMessage(q)}
+                        className="rounded-full border px-3 py-1.5 text-left text-[11.5px] font-medium transition-colors hover:border-crimson-400"
+                        style={{ borderColor: 'color-mix(in srgb, var(--color-crimson-500) 28%, transparent)', background: 'color-mix(in srgb, var(--color-crimson-500) 6%, var(--surface-1))', color: 'var(--surface-text)' }}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div ref={endRef} />
+              </div>
+              <AnimatePresence>
+                {showScrollBtn && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => endRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })}
+                    className="absolute bottom-3 right-3 grid h-8 w-8 place-items-center rounded-full border shadow-md"
+                    style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-1)', color: 'var(--surface-text)' }}
+                    title="Go to the latest message"
+                    aria-label="Go to the latest message"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
               </div>
 
               {/* Footer controls: guided flow chips, lead form, or normal input */}
@@ -427,13 +670,38 @@ const PlatformChatWidget = () => {
                     onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
                     className="flex items-center gap-2 px-3 py-3"
                   >
+                    {voice.supported && (
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => (voice.listening ? voice.stop() : voice.start(voiceLang))}
+                          disabled={isBusy}
+                          className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${voice.listening ? 'animate-pulse text-white' : 'hover:bg-black/5'}`}
+                          style={voice.listening ? { backgroundImage: 'var(--background-image-gradient-crimson)' } : { color: 'var(--surface-text-2)' }}
+                          title={voice.listening ? 'Stop listening' : 'Ask by voice'}
+                          aria-label={voice.listening ? 'Stop listening' : 'Ask by voice'}
+                        >
+                          {voice.listening ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVoiceLang(l => (l === 'en-IN' ? 'hi-IN' : 'en-IN'))}
+                          className="rounded-md px-1 py-0.5 text-[10px] font-bold"
+                          style={{ color: 'var(--surface-text-2)' }}
+                          title="Voice language: English or Hindi"
+                          aria-label={`Voice language: ${voiceLang === 'en-IN' ? 'English' : 'Hindi'}. Tap to switch.`}
+                        >
+                          {VOICE_LANGS.find(l => l.code === voiceLang)?.label}
+                        </button>
+                      </div>
+                    )}
                     <input
                       ref={inputRef}
                       type="text"
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-                      placeholder="Type a message…"
+                      placeholder={voice.listening ? 'Listening…' : 'Type or speak your question…'}
                       maxLength={MAX_MESSAGE_LENGTH}
                       disabled={isBusy}
                       aria-label="Message"

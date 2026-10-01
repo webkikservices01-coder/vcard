@@ -1337,7 +1337,7 @@ export function LandingPage() {
       {/* ── 5. Features Section ─────────────────────────────── */}
       <section 
         id="features" 
-        className="relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden"
+        className="cv-auto relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden"
       >
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-3/4 max-w-3xl rounded-full bg-gradient-to-tr from-[#E70C65]/20 via-[#6366f1]/15 to-transparent blur-[120px] opacity-75" />
 
@@ -1393,7 +1393,7 @@ export function LandingPage() {
 
       {/* ── 6. Pricing Section ──────────────────────────────── */}
       {PRICING_ENABLED && (
-      <section id="pricing" className="relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
+      <section id="pricing" className="cv-auto relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/20 via-[#6366f1]/15 to-[#9F1C44]/20 blur-[140px] opacity-80" />
 
         <SectionHeading eyebrow="Pricing" title="Simple Plans That Grow With You." subtitle="Start Free, Upgrade When Your First Impressions Need Superpowers." />
@@ -1523,7 +1523,7 @@ export function LandingPage() {
       )}
 
       {/* ── 7. Stories Section ──────────────────────────────── */}
-      <section id="stories" className="relative py-24 overflow-hidden">
+      <section id="stories" className="cv-auto relative py-24 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[350px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/15 via-[#6366f1]/15 to-[#9F1C44]/15 blur-[120px] opacity-75" />
 
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
@@ -1587,7 +1587,7 @@ export function LandingPage() {
       <section 
         id="how-it-works" 
         ref={howItWorksSectionRef}
-        className="relative mx-auto max-w-7xl px-6 pb-24 lg:px-10 overflow-hidden"
+        className="cv-auto relative mx-auto max-w-7xl px-6 pb-24 lg:px-10 overflow-hidden"
       >
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[450px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/15 via-[#6366f1]/15 to-[#9F1C44]/15 blur-[130px] opacity-70" />
 
@@ -1603,7 +1603,7 @@ export function LandingPage() {
       </section>
 
       {/* ── 9. FAQ Section (same Q&A as the FAQPage schema: src/data/homeSchema.json) ── */}
-      <section id="faq" className="relative mx-auto max-w-3xl px-6 pb-24 lg:px-10">
+      <section id="faq" className="cv-auto relative mx-auto max-w-3xl px-6 pb-24 lg:px-10">
         <SectionHeading eyebrow="FAQ" title="Questions, Answered." subtitle="Everything People Ask Before Making Their First Aicardly." />
         <div className="mt-12 space-y-3">
           {HOME_SCHEMA.faqs.map((f) => (

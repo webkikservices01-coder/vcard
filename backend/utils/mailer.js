@@ -18,7 +18,7 @@ const isMailConfigured = () => !!getTransporter();
 // Best-effort — never throws, so the caller's work (a sign-up, a saved lead) always completes.
 // Returns true when the email was handed to the SMTP server. Every attempt is logged
 // (mail.sent / mail.failed / mail.skipped) for the admin Logs page.
-const sendMail = async ({ to, subject, text, html, attachments }) => {
+const sendMail = async ({ to, subject, text, html, attachments, replyTo }) => {
   // Required here, not at the top: logger → AppLog model, loaded after mongoose is set up.
   const { logEvent } = require('./logger');
   const t = getTransporter();
@@ -27,8 +27,8 @@ const sendMail = async ({ to, subject, text, html, attachments }) => {
     return false;
   }
   try {
-    const from = process.env.SMTP_FROM || `Aicardly <${process.env.SMTP_USER}>`;
-    const info = await t.sendMail({ from, to, subject, text, html, attachments });
+    const from = process.env.SMTP_FROM || `AiCardly <${process.env.SMTP_USER}>`;
+    const info = await t.sendMail({ from, to, subject, text, html, attachments, ...(replyTo ? { replyTo } : {}) });
     logEvent(null, 'mail.sent', `Email sent: "${subject}"`, { email: to, meta: { messageId: info.messageId } });
     return true;
   } catch (err) {
@@ -38,18 +38,45 @@ const sendMail = async ({ to, subject, text, html, attachments }) => {
 };
 
 // Simple branded HTML email: heading, paragraphs, optional button.
+// Brand details shown on every email. Social links can be changed with env vars
+// (SOCIAL_INSTAGRAM, SOCIAL_FACEBOOK, SOCIAL_LINKEDIN, SOCIAL_YOUTUBE); empty = not shown.
+const BRAND = {
+  name: 'AiCardly',
+  site: (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, ''),
+  contact: process.env.CONTACT_EMAIL || 'hello@aicardly.com',
+};
+const SOCIALS = [
+  ['Instagram', process.env.SOCIAL_INSTAGRAM ?? 'https://www.instagram.com/webkik_services/'],
+  ['YouTube', process.env.SOCIAL_YOUTUBE ?? ''],
+  ['Facebook', process.env.SOCIAL_FACEBOOK ?? 'https://www.facebook.com/webkikservices/'],
+  ['LinkedIn', process.env.SOCIAL_LINKEDIN ?? 'https://www.linkedin.com/company/webkik-services'],
+].filter(([, url]) => /^https:\/\//.test(url));
+
+// The logo is drawn with HTML (no image), so it shows even where email images are blocked.
+const logoHtml = `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="width:38px;height:38px;border-radius:11px;background:#ffffff;color:#E70C65;font-size:22px;font-weight:800;text-align:center;line-height:38px;font-family:Arial,Helvetica,sans-serif">A</td>
+<td style="padding-left:10px;color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.2px;font-family:Arial,Helvetica,sans-serif">Ai<span style="font-weight:700">Cardly</span></td>
+</tr></table>`;
+
+const footerHtml = () => `<tr><td style="padding:20px 24px 22px;background:#faf8f9;border-top:1px solid #f0e6eb;text-align:center;font-family:Arial,Helvetica,sans-serif">
+${SOCIALS.length ? `<p style="margin:0 0 12px">${SOCIALS.map(([label, url]) => `<a href="${url}" style="display:inline-block;margin:0 4px 6px;padding:6px 12px;border-radius:999px;background:#ffffff;border:1px solid #f3c6da;color:#E70C65;font-size:12px;font-weight:bold;text-decoration:none">${label}</a>`).join('')}</p>` : ''}
+<p style="margin:0 0 4px;font-size:12px;color:#6b7280">Questions? Write to <a href="mailto:${BRAND.contact}" style="color:#E70C65;text-decoration:none;font-weight:bold">${BRAND.contact}</a></p>
+<p style="margin:0;font-size:12px;color:#9ca3af">${BRAND.name} by Webkik Services · <a href="${BRAND.site}" style="color:#9ca3af">${BRAND.site.replace(/^https?:\/\//, '')}</a></p>
+</td></tr>`;
+
 const emailHtml = ({ heading, paragraphs = [], button, footer }) => `<!doctype html>
 <html><body style="margin:0;background:#f6f4f5;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden">
-<tr><td style="background:#E70C65;padding:18px 24px;color:#ffffff;font-size:20px;font-weight:bold">Aicardly</td></tr>
-<tr><td style="padding:24px">
-<h1 style="margin:0 0 12px;font-size:20px">${heading}</h1>
-${paragraphs.map((p) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#374151">${p}</p>`).join('')}
-${button ? `<p style="margin:20px 0"><a href="${button.url}" style="display:inline-block;background:#E70C65;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:10px">${button.label}</a></p>` : ''}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)">
+<tr><td style="background:#E70C65;background-image:linear-gradient(135deg,#E70C65,#9B1FE8);padding:18px 24px">${logoHtml}</td></tr>
+<tr><td style="padding:26px 24px 24px">
+<h1 style="margin:0 0 12px;font-size:21px;color:#111827">${heading}</h1>
+${paragraphs.map((p) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#374151">${p}</p>`).join('')}
+${button ? `<p style="margin:22px 0"><a href="${button.url}" style="display:inline-block;background:#E70C65;color:#ffffff;text-decoration:none;font-weight:bold;padding:13px 24px;border-radius:10px">${button.label}</a></p>
+<p style="margin:0 0 12px;font-size:12px;line-height:1.5;color:#6b7280">Button not working? Copy this link into your browser:<br><a href="${button.url}" style="color:#E70C65;word-break:break-all">${button.url}</a></p>` : ''}
 ${footer ? `<p style="margin:16px 0 0;font-size:12px;color:#6b7280">${footer}</p>` : ''}
 </td></tr>
-<tr><td style="padding:14px 24px;background:#faf8f9;font-size:12px;color:#6b7280">Aicardly by Webkik Services · aicardly.com</td></tr>
+${footerHtml()}
 </table></td></tr></table></body></html>`;
 
 module.exports = { sendMail, emailHtml, isMailConfigured };

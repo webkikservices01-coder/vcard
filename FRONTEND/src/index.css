@@ -419,3 +419,11 @@
   }
   .text-balance { text-wrap: balance; }
 }
+
+/* Long pages: sections far below the first screen are laid out and painted only when they are
+   scrolled near, so the first screen shows sooner. Only on sections that already clip their
+   overflow (or hold plain text), so nothing looks different. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}

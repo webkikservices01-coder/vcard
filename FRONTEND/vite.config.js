@@ -31,30 +31,39 @@ function homeSchema() {
   }
 }
 
-// The homepage is a lazy chunk, so normally the browser only asks for it after the main bundle
-// has run. On "/" this starts downloading it (and the chunks it imports) together with the main
-// bundle, which brings the first paint of the hero forward on phones.
-function preloadHomeChunk() {
+// Pages are lazy chunks, so normally the browser only asks for one after the main bundle has run.
+// This starts downloading the page's chunks together with the main bundle: the homepage on "/",
+// and the card renderer on card links (index.html's inline script marks those with
+// window.__cardPrefetch). That brings the first paint forward on phones.
+function preloadPageChunks() {
   return {
-    name: 'aicardly-preload-home',
+    name: 'aicardly-preload-pages',
     apply: 'build',
     transformIndexHtml: {
       order: 'post',
       handler(html, ctx) {
         if (!ctx.bundle) return html
         const chunks = Object.values(ctx.bundle).filter((c) => c.type === 'chunk')
-        const home = chunks.find((c) => c.facadeModuleId && /src[\\/]pages[\\/]LandingPage\.jsx$/.test(c.facadeModuleId))
-        if (!home) return html
         const entry = chunks.find((c) => c.isEntry)
         const skip = new Set([entry?.fileName, ...(entry?.imports || [])])
-        const files = []
-        const walk = (name) => {
-          if (skip.has(name) || files.includes(name)) return
-          files.push(name)
-          ;(ctx.bundle[name]?.imports || []).forEach(walk)
+        // A page chunk and everything it imports (minus what the main bundle already loads).
+        const filesFor = (re) => {
+          const page = chunks.find((c) => c.facadeModuleId && re.test(c.facadeModuleId))
+          if (!page) return []
+          const files = []
+          const walk = (name) => {
+            if (skip.has(name) || files.includes(name)) return
+            files.push(name)
+            ;(ctx.bundle[name]?.imports || []).forEach(walk)
+          }
+          walk(page.fileName)
+          return files.map((f) => '/' + f)
         }
-        walk(home.fileName)
-        const script = `<script>if(location.pathname==='/'){${JSON.stringify(files.map((f) => '/' + f))}.forEach(function(h){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=h;document.head.appendChild(l);});}</script>`
+        const home = filesFor(/src[\/]pages[\/]LandingPage\.jsx$/)
+        const card = filesFor(/src[\/]pages[\/]PublicVcard\.jsx$/)
+        const script =
+          `<script>(function(){var f=location.pathname==='/'?${JSON.stringify(home)}:window.__cardPrefetch?${JSON.stringify(card)}:null;` +
+          `if(f)f.forEach(function(h){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=h;document.head.appendChild(l);});})();</script>`
         // The two self-hosted latin font files (src/index.css) start downloading with the HTML
         // instead of after the CSS has been parsed.
         const fonts = Object.values(ctx.bundle)
@@ -68,7 +77,7 @@ function preloadHomeChunk() {
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
-  plugins: [react(), tailwindcss(), homeSchema(), preloadHomeChunk()],
+  plugins: [react(), tailwindcss(), homeSchema(), preloadPageChunks()],
   // react-router's package points bundlers at its development build by default (~95 KB bigger,
   // with dev-only checks); production builds use its production files instead.
   resolve: {

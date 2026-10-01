@@ -206,8 +206,8 @@ const GetCard = () => {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-9 w-9 shrink-0 text-emerald-500" />
                 <div>
-                  <h2 className="text-xl font-extrabold" style={text}>Payment received – {price}</h2>
-                  <p className="text-sm" style={muted}>Paid on {new Date(order.paidAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                  <h2 className="text-xl font-extrabold" style={text}>{order.complimentary ? 'Your card is on us 🎁' : `Payment received – ${price}`}</h2>
+                  <p className="text-sm" style={muted}>{order.complimentary ? 'Free card from Aicardly, confirmed on' : 'Paid on'} {new Date(order.paidAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </div>
               </div>
               {d && (

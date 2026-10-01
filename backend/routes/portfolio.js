@@ -1,4 +1,5 @@
 const express = require('express');
+const { fillShotsLater } = require('../utils/siteShot');
 const router = express.Router();
 
 const auth = require('../middleware/auth');
@@ -100,6 +101,7 @@ router.post('/bulk', auth, async (req, res) => {
         const items = await Promise.all(links.map(linkToItem));
         const saved = await Portfolio.insertMany(items.map(it => ({ ...it, vcardId, order: order++ })));
         res.json({ msg: `${saved.length} projects added`, items: saved });
+        fillShotsLater(Portfolio, saved, 'url');
     } catch (err) {
         console.error('Portfolio Bulk Error:', err);
         res.status(500).json({ msg: 'Server Error adding links', error: err.message });
@@ -148,6 +150,7 @@ router.post('/', [auth, itemUpload], async (req, res) => {
         });
         await item.save();
         res.json(item);
+        fillShotsLater(Portfolio, [item], 'url');
     } catch (err) {
         console.error('Portfolio Save Error:', err);
         res.status(err.status || 500).json({ msg: err.status ? err.message : 'Server Error saving portfolio', error: err.message });
@@ -171,7 +174,9 @@ router.put('/:id', [auth, itemUpload], async (req, res) => {
             update.fileName = '';
         }
 
-        const item = await Portfolio.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+        const ownerCard = await getOrCreateCardId(req.user.userId);
+        const item = await Portfolio.findOneAndUpdate({ _id: req.params.id, vcardId: ownerCard }, { $set: update }, { new: true });
+        if (!item) return res.status(404).json({ msg: 'Not found' });
         res.json(item);
     } catch (err) {
         console.error('Portfolio Update Error:', err);
@@ -181,7 +186,9 @@ router.put('/:id', [auth, itemUpload], async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
     try {
-        await Portfolio.findOneAndDelete({ _id: req.params.id });
+        const ownerCard = await getOrCreateCardId(req.user.userId);
+        const gone = await Portfolio.findOneAndDelete({ _id: req.params.id, vcardId: ownerCard });
+        if (!gone) return res.status(404).json({ msg: 'Not found' });
         res.json({ msg: 'Deleted' });
     } catch (err) {
         console.error('Portfolio Delete Error:', err);

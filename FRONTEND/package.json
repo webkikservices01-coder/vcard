@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "zip": "python scripts/make-zip.py"
   },
   "dependencies": {
     "@cashfreepayments/cashfree-js": "^1.0.7",

@@ -1,5 +1,5 @@
 import W from './webcard-shared.js';
-import { getImageUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
+import { getImageUrl, coverImageUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
 
 // One live card model shared by every template. WebCard calls applyCard() before
 // rendering, and the templates read from CARD (they were designed with one card per page).
@@ -63,6 +63,7 @@ const EXTRA_PATHS = {
   github:
     '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>',
   globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>',
+  location: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
   telegram: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
@@ -83,12 +84,30 @@ const SOCIAL_NAME = {
   spotify: 'Spotify',
   discord: 'Discord',
   website: 'Website',
+  location: 'Location',
 };
 
-export const socialIcon = (kind) => {
+// The site's own icon (favicon) for links without a drawn icon: Behance, Dribbble, a portfolio
+// on its own domain, … — so each one is recognisable instead of a plain chain link.
+const faviconIcon = (href) => {
+  let host;
+  try {
+    host = new URL(href).hostname;
+  } catch {
+    return null;
+  }
+  if (!host) return null;
+  return {
+    __html: `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64" width="20" height="20" alt="" loading="lazy" style="display:block;width:20px;height:20px;border-radius:5px;object-fit:contain" />`,
+  };
+};
+
+export const socialIcon = (kind, href = '', fieldType = '') => {
   if (SOCIAL_ICON[kind]) return W.svg(W.P[SOCIAL_ICON[kind]]);
   if (EXTRA_PATHS[kind]) return W.svg(EXTRA_PATHS[kind]);
-  return W.svg(kind === 'website' ? EXTRA_PATHS.globe : EXTRA_PATHS.link);
+  // A link saved as "Website" keeps the globe; any other link shows its site's icon.
+  if (kind === 'website' && /website|^$/i.test(String(fieldType).trim())) return W.svg(EXTRA_PATHS.globe);
+  return (/^https?:\/\//i.test(href) && faviconIcon(href)) || W.svg(kind === 'website' ? EXTRA_PATHS.globe : EXTRA_PATHS.link);
 };
 
 const initialsOf = (name) =>
@@ -146,6 +165,18 @@ export function reelInfo(url, title = '', thumbnail = '') {
 export const CARD = {};
 
 // Turns the /api/vcard/public/:slug payload (or a dashboard card) into the template model.
+// Web addresses only ("site.com" gets https://); anything else (javascript:, data:, ...) is dropped.
+const webLink = (v) => {
+  const t = String(v || '').trim();
+  if (!t) return '';
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(t) ? t : `https://${t.replace(/^\/+/, '')}`);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : '';
+  } catch {
+    return '';
+  }
+};
+
 export function buildCard(payload = {}, { origin = window.location.origin, aiPersona = null, videoRoomUrl = '' } = {}) {
   const card = payload.card || {};
   const pi = card.personalInfo || {};
@@ -172,20 +203,35 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     Location: locLink ? linkHref(locLink, 'location') : '',
   };
 
-  const quickKinds = new Set(['phone', 'whatsapp', 'email', 'location']);
+  // The big buttons up top: Call, WhatsApp, Email and Website (Location there when there's no
+  // website). Everything else is a small icon in the row below — Location too, when it moved.
+  const siteLink = links.find((l) => detectPlatform(l) === 'website' && /website/i.test(l.fieldType || '')) || links.find((l) => detectPlatform(l) === 'website');
+  const website = siteLink ? linkHref(siteLink, 'website') : '';
+  href.Website = website;
+  const quickKinds = new Set(['phone', 'whatsapp', 'email', website ? 'website-main' : 'location']);
   const socials = links
-    .map((l) => ({ l, kind: detectPlatform(l) }))
+    .map((l) => ({ l, kind: l === siteLink ? 'website-main' : detectPlatform(l) }))
     .filter(({ kind }) => !quickKinds.has(kind))
-    .map(({ l, kind }) => ({ kind, name: l.title || SOCIAL_NAME[kind] || l.fieldType || 'Link', href: linkHref(l, kind) }));
-  const website = socials.find((s) => s.kind === 'website')?.href || '';
+    .map(({ l, kind }) => {
+      const k = kind === 'website-main' ? 'website' : kind;
+      return { kind: k, name: l.title || SOCIAL_NAME[k] || l.fieldType || 'Link', href: linkHref(l, k), fieldType: l.fieldType || '' };
+    })
+    // Location sits at the end of the small icons.
+    .sort((a, b) => (a.kind === 'location') - (b.kind === 'location'));
 
-  const services = (payload.products || []).map((p) => ({
-    title: p.title || '',
-    desc: p.description || '',
-    price: p.price || '',
-    image: getImageUrl(p.coverImage),
-    link: p.link || '',
-  }));
+  // Services (dashboard Services tab) first, then products. A service's link opens the owner's
+  // website when tapped; only http(s) links are used (older items were saved unchecked).
+  const services = [...(payload.products || [])]
+    .sort((a, b) => (a.kind === 'service' ? 0 : 1) - (b.kind === 'service' ? 0 : 1))
+    .map((p) => ({
+      title: p.title || '',
+      desc: p.description || '',
+      price: p.price || '',
+      // No picture? A screenshot of the service's page (as for projects).
+      image: getImageUrl(p.coverImage) || siteShot(webLink(p.link)),
+      link: webLink(p.link),
+      kind: p.kind === 'service' ? 'service' : 'product',
+    }));
   const projects = (payload.portfolio || []).map((p) => {
     const pdf = getImageUrl(p.file);
     return {
@@ -234,7 +280,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     email,
     website,
     avatar: getImageUrl(pi.profilePic),
-    cover: getImageUrl(pi.bannerImage),
+    cover: coverImageUrl(pi.bannerImage),
     logo: null,
     href,
     // Every link with its platform, for the saved contact.
@@ -287,6 +333,7 @@ const SECTION_HAS = {
   Projects: (c) => c.projects.length > 0,
   Work: (c) => c.projects.length > 0,
   Reels: (c) => c.reels.length > 0,
+  Videos: (c) => c.reels.length > 0,
   Portfolio: (c) => c.photos.length > 0,
   Gallery: (c) => c.photos.length > 0,
   Testimonials: (c) => c.testimonials.length > 0,
@@ -314,11 +361,23 @@ const helpers = {
     return real.map((r, i) => ({ ...styled[i % styled.length], ...r, roman: ROMAN[i] || String(i + 1) }));
   },
   // Quick actions: keep only those the owner has, with real links.
+  // The template's Location slot shows Website instead when the owner has a website; the icon
+  // keeps the template's own stroke and size, only the drawing changes.
   quickFrom(styled) {
-    return styled.map((q) => ({ ...q, href: CARD.href[q.key || q.label] || '' })).filter((q) => q.href);
+    return styled
+      .map((q) => {
+        const k = q.key || q.label;
+        if (k === 'Location' && CARD.href.Website) {
+          const svg = q.icon?.__html || '';
+          const icon = /^<svg[^>]*>/.test(svg) ? { __html: svg.replace(/^(<svg[^>]*>)[\s\S]*(<\/svg>)$/, `$1${EXTRA_PATHS.globe}$2`) } : socialIcon('website');
+          return { ...q, key: 'Website', label: /^[A-Z]+$/.test(q.label || '') ? 'WEBSITE' : /^[a-z]+$/.test(q.label || '') ? 'website' : 'Website', icon, href: CARD.href.Website };
+        }
+        return { ...q, href: CARD.href[k] || '' };
+      })
+      .filter((q) => q.href);
   },
   socialsFrom() {
-    return CARD.socials.map((s) => ({ ...s, icon: socialIcon(s.kind) }));
+    return CARD.socials.map((s) => ({ ...s, icon: socialIcon(s.kind, s.href, s.fieldType) }));
   },
   navFrom(items) {
     return items
@@ -446,7 +505,7 @@ export function contactDetails() {
   add('website', 'Website', c.website, () => [`URL;TYPE=WORK:${c.website}`]);
   add('cardUrl', 'Digital card link', c.cardUrl, labelled('URL', c.cardUrl, 'Digital Card'));
   (c.socials || []).forEach((so, i) => {
-    if (so.href && so.href !== c.website) add('social' + i, so.name || SOCIAL_NAME[so.kind] || 'Link', so.href, labelled('URL', so.href, so.name || SOCIAL_NAME[so.kind] || 'Link'));
+    if (so.href && so.href !== c.website && so.kind !== 'location') add('social' + i, so.name || SOCIAL_NAME[so.kind] || 'Link', so.href, labelled('URL', so.href, so.name || SOCIAL_NAME[so.kind] || 'Link'));
   });
   add('bio', 'Bio', c.bio, () => []);
   return rows;

@@ -14,7 +14,10 @@ const PORT = process.env.PORT || 5000;
 // CORS_ORIGINS = comma-separated list (e.g. https://yourdomain.com,https://www.yourdomain.com).
 // Unset = allow all origins (same as before).
 const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-app.use(cors(corsOrigins.length ? { origin: corsOrigins } : undefined));
+const siteCors = cors(corsOrigins.length ? { origin: corsOrigins } : undefined);
+// The admin panel (/admin, /api/admin) has its own, stricter CORS (routes/admin/index.js).
+const isAdminPath = (p) => p === '/admin' || p.startsWith('/admin/') || p.startsWith('/api/admin');
+app.use((req, res, next) => (isAdminPath(req.path) ? next() : siteCors(req, res, next)));
 // One log line per API request (method, path, status, ms, IP, user). See utils/logger.js.
 app.use(requestLogger);
 
@@ -37,6 +40,10 @@ try {
     console.error('Could not create uploads directory:', err.message);
 }
 app.use('/uploads', express.static(uploadDir));
+
+// Admin panel pages (static build, no database needed). Switched off unless ADMIN_ENABLED=true.
+const { createAdminApi, createAdminUi } = require('./routes/admin');
+app.use('/admin', createAdminUi());
 
 // On serverless (Vercel), mongoose.connect() is fire-and-forget across cold
 // starts, so a request can arrive before the connection is ready and throw.
@@ -61,7 +68,14 @@ app.use((req, res, next) => {
 
 // Warm-up ping: the site calls this on page load so a cold serverless function and its
 // DB connection are ready before the user submits the login form.
-app.get('/api/ping', (req, res) => res.set('Cache-Control', 'no-store').json({ ok: true }));
+// ?db=1 also times one database round trip (to see how far the database is from this server).
+app.get('/api/ping', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    if (req.query.db !== '1') return res.json({ ok: true });
+    const t = Date.now();
+    await mongoose.connection.db.admin().ping();
+    res.json({ ok: true, dbMs: Date.now() - t, region: process.env.VERCEL_REGION || 'local' });
+});
 
 // Routes
 app.use('/api/auth',           require('./routes/auth'));
@@ -76,7 +90,7 @@ app.use('/api/stats',           require('./routes/stats'));
 app.use('/api/settings',        require('./routes/settings'));
 app.use('/api/transactions',    require('./routes/transactions'));
 app.use('/api/ai',              require('./routes/ai'));
-app.use('/api/admin',           require('./routes/admin'));
+app.use('/api/admin',           createAdminApi());
 app.use('/api/og',              require('./routes/og'));
 app.use('/api/card-orders',     require('./routes/cardOrders'));
 app.use('/api/webhooks',        require('./routes/webhooks'));
