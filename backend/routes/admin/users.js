@@ -76,6 +76,42 @@ router.post('/', requirePermission('users.create'), validate({
   }
 });
 
+// Bulk actions from the users list: block / unblock / remove / restore / delete permanently.
+// Each user is handled (and audited) on its own; one failure doesn't stop the rest.
+// Permanent delete needs the typed confirmation "DELETE <count>".
+const BULK_PERM = { block: 'users.block', unblock: 'users.block', remove: 'users.delete', restore: 'users.delete', purge: 'users.purge' };
+router.post('/bulk', validate({
+  body: z.object({
+    ids: z.array(objectId).min(1, 'choose at least one user').max(100, 'at most 100 users at a time'),
+    action: z.enum(['block', 'unblock', 'remove', 'restore', 'purge']),
+    reason: z.string().trim().max(500).optional().default(''),
+    confirm: z.string().trim().max(40).optional().default(''),
+  }),
+}), async (req, res, next) => requirePermission(BULK_PERM[req.v.body.action])(req, res, next), async (req, res) => {
+  const { ids, action, reason: why, confirm } = req.v.body;
+  const unique = [...new Set(ids)];
+  if (action === 'purge' && confirm !== `DELETE ${unique.length}`) return res.status(400).json({ msg: `Type DELETE ${unique.length} to confirm.` });
+  if ((action === 'block' || action === 'remove' || action === 'purge') && why.length < 3) return res.status(400).json({ msg: 'Please give a reason.' });
+  let done = 0;
+  const failed = [];
+  for (const id of unique) {
+    try {
+      if (action === 'purge') {
+        const r = await svc.purgeUser(id);
+        await audit(req, 'user.purge', { targetType: 'user', targetId: id, summary: `Permanently deleted ${r.email} (bulk)`, meta: { removed: r.removed, reason: why, bulk: unique.length } });
+      } else {
+        const user = action === 'block' || action === 'unblock' ? await svc.setBlocked(id, action === 'block', why) : await svc.setRemoved(id, action === 'remove');
+        await audit(req, `user.${action}`, { targetType: 'user', targetId: user._id, summary: `${action[0].toUpperCase() + action.slice(1)} ${user.email} (bulk)`, meta: { reason: why, bulk: unique.length } });
+      }
+      done++;
+    } catch (err) {
+      failed.push({ id, msg: err.status ? err.message : 'failed' });
+    }
+  }
+  const verb = { block: 'blocked', unblock: 'unblocked', remove: 'removed', restore: 'restored', purge: 'permanently deleted' }[action];
+  res.json({ done, failed, msg: `${done} user${done === 1 ? '' : 's'} ${verb}${failed.length ? `, ${failed.length} failed` : ''}.` });
+});
+
 router.get('/:id', requirePermission('users.view'), validate({ params: idParams }), async (req, res) => {
   const detail = await svc.userDetail(req.v.params.id);
   if (!detail) return res.status(404).json({ msg: 'User not found.' });

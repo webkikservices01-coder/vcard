@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -756,6 +756,14 @@ export function AuroraAI(props) {
                 {'Services'}
               </h3>
               <ServiceSlides items={CARD.services} />
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '28px 16px 0' }}>
+              <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontSize: '20px', fontWeight: '600' }}>
+                {'Testimonials'}
+              </h3>
+              <TestimonialSlides items={CARD.testimonials} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -1935,6 +1943,12 @@ export function MinimalPro(props) {
             <div style={{ padding: '32px 16px 0' }}>
               <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '600' }}>{'Services'}</h3>
               <ServiceSlides items={CARD.services} />
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '32px 16px 0' }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '600' }}>{'Testimonials'}</h3>
+              <TestimonialSlides items={CARD.testimonials} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -3178,6 +3192,26 @@ export function NeoBrutal(props) {
                 {'Services'}
               </h3>
               <ServiceSlides items={CARD.services} />
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '32px 16px 0' }}>
+              <h3
+                style={{
+                  display: 'inline-block',
+                  margin: '0 0 14px',
+                  padding: '6px 12px',
+                  background: '#111',
+                  color: '#FFF4E0',
+                  fontFamily: "'Archivo Black',sans-serif",
+                  fontWeight: '400',
+                  fontSize: '18px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {'Testimonials'}
+              </h3>
+              <TestimonialSlides items={CARD.testimonials} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (

@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -551,6 +551,14 @@ export function WebkikSignature(props) {
                 {'Services'}
               </h3>
               <ServiceSlides items={CARD.services} pad={0} />
+            </div>
+          )}
+          {CARD.testimonials.length > 0 && (
+            <div style={{ padding: '28px 0 0' }}>
+              <h3 style={{ margin: '0 16px 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>
+                {'Testimonials'}
+              </h3>
+              <TestimonialSlides items={CARD.testimonials} pad={0} />
             </div>
           )}
           {CARD.projects.length > 0 && (

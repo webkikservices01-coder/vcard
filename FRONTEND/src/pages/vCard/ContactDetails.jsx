@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import {
   FaPhoneAlt, FaWhatsapp, FaGlobe, FaLinkedin, FaInstagram, FaFacebook, FaTwitter, FaYoutube,
-  FaMapMarkerAlt, FaSpotify, FaTiktok, FaTelegram, FaGithub, FaDiscord, FaPinterest, FaSnapchat
+  FaMapMarkerAlt, FaSpotify, FaTiktok, FaTelegram, FaGithub, FaDiscord, FaPinterest, FaSnapchat, FaGoogle
 } from 'react-icons/fa';
 import { MdEmail, MdOutlineLink } from 'react-icons/md';
 import { FiPlus, FiTrash2, FiEdit2, FiSave, FiMic } from 'react-icons/fi';
@@ -39,7 +39,7 @@ const ContactDetails = () => {
   const [editIndex, setEditIndex] = useState(null);
 
   const fieldOptions = [
-    'Mobile / Phone', 'WhatsApp', 'Email', 'Website', 'Location',
+    'Mobile / Phone', 'WhatsApp', 'Email', 'Website', 'Location', 'Google Review',
     'LinkedIn', 'Instagram', 'Snapchat', 'Facebook', 'Twitter', 'YouTube', 'Telegram', 'TikTok', 'Custom URL'
   ];
 
@@ -119,6 +119,7 @@ const ContactDetails = () => {
       case 'Twitter': return <FaTwitter className="w-4 h-4" style={iconStyle} />;
       case 'YouTube': return <FaYoutube className="w-4 h-4" style={iconStyle} />;
       case 'Location': return <FaMapMarkerAlt className="w-4 h-4" style={iconStyle} />;
+      case 'Google Review': return <FaGoogle className="w-4 h-4" style={iconStyle} />;
       case 'Snapchat': return <FaSnapchat className="w-4 h-4" style={iconStyle} />;
       case 'Telegram': return <FaTelegram className="w-4 h-4" style={iconStyle} />;
       case 'TikTok': return <FaTiktok className="w-4 h-4" style={iconStyle} />;
@@ -144,6 +145,7 @@ const ContactDetails = () => {
         if (!/^https?:\/\//i.test(cleanUrl) && !cleanUrl.includes('.')) return `https://www.snapchat.com/add/${cleanUrl.replace('@', '')}`;
         return /^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`;
       case 'Website':
+      case 'Google Review':
       case 'Telegram':
       case 'TikTok':
       case 'LinkedIn':

@@ -6,6 +6,7 @@ import { getImageUrl, coverImageUrl, getYoutubeId, isDirectVideo, siteShot } fro
 
 // Ordered so specific platforms win; each pattern is matched against the label first, then the URL.
 const PLATFORM_RULES = [
+  ['review', /google review|\breviews?\b|g\.page\/r\/|search\.google\.com\/local\/writereview|writereview/],
   ['location', /location|address|directions|\bmaps?\b|\bgps\b|google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/],
   ['snapchat', /snapchat|snap\.com/],
   ['instagram', /insta/],
@@ -37,7 +38,8 @@ export const detectPlatform = (link) => {
 const isUrl = (v) => /^https?:\/\//i.test(v);
 const digitsOf = (v) => (v || '').replace(/[^0-9]/g, '');
 
-export const linkHref = (link, platform) => {
+// place_: the business / person name, put in front of a plain address for Maps (see buildCard).
+export const linkHref = (link, platform, place_ = '') => {
   const clean = (link.url || '').trim();
   if (!clean) return '';
   if (platform === 'phone') return `tel:${clean.replace(/[^0-9+]/g, '')}`;
@@ -49,9 +51,9 @@ export const linkHref = (link, platform) => {
   }
   if (platform === 'email') return clean.startsWith('mailto:') ? clean : `mailto:${clean}`;
   if (platform === 'location' && !isUrl(clean)) {
-    return /^[\w.-]+\.[a-z]{2,}\//i.test(clean)
-      ? `https://${clean}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clean)}`;
+    if (/^[\w.-]+\.[a-z]{2,}\//i.test(clean)) return `https://${clean}`;
+    const place = place_ && !clean.toLowerCase().includes(place_.toLowerCase()) ? `${place_}, ${clean}` : clean;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   }
   if (platform === 'snapchat' && !isUrl(clean) && !clean.includes('.')) return `https://www.snapchat.com/add/${clean.replace('@', '')}`;
   return isUrl(clean) ? clean : `https://${clean}`;
@@ -64,6 +66,9 @@ const EXTRA_PATHS = {
     '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>',
   globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/>',
   location: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  email: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  whatsapp: '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
   telegram: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
@@ -85,6 +90,8 @@ const SOCIAL_NAME = {
   discord: 'Discord',
   website: 'Website',
   location: 'Location',
+  review: 'Google Review',
+  email: 'Email',
 };
 
 // The site's own icon (favicon) for links without a drawn icon: Behance, Dribbble, a portfolio
@@ -103,12 +110,16 @@ const faviconIcon = (href) => {
 };
 
 export const socialIcon = (kind, href = '', fieldType = '') => {
+  if (kind === 'review') return faviconIcon(/g\.page|google\./i.test(href) || !/^https?:/i.test(href) ? 'https://www.google.com/' : href) || W.svg(EXTRA_PATHS.link);
   if (SOCIAL_ICON[kind]) return W.svg(W.P[SOCIAL_ICON[kind]]);
   if (EXTRA_PATHS[kind]) return W.svg(EXTRA_PATHS[kind]);
   // A link saved as "Website" keeps the globe; any other link shows its site's icon.
   if (kind === 'website' && /website|^$/i.test(String(fieldType).trim())) return W.svg(EXTRA_PATHS.globe);
   return (/^https?:\/\//i.test(href) && faviconIcon(href)) || W.svg(kind === 'website' ? EXTRA_PATHS.globe : EXTRA_PATHS.link);
 };
+
+const QUICK_ORDER = ['Call', 'WhatsApp', 'Website', 'Location', 'Email'];
+const SMALL_FIRST = { email: 0, review: 1 };
 
 const initialsOf = (name) =>
   name
@@ -200,24 +211,28 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     Call: phoneLink ? linkHref(phoneLink, 'phone') : '',
     WhatsApp: waLink ? linkHref(waLink, 'whatsapp') : '',
     Email: mailLink ? linkHref(mailLink, 'email') : '',
-    Location: locLink ? linkHref(locLink, 'location') : '',
+    Location: locLink ? linkHref(locLink, 'location', company || fullName) : '',
   };
 
-  // The big buttons up top: Call, WhatsApp, Email and Website (Location there when there's no
-  // website). Everything else is a small icon in the row below — Location too, when it moved.
+  // The 4 big buttons up top, in this order of preference: Call, WhatsApp, Website, Location
+  // (Google Maps); Email takes a free slot only when one of those is missing. Everything else —
+  // Email, Google Review, social media, GitHub … — is a small icon in the row below.
   const siteLink = links.find((l) => detectPlatform(l) === 'website' && /website/i.test(l.fieldType || '')) || links.find((l) => detectPlatform(l) === 'website');
   const website = siteLink ? linkHref(siteLink, 'website') : '';
   href.Website = website;
-  const quickKinds = new Set(['phone', 'whatsapp', 'email', website ? 'website-main' : 'location']);
+  const quickKeys = QUICK_ORDER.filter((k) => href[k]).slice(0, 4);
+  const KEY_KIND = { Call: 'phone', WhatsApp: 'whatsapp', Website: 'website-main', Location: 'location', Email: 'email' };
+  const quickKinds = new Set(['phone', 'whatsapp', ...quickKeys.map((k) => KEY_KIND[k])]);
   const socials = links
     .map((l) => ({ l, kind: l === siteLink ? 'website-main' : detectPlatform(l) }))
-    .filter(({ kind }) => !quickKinds.has(kind))
+    // the first email / location link is the one a big button would use; extra ones stay small
+    .filter(({ l, kind }) => !quickKinds.has(kind) || (kind === 'email' && l !== mailLink) || (kind === 'location' && l !== locLink))
     .map(({ l, kind }) => {
       const k = kind === 'website-main' ? 'website' : kind;
-      return { kind: k, name: l.title || SOCIAL_NAME[k] || l.fieldType || 'Link', href: linkHref(l, k), fieldType: l.fieldType || '' };
+      return { kind: k, name: l.title || SOCIAL_NAME[k] || l.fieldType || 'Link', href: linkHref(l, k, company || fullName), fieldType: l.fieldType || '' };
     })
-    // Location sits at the end of the small icons.
-    .sort((a, b) => (a.kind === 'location') - (b.kind === 'location'));
+    // Email and Google Review first among the small icons.
+    .sort((a, b) => (SMALL_FIRST[a.kind] ?? 9) - (SMALL_FIRST[b.kind] ?? 9));
 
   // Services (dashboard Services tab) first, then products. A service's link opens the owner's
   // website when tapped; only http(s) links are used (older items were saved unchecked).
@@ -286,6 +301,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     // Every link with its platform, for the saved contact.
     contactLinks: links.map((l) => ({ kind: detectPlatform(l), url: l.url.trim(), title: l.title || l.fieldType || '' })),
     socials,
+    quickKeys,
     services,
     projects,
     reels,
@@ -364,17 +380,17 @@ const helpers = {
   // The template's Location slot shows Website instead when the owner has a website; the icon
   // keeps the template's own stroke and size, only the drawing changes.
   quickFrom(styled) {
-    return styled
-      .map((q) => {
-        const k = q.key || q.label;
-        if (k === 'Location' && CARD.href.Website) {
-          const svg = q.icon?.__html || '';
-          const icon = /^<svg[^>]*>/.test(svg) ? { __html: svg.replace(/^(<svg[^>]*>)[\s\S]*(<\/svg>)$/, `$1${EXTRA_PATHS.globe}$2`) } : socialIcon('website');
-          return { ...q, key: 'Website', label: /^[A-Z]+$/.test(q.label || '') ? 'WEBSITE' : /^[a-z]+$/.test(q.label || '') ? 'website' : 'Website', icon, href: CARD.href.Website };
-        }
-        return { ...q, href: CARD.href[k] || '' };
-      })
-      .filter((q) => q.href);
+    const byKey = Object.fromEntries(styled.map((q) => [q.key || q.label, q]));
+    const PATH = { Call: EXTRA_PATHS.phone, WhatsApp: EXTRA_PATHS.whatsapp, Website: EXTRA_PATHS.globe, Location: EXTRA_PATHS.location, Email: EXTRA_PATHS.email };
+    const caseLike = (sample, word) => (/^[A-Z]+$/.test(sample || '') ? word.toUpperCase() : /^[a-z]+$/.test(sample || '') ? word.toLowerCase() : word);
+    return (CARD.quickKeys || []).slice(0, styled.length).map((k, i) => {
+      const slot = styled[i];
+      // The template's own icon for this button when it has one, else its slot's icon redrawn.
+      const own = byKey[k]?.icon;
+      const svg = slot.icon?.__html || '';
+      const icon = own || (/^<svg[^>]*>/.test(svg) ? { __html: svg.replace(/^(<svg[^>]*>)[\s\S]*(<\/svg>)$/, `$1${PATH[k]}$2`) } : socialIcon(k.toLowerCase()));
+      return { ...slot, ...(byKey[k] || {}), key: k, label: caseLike(slot.label, k), icon, href: CARD.href[k] };
+    });
   },
   socialsFrom() {
     return CARD.socials.map((s) => ({ ...s, icon: socialIcon(s.kind, s.href, s.fieldType) }));
@@ -505,7 +521,7 @@ export function contactDetails() {
   add('website', 'Website', c.website, () => [`URL;TYPE=WORK:${c.website}`]);
   add('cardUrl', 'Digital card link', c.cardUrl, labelled('URL', c.cardUrl, 'Digital Card'));
   (c.socials || []).forEach((so, i) => {
-    if (so.href && so.href !== c.website && so.kind !== 'location') add('social' + i, so.name || SOCIAL_NAME[so.kind] || 'Link', so.href, labelled('URL', so.href, so.name || SOCIAL_NAME[so.kind] || 'Link'));
+    if (so.href && so.href !== c.website && so.kind !== 'location' && so.kind !== 'email') add('social' + i, so.name || SOCIAL_NAME[so.kind] || 'Link', so.href, labelled('URL', so.href, so.name || SOCIAL_NAME[so.kind] || 'Link'));
   });
   add('bio', 'Bio', c.bio, () => []);
   return rows;

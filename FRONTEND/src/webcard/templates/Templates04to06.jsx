@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -745,6 +745,18 @@ export function LuxeNoir(props) {
                 <span style={{ flex: '1', height: '1px', background: 'linear-gradient(90deg, rgba(201,164,92,.5), transparent)' }}></span>
               </div>
               <ServiceSlides items={CARD.services} pad={20} />
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '40px 20px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
+                <span style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: 'italic', fontSize: '22px', color: '#C9A45C' }}>
+                  {'—'}
+                </span>
+                <h3 style={{ margin: '0', fontFamily: "'Cormorant Garamond',serif", fontWeight: '600', fontSize: '26px' }}>{'Testimonials'}</h3>
+                <span style={{ flex: '1', height: '1px', background: 'linear-gradient(90deg, rgba(201,164,92,.5), transparent)' }}></span>
+              </div>
+              <TestimonialSlides items={CARD.testimonials} pad={20} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (
@@ -2113,80 +2125,9 @@ export function SplitHeroCorporate(props) {
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Manrope',sans-serif", fontSize: '19px', fontWeight: '800' }}>
                 {'What clients say'}
               </h3>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  overflowX: 'auto',
-                  scrollSnapType: 'x mandatory',
-                  scrollbarWidth: 'none',
-                  padding: '0 16px 4px',
-                  scrollPadding: '0 16px',
-                }}
-              >
-                {(V.testimonials || []).map((tm, $index) => (
-                  <React.Fragment key={$index}>
-                    <div
-                      style={{
-                        flex: '0 0 82%',
-                        scrollSnapAlign: 'start',
-                        padding: '16px',
-                        background: '#FFFFFF',
-                        border: '1px solid #E3E9F0',
-                        borderRadius: '14px',
-                        boxSizing: 'border-box',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                      }}
-                    >
-                      <div style={{ fontSize: '15px', color: '#0E7C66', letterSpacing: '2px' }}>{'★'.repeat(tm?.rating || 5)}</div>
-                      <p style={{ margin: '0', fontSize: '15px', lineHeight: '1.55', color: '#334155' }}>{tm?.q}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 'auto' }}>
-                        <span
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: '#E4F2EE',
-                            color: '#0E7C66',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '13px',
-                            fontWeight: '700',
-                          }}
-                        >
-                          {tm?.photo ? (
-                            <img src={tm.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                          ) : (
-                            tm?.i
-                          )}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: '700' }}>{tm?.n}</div>
-                          {tm?.c ? <div style={{ fontSize: '12.5px', color: '#5B6B7C' }}>{tm.c}</div> : null}
-                        </div>
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
+              <div style={{ padding: '0 16px' }}>
+                <TestimonialSlides items={CARD.testimonials} />
               </div>
-              {V.testimonials.length > 1 ? (
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '10px' }}>
-                  {V.testimonials.map((tm, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        width: i === 0 ? '18px' : '6px',
-                        height: '6px',
-                        borderRadius: '3px',
-                        background: i === 0 ? '#0E7C66' : '#CBD6E2',
-                      }}
-                    ></span>
-                  ))}
-                </div>
-              ) : null}
             </div>
           ) : null}
           {CARD.reels.length > 0 ? (
@@ -3270,7 +3211,7 @@ export function SoftBentoWellness(props) {
       ) : null}
       {f?.rest ? (
         <>
-          {CARD.services.length > 0 || CARD.href.Location || CARD.testimonials.length > 0 || CARD.timings.length > 0 ? (
+          {CARD.services.length > 0 || CARD.href.Location || CARD.timings.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>
                 {CARD.services.length > 0 ? 'Services & visit info' : 'Visit info'}
@@ -3402,35 +3343,13 @@ export function SoftBentoWellness(props) {
                     <div style={{ fontSize: '12.5px', color: '#5E5A57' }}>{V.rating.label}</div>
                   </div>
                 ) : null}
-                {V.testimonials?.[0] ? (
-                  <div
-                    style={{
-                      padding: '14px',
-                      borderRadius: '24px',
-                      background: '#FDEDEC',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px',
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: '0',
-                        fontSize: '13.5px',
-                        lineHeight: '1.45',
-                        color: '#3F3C3A',
-                        display: '-webkit-box',
-                        WebkitLineClamp: '4',
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {'"' + V.testimonials[0].q + '"'}
-                    </p>
-                    <span style={{ fontSize: '12.5px', fontWeight: '700' }}>{V.testimonials[0].n}</span>
-                  </div>
-                ) : null}
               </div>
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '28px 16px 0' }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>{'Testimonials'}</h3>
+              <TestimonialSlides items={CARD.testimonials} />
             </div>
           ) : null}
           {CARD.projects.length > 0 ? (

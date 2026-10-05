@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD, socialIcon } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -668,6 +668,14 @@ export function CreatorReel(props) {
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Services'}</h3>
               <div style={{ padding: '0 16px' }}>
                 <ServiceSlides items={CARD.services} />
+              </div>
+            </div>
+          ) : null}
+          {CARD.testimonials.length > 0 ? (
+            <div style={{ padding: '28px 0 0' }}>
+              <h3 style={{ margin: '0 16px 12px', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Testimonials'}</h3>
+              <div style={{ padding: '0 16px' }}>
+                <TestimonialSlides items={CARD.testimonials} />
               </div>
             </div>
           ) : null}

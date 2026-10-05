@@ -33,6 +33,17 @@ export function restoreOwnSession() {
   }
 }
 
+// Leaves "Sign in as user": back to the admin's own site account if they had one, else sign-in.
+export function exitImpersonation() {
+  setImpersonating(null);
+  try {
+    sessionStorage.removeItem('aicardly-theme-studio');
+  } catch {
+    /* storage blocked */
+  }
+  window.location.assign(restoreOwnSession() ? '/dashboard' : '/login');
+}
+
 export function setImpersonating(user) {
   try {
     if (user) localStorage.setItem(KEY, JSON.stringify(user));

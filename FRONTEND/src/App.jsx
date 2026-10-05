@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { PRICING_ENABLED } from './utils/plan';
 import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -19,6 +19,7 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const Impersonate = lazy(() => import('./pages/Impersonate'));
+const ImpersonationBanner = lazy(() => import('./components/ImpersonationBanner'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Dashboard
@@ -115,7 +116,18 @@ const PREFETCH_OWNER = [() => import('./webcard/WebCard'), () => import('./pages
 
 // Everything inside the router. The browser wraps it in <BrowserRouter> (App below); the build's
 // homepage prerender (scripts/prerender.mjs) wraps it in a StaticRouter.
+// Only while an admin uses "Sign in as user" (no extra download for anyone else).
+const hasImpersonation = () => {
+  try {
+    return typeof window !== 'undefined' && !!localStorage.getItem('aicardly_impersonating');
+  } catch {
+    return false;
+  }
+};
+
 export function AppRoutes() {
+  // Re-render on navigation, so the admin banner appears right after "Sign in as user".
+  useLocation();
   useEffect(() => {
     // Wake the serverless backend (and its DB connection) before the user logs in.
     fetch(`${import.meta.env.VITE_API_URL}/api/ping`).catch(() => {});
@@ -148,6 +160,11 @@ export function AppRoutes() {
       <Seo />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
       <DeferredChatWidget />
+      {hasImpersonation() ? (
+        <Suspense fallback={null}>
+          <ImpersonationBanner />
+        </Suspense>
+      ) : null}
       <Routes>
         {/* Auth */}
         <Route path="/" element={page(<LandingPage />)} />

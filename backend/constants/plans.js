@@ -11,7 +11,7 @@ const CATALOG = {
   'digital-id':    { name: PLANS.DIGITAL,      monthly: 99,  yearly: 999 },
   'smart-ai-card': { name: PLANS.SMART_AI,     monthly: 199, yearly: 1999 },
   // ₹1 for now, to test live payments and invoices end to end (was ₹399 / ₹3,999).
-  'ai-agent-pro':  { name: PLANS.AI_AGENT_PRO, monthly: 1, yearly: 1 },
+  'ai-agent-pro':  { name: PLANS.AI_AGENT_PRO, monthly: 1999, yearly: 19999 },
 };
 
 // Price and duration for a plan + billing period, or null if the combination doesn't exist.

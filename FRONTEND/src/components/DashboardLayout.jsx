@@ -11,7 +11,7 @@ import IconButton from './ui/IconButton';
 import axios from 'axios';
 import { hasDashboardAi, PRICING_ENABLED } from '../utils/plan';
 import { warmThemeStudio } from '../utils/themeStudioCache';
-import { getImpersonating, setImpersonating, restoreOwnSession } from '../utils/impersonation';
+import { getImpersonating, setImpersonating, exitImpersonation } from '../utils/impersonation';
 import { clearThemeCache } from '../utils/themeStudioCache';
 
 const CardPreviewPanel = lazy(() => import('./CardPreviewPanel'));
@@ -142,17 +142,7 @@ const DashboardLayout = () => {
   };
   // Opened from the admin panel with "Sign in as user".
   const [impersonating] = useState(getImpersonating);
-  const exitImpersonation = () => {
-    setImpersonating(null);
-    clearThemeCache();
-    // Back to the admin's own account, if they were signed in to the site before.
-    if (restoreOwnSession()) {
-      window.location.assign('/dashboard');
-      return;
-    }
-    window.close();
-    navigate('/login');
-  };
+
 
   const initials = user.name
     ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)

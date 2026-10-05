@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Search, UserPlus, Wand2 } from 'lucide-react';
+import { Download, Search, UserPlus, Wand2, Ban, CheckCircle2, UserX, RotateCcw, Trash2, X } from 'lucide-react';
 import { useApi, useDebounced, useFilters } from '../lib/hooks';
 import { qs, downloadUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -46,7 +46,69 @@ export default function UsersPage() {
     navigate(`/users/${res.id}`);
   };
 
+  // Bulk selection: id → email. Kept while you open a user and come back, change page or
+  // filters (saved for this browser tab); cleared only by "Clear" or after a bulk action.
+  const SEL_KEY = 'aicardly_admin_user_sel';
+  const [sel, setSelState] = useState(() => {
+    try {
+      return new Map(JSON.parse(sessionStorage.getItem(SEL_KEY) || '[]'));
+    } catch {
+      return new Map();
+    }
+  });
+  const setSel = (next) => {
+    setSelState(next);
+    try {
+      if (next.size) sessionStorage.setItem(SEL_KEY, JSON.stringify([...next]));
+      else sessionStorage.removeItem(SEL_KEY);
+    } catch {
+      /* storage blocked: selection just isn't remembered */
+    }
+  };
+  const [bulk, setBulk] = useState(null); // block | unblock | remove | restore | purge
+  const rows = data?.users || [];
+  const allOn = rows.length > 0 && rows.every((u) => sel.has(u.id));
+  const toggle = (u) => {
+    const n = new Map(sel);
+    if (n.has(u.id)) n.delete(u.id);
+    else n.set(u.id, u.email);
+    setSel(n);
+  };
+  const togglePage = () => {
+    const n = new Map(sel);
+    if (allOn) rows.forEach((u) => n.delete(u.id));
+    else rows.forEach((u) => n.set(u.id, u.email));
+    setSel(n);
+  };
+  const canBulk = can('users.block') || can('users.delete') || can('users.purge');
+  const runBulk = async ({ reason }) => {
+    const res = await api('/users/bulk', { method: 'POST', body: { ids: [...sel.keys()], action: bulk, reason, confirm: bulk === 'purge' ? `DELETE ${sel.size}` : '' } });
+    toast(res.msg, res.failed?.length ? 'error' : 'success');
+    setSel(new Map());
+    reload();
+  };
+  const BULK = {
+    block: { title: 'Block users', desc: 'They are signed out at once and cannot sign in or create cards until unblocked.', label: 'Block', danger: true },
+    unblock: { title: 'Unblock users', desc: 'They can sign in again.', label: 'Unblock', reasonRequired: false },
+    remove: { title: 'Remove users', desc: 'Soft delete: the accounts cannot be used and their public cards are hidden. You can restore them later.', label: 'Remove', danger: true },
+    restore: { title: 'Restore users', desc: 'Their accounts and public cards come back.', label: 'Restore', reasonRequired: false },
+    purge: { title: 'Delete permanently', desc: 'Deletes the accounts, their cards and everything on them. This cannot be undone. Payment records are kept for accounting.', label: 'Delete forever', danger: true },
+  };
+
   const columns = [
+    ...(canBulk
+      ? [{
+          key: 'pick',
+          label: <input type="checkbox" aria-label="Select all users on this page" checked={allOn} onChange={togglePage} className="h-4 w-4 cursor-pointer accent-pink-600" />,
+          className: 'w-12',
+          // The whole cell toggles the tick (a near miss must not open the user's page).
+          render: (u) => (
+            <label onClick={(e) => e.stopPropagation()} className="-mx-4 -my-3 flex min-h-[60px] cursor-pointer items-start px-4 py-3">
+              <input type="checkbox" aria-label={`Select ${u.email}`} checked={sel.has(u.id)} onChange={() => toggle(u)} className="h-4 w-4 cursor-pointer accent-pink-600" />
+            </label>
+          ),
+        }]
+      : []),
     {
       key: 'name',
       label: 'User',
@@ -142,11 +204,43 @@ export default function UsersPage() {
           </div>
         ) : (
           <>
+            {sel.size > 0 && (
+              <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-surface-2 px-4 py-2.5 text-sm">
+                <span className="mr-1 font-semibold text-slate-900">{sel.size} selected</span>
+                {can('users.block') && <Button size="sm" variant="secondary" onClick={() => setBulk('block')}><Ban className="h-3.5 w-3.5" /> Block</Button>}
+                {can('users.block') && <Button size="sm" variant="secondary" onClick={() => setBulk('unblock')}><CheckCircle2 className="h-3.5 w-3.5" /> Unblock</Button>}
+                {can('users.delete') && <Button size="sm" variant="secondary" onClick={() => setBulk('remove')}><UserX className="h-3.5 w-3.5" /> Remove</Button>}
+                {can('users.delete') && <Button size="sm" variant="secondary" onClick={() => setBulk('restore')}><RotateCcw className="h-3.5 w-3.5" /> Restore</Button>}
+                {can('users.purge') && <Button size="sm" variant="danger" onClick={() => setBulk('purge')}><Trash2 className="h-3.5 w-3.5" /> Delete permanently</Button>}
+                <button type="button" onClick={() => setSel(new Map())} className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"><X className="h-3.5 w-3.5" /> Clear</button>
+              </div>
+            )}
             <Table columns={columns} rows={data?.users} loading={loading} empty="No users match these filters." onRowClick={(u) => navigate(`/users/${u.id}`)} />
             <Pagination page={f.page} pages={data?.pages} total={data?.total} onPage={(page) => set({ page })} />
           </>
         )}
       </Card>
+
+      {bulk && (
+        <ActionDialog
+          open
+          onClose={() => setBulk(null)}
+          title={`${BULK[bulk].title} (${sel.size})`}
+          description={
+            <>
+              {BULK[bulk].desc}
+              <span className="mt-2 block max-h-28 overflow-y-auto rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                {[...sel.values()].join(', ')}
+              </span>
+            </>
+          }
+          confirmLabel={BULK[bulk].label}
+          danger={BULK[bulk].danger}
+          reasonRequired={BULK[bulk].reasonRequired !== false}
+          confirmText={bulk === 'purge' ? `DELETE ${sel.size}` : undefined}
+          onSubmit={runBulk}
+        />
+      )}
 
       <ActionDialog
         open={creating}

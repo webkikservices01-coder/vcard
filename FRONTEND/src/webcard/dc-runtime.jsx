@@ -1252,6 +1252,43 @@ export function ServiceSlides({ items, pad = 16, accent }) {
   );
 }
 
+// Client reviews as a slider (arrows, dots, auto-slide, drag), shown right after Services.
+// Colours come from the section's own text colour, so it fits every template and palette.
+export function TestimonialSlides({ items, pad = 16 }) {
+  const list = (items || []).filter((t) => t && t.q);
+  if (!list.length) return null;
+  const tint = (pct) => `color-mix(in srgb, currentColor ${pct}%, transparent)`;
+  return (
+    <SwipeRow
+      label="Testimonials"
+      itemLabel="Review"
+      style={{ display: 'flex', alignItems: 'stretch', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none', margin: `0 -${pad}px`, padding: '0 16px 6px', scrollPadding: '0 16px' }}
+    >
+      {list.map((t, i) => (
+        <figure
+          key={i}
+          data-wc-review=""
+          style={{ flex: '0 0 82%', maxWidth: '360px', scrollSnapAlign: 'start', margin: 0, display: 'flex', flexDirection: 'column', gap: '12px', padding: '18px 18px 16px', borderRadius: '18px', border: `1px solid ${tint(14)}`, background: tint(5), minWidth: 0 }}
+        >
+          <div aria-label={`${t.rating || 5} out of 5 stars`} style={{ display: 'flex', gap: '2px', color: '#F5B400', fontSize: '15px', letterSpacing: '1px' }}>
+            {'★★★★★'.slice(0, Math.max(1, Math.min(5, t.rating || 5)))}
+            <span style={{ opacity: 0.25 }}>{'★★★★★'.slice(0, 5 - Math.max(1, Math.min(5, t.rating || 5)))}</span>
+          </div>
+          <blockquote style={{ margin: 0, flex: 1, fontSize: '14px', lineHeight: 1.6, opacity: 0.88, display: '-webkit-box', WebkitLineClamp: 7, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            “{t.q}”
+          </blockquote>
+          <figcaption style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <span style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, overflow: 'hidden', display: 'grid', placeItems: 'center', fontSize: '13px', fontWeight: 800, background: tint(14) }}>
+              {t.photo ? <img src={t.photo} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : t.i || '★'}
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.n || 'Client'}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </SwipeRow>
+  );
+}
+
 // Gallery photos as a slider (arrows, dots, auto-slide, drag), like projects and services.
 // pad: the section's side padding, so the row can run edge to edge.
 export function PhotoSlides({ items, pad = 16 }) {

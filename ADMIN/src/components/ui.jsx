@@ -218,13 +218,23 @@ export function Pagination({ page, pages, total, onPage }) {
 
 export function Modal({ open, title, onClose, children, footer, wide }) {
   const ref = useRef(null);
+  // The latest onClose, without re-running the effects below on every render (a parent passes a
+  // new function each time it re-renders, i.e. on every keystroke in the dialog).
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === 'Escape' && onClose?.();
+    const onKey = (e) => e.key === 'Escape' && closeRef.current?.();
     document.addEventListener('keydown', onKey);
-    ref.current?.querySelector('input, select, textarea, button')?.focus();
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open]);
+  // Focus the first field once, when the dialog opens — not on every keystroke, which used to
+  // pull the cursor back to the first box after each letter typed in a later one.
+  useEffect(() => {
+    if (open) ref.current?.querySelector('input, select, textarea, button')?.focus();
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>

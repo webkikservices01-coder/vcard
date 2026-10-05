@@ -43,8 +43,8 @@ export const plans = [
     id: 'ai-agent-pro',
     name: 'AI AGENT PRO',
     tagline: 'Full AI sales & support automation',
-    // ₹1 for now, to test live payments and invoices (was ₹399 / ₹3,999). Keep in sync with BACKEND/constants/plans.js.
-    price: { monthly: 1, yearly: 1 },
+    // Keep in sync with BACKEND/constants/plans.js (the server charges from there).
+    price: { monthly: 1999, yearly: 19999 },
     icon: <Phone className="w-5 h-5" />,
     popular: false,
     badge: '🤖 AI Powered',

@@ -92,9 +92,9 @@ const PLANS = [
   {
     name: 'AI AGENT PRO',
     tagline: 'Full AI sales & support automation',
-    priceMonthly: 1,
-    priceYearly: 1,
-    yearlySaving: 11,
+    priceMonthly: 1999,
+    priceYearly: 19999,
+    yearlySaving: 3989,
     support: '24/7 Dedicated',
     bestFor: 'voice + WhatsApp automation, multiple cards, or agencies wanting white-label',
     highlights: [
@@ -166,7 +166,7 @@ const FAQS = [
   },
   {
     q: 'How much does it cost?',
-    a: 'Digital Card ₹99/month (₹999/year), Smart AI Card ₹199/month (₹1,999/year), AI Agent Pro ₹1/month (₹1/year) with every AI feature. Yearly billing is cheaper than paying monthly (saves ₹189, ₹389 and ₹11 a year respectively). Prices shown are final at the time of purchase.',
+    a: 'Digital Card ₹99/month (₹999/year), Smart AI Card ₹199/month (₹1,999/year), AI Agent Pro ₹1,999/month (₹19,999/year) with every AI feature. Yearly billing is cheaper than paying monthly (saves ₹189, ₹389 and ₹3,989 a year respectively). Prices shown are final at the time of purchase.',
   },
   {
     q: 'Which plan should I choose?',
