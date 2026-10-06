@@ -82,4 +82,13 @@ const cardOrderLimiter = rateLimit({
   message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
 });
 
-module.exports = { authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter, cardOrderLimiter };
+// Starting a live AI call (each one costs per minute).
+const aiCallLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000,
+  limit: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many calls. Please wait a while and try again.' },
+});
+
+module.exports = { aiCallLimiter, authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter, cardOrderLimiter };

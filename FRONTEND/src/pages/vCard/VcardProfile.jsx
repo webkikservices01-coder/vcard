@@ -151,6 +151,27 @@ const VcardProfile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // "Generate with AI": a short bio from the name, designation and whatever is in the box.
+  const [bioBusy, setBioBusy] = useState(false);
+  const generateBio = async () => {
+    setBioBusy(true);
+    try {
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/ai/bio`,
+        { name: formData.title, designation: formData.subTitle, notes: formData.description },
+        { headers: { 'x-auth-token': localStorage.getItem('token') } }
+      );
+      if (data?.bio) {
+        setFormData((prev) => ({ ...prev, description: data.bio.split(/\s+/).slice(0, MAX_BIO_WORDS).join(' ') }));
+        toast.success('Bio written. Edit it if you like, then Save & Deploy.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not write the bio. Please try again.');
+    } finally {
+      setBioBusy(false);
+    }
+  };
+
   const slugCheck = useUsernameCheck(formData.slug.replace(/-+$/, ''));
 
   const handleCopyUrl = () => {
@@ -507,13 +528,25 @@ const VcardProfile = () => {
                     <label className={`block text-xs sm:text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                       Executive Bio <span className="text-[#E70C65]">*</span>
                     </label>
-                    <span className={`text-[10px] font-semibold ${
-                      bioWordCount >= MAX_BIO_WORDS
-                        ? 'text-[#E70C65]'
-                        : isDark ? 'text-slate-400' : 'text-slate-500'
-                    }`}>
-                      {bioWordCount}/{MAX_BIO_WORDS} words
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={generateBio}
+                        disabled={bioBusy}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#E70C65] to-[#9F1C44] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                        title="Write my bio from my name, designation and card"
+                      >
+                        {bioBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {bioBusy ? 'Writing…' : formData.description.trim() ? 'Improve with AI' : 'Generate with AI'}
+                      </button>
+                      <span className={`text-[10px] font-semibold ${
+                        bioWordCount >= MAX_BIO_WORDS
+                          ? 'text-[#E70C65]'
+                          : isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>
+                        {bioWordCount}/{MAX_BIO_WORDS} words
+                      </span>
+                    </div>
                   </div>
                   <textarea
                     name="description" 

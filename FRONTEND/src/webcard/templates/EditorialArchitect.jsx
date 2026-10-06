@@ -160,14 +160,15 @@ export function EditorialArchitect(props) {
           style={{
             overflowWrap: 'anywhere',
             display: '-webkit-box',
-            WebkitLineClamp: '2',
+            WebkitLineClamp: '3',
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
             margin: '14px 0 0',
+            paddingBottom: '0.08em',
             minWidth: '0',
             fontFamily: "'DM Serif Display',serif",
             fontWeight: '400',
-            fontSize: 'clamp(40px, 12cqi, 50px)',
+            fontSize: CARD.nameSize('clamp(40px, 12cqi, 50px)', true),
             lineHeight: '.95',
             letterSpacing: '-0.01em',
           }}

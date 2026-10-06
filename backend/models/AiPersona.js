@@ -24,6 +24,10 @@ const AiPersonaSchema = new mongoose.Schema({
   },
   // Ask visitors for a 0-10 rating (NPS) at the end of a chat.
   npsEnabled: { type: Boolean, default: true },
+  // Live AI calls on the card (the plan decides which exist; the owner can switch them off).
+  voiceCall: { type: Boolean, default: true },
+  videoCall: { type: Boolean, default: true },
+  voiceName: { type: String, default: 'marin' }, // the AI's speaking voice on calls
   // Owner accepted the Data Processing Addendum for visitor data handled by the assistant.
   dpaAcceptedAt: { type: Date, default: null },
   dpaVersion:    { type: String, default: '' },

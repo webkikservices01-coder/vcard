@@ -138,6 +138,12 @@ function walk(th, node, ctx) {
   const next = {};
   let cctx = ctx;
   if (props.style) { const r = themeStyle(th, props.style, ctx); next.style = r.s; cctx = r.ctx; }
+  // Aicardly: the box a QR code (CardQR, marked keepQr) sits in stays white in every palette and
+  // mode, so the dark code is always scannable (a dark template in light mode turned it dark).
+  if (React.Children.toArray(props.children).some((k) => k && k.type && k.type.keepQr)) {
+    next.style = { ...(next.style || props.style), background: '#FFFFFF', backgroundColor: '#FFFFFF' };
+    cctx = { ...cctx, bg: { r: 255, g: 255, b: 255, a: 1 } };
+  }
   // Aicardly: style objects handed to runtime components (EnquiryForm fieldStyle/buttonStyle...).
   for (const k in props) {
     if (k !== 'style' && /Style$/.test(k) && props[k] && typeof props[k] === 'object') next[k] = themeStyle(th, props[k], cctx).s;

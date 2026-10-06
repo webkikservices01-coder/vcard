@@ -271,13 +271,14 @@ export function DevTerminal(props) {
             style={{
               overflowWrap: 'anywhere',
               display: '-webkit-box',
-              WebkitLineClamp: '2',
+              WebkitLineClamp: '3',
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               margin: '0',
+              paddingBottom: '0.08em',
               fontFamily: "'JetBrains Mono',monospace",
               fontWeight: '700',
-              fontSize: 'clamp(24px, 6.8cqi, 28px)',
+              fontSize: CARD.nameSize('clamp(24px, 6.8cqi, 28px)'),
               lineHeight: '1.15',
               letterSpacing: '-0.02em',
             }}

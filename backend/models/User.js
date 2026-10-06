@@ -9,6 +9,8 @@ const UserSchema = new mongoose.Schema({
     password:  { type: String, required: true },
     plan:      { type: String, default: 'Free Trial' },
     planExpiry:{ type: Date, default: null },
+    // Lifetime account (set from the admin panel): the plan never runs out, whatever planExpiry says.
+    lifetime:  { type: Boolean, default: false },
     status:    { type: String, enum: ['active', 'inactive'], default: 'active' },
     cardLimit: { type: Number, default: 1 },
     isAdmin:   { type: Boolean, default: false },

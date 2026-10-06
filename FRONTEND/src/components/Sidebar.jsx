@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, UserCircle, LifeBuoy, CreditCard, Receipt, LogOut,
-  ChevronDown, Bot, X, Send
+  ChevronDown, Bot, X, Send, Heart
 } from 'lucide-react';
 import { hasCardAi, PRICING_ENABLED } from '../utils/plan';
 import Logo from './ui/Logo';
@@ -16,6 +16,7 @@ const aiSubItems = [
 ];
 
 const mainItems = [
+  { name: 'Wedding Invite', icon: Heart,    path: '/dashboard/wedding' },
   { name: 'Get my card',  icon: Send,       path: '/dashboard/get-card' },
   // Plans & Transactions stay hidden while pricing is switched off.
   ...(PRICING_ENABLED ? [

@@ -1,10 +1,11 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink, ShieldCheck, BookOpen, Briefcase, Target, X } from 'lucide-react';
+import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLink, ShieldCheck, BookOpen, Briefcase, Target, X, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { hasCardAi } from '../../utils/plan';
+import { hasCardAi, PRICING_ENABLED } from '../../utils/plan';
+import FreePlanNotice from '../../components/FreePlanNotice';
 import { getVideoRoomUrl } from '../../utils/videoRoom';
 import GlassCard from '../../components/ui/GlassCard';
 import Toggle from '../../components/ui/Toggle';
@@ -14,6 +15,10 @@ import IconButton from '../../components/ui/IconButton';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { fadeUp } from '../../utils/motion';
 import { plans as pricingPlans, featureSections } from '../../data/plans.jsx';
+
+// Plans that include live AI calls on the card (same as BACKEND constants/plans.js).
+const CALL_PLANS = { voice: ['SMART AI CARD', 'AI AGENT PRO'], video: ['AI AGENT PRO'] };
+const CALL_VOICES = [['marin', 'Marin (warm, female)'], ['cedar', 'Cedar (calm, male)'], ['coral', 'Coral (bright, female)'], ['ash', 'Ash (deep, male)'], ['sage', 'Sage (soft)'], ['verse', 'Verse (expressive)']];
 
 // The two AI-capable plans' unique features, for the "what do I get" breakdown shown to locked-plan users.
 const aiPlans = pricingPlans.filter(p => p.id !== 'digital-id');
@@ -42,6 +47,9 @@ const AiPersona = () => {
     blockedTopics: [],
     offer: { title: '', cta: '', url: '' },
     npsEnabled: true,
+    voiceCall: true,
+    videoCall: true,
+    voiceName: 'marin',
   });
   const [niches, setNiches] = useState([]);
   const [dpaAcceptedAt, setDpaAcceptedAt] = useState(null);
@@ -91,6 +99,9 @@ const AiPersona = () => {
             blockedTopics:  personaRes.data.blockedTopics || [],
             offer:     { title: '', cta: '', url: '', ...(personaRes.data.offer || {}) },
             npsEnabled: personaRes.data.npsEnabled !== false,
+            voiceCall: personaRes.data.voiceCall !== false,
+            videoCall: personaRes.data.videoCall !== false,
+            voiceName: personaRes.data.voiceName || 'marin',
           });
           setDpaAcceptedAt(personaRes.data.dpaAcceptedAt || null);
         }
@@ -232,6 +243,8 @@ const AiPersona = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {PRICING_ENABLED && <FreePlanNotice show={['ai']} />}
 
       {/* Enable toggle */}
       <GlassCard {...fadeUp(0.05)} className="p-5 flex items-center justify-between">
@@ -565,6 +578,39 @@ const AiPersona = () => {
           </div>
           <Toggle checked={form.npsEnabled} onChange={(val) => setForm(f => ({ ...f, npsEnabled: val }))} aria-label="Ask for NPS rating" />
         </div>
+      </GlassCard>
+
+      {/* Live AI calls on the card */}
+      <GlassCard {...fadeUp(0.18)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Phone className="w-4 h-4 text-brand-600" />Live AI calls</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>
+          Visitors tap “AI call” on your card and talk to your AI out loud, in English or Hindi. With AI video call they can also show it something on camera.
+        </p>
+        {[
+          ['voiceCall', 'AI voice call', 'Smart AI Card and AI Agent Pro', CALL_PLANS.voice.includes(plan)],
+          ['videoCall', 'AI video call', 'AI Agent Pro', CALL_PLANS.video.includes(plan)],
+        ].map(([k, label, plans, included]) => (
+          <div key={k} className="mt-3 flex items-center justify-between gap-4 rounded-xl px-3 py-3" style={{ background: 'var(--surface-2)' }}>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>{label}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
+                {included ? 'Included in your plan.' : <>On {plans}. <Link to="/dashboard/plans" className="underline font-semibold text-brand-600">Upgrade</Link></>}
+              </p>
+            </div>
+            <Toggle checked={included && form[k]} disabled={!included} onChange={(val) => setForm(f => ({ ...f, [k]: val }))} aria-label={label} />
+          </div>
+        ))}
+        <label className="mt-3 block">
+          <span className="text-xs font-semibold" style={{ color: 'var(--surface-text-2)' }}>AI voice on calls</span>
+          <select
+            value={form.voiceName}
+            onChange={e => setForm(f => ({ ...f, voiceName: e.target.value }))}
+            className="mt-1 w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+            style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+          >
+            {CALL_VOICES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
       </GlassCard>
 
       {/* Data privacy + Data Processing Addendum */}

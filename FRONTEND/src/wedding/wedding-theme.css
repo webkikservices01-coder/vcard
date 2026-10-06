@@ -1,0 +1,1300 @@
+/* ===========================================================
+   WEDDING VERTICAL THEME — scoped under [data-vertical="wedding"]
+   Ported from wedding-tempalte-website/src/styles.css.
+   Base tokens are wrapped so they only apply inside the Wedding
+   route subtree; per-invite [data-palette] rules, keyframes, and
+   @utility classes below are already self-scoped and copied as-is.
+   =========================================================== */
+
+[data-vertical="wedding"] {
+  --font-display: "Cormorant Garamond", "Playfair Display", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-label: "Marcellus", "Cormorant Garamond", serif;
+  --font-serif: "Cormorant Garamond", serif;
+
+  /* Showcase site (lavender elegance) */
+  --background: oklch(0.94 0.06 280);
+  --foreground: oklch(0.22 0.12 300);
+  --card: oklch(0.97 0.04 300);
+  --card-foreground: oklch(0.22 0.12 300);
+  --popover: oklch(0.97 0.03 300);
+  --popover-foreground: oklch(0.22 0.12 300);
+  --primary: oklch(0.68 0.18 300);
+  --primary-foreground: oklch(0.98 0.02 80);
+  --secondary: oklch(0.78 0.12 300);
+  --secondary-foreground: oklch(0.22 0.12 300);
+  --muted: oklch(0.9 0.05 300);
+  --muted-foreground: oklch(0.3 0.14 300);
+  --accent: oklch(0.64 0.2 280);
+  --accent-foreground: oklch(0.14 0.04 300);
+  --destructive: oklch(0.6 0.22 30);
+  --destructive-foreground: oklch(0.14 0.04 300);
+  --border: oklch(0.8 0.04 80 / 0.4);
+  --input: oklch(0.96 0.02 80 / 0.9);
+  --ring: oklch(0.82 0.14 82);
+
+  --gold: oklch(0.82 0.14 82);
+  --gold-soft: oklch(0.88 0.09 85);
+  --ink: oklch(0.12 0.02 300);
+  --cream: oklch(0.96 0.02 80);
+  --rose: oklch(0.62 0.2 15);
+
+  --tier-silver: oklch(0.82 0.02 260);
+  --tier-gold: oklch(0.82 0.14 82);
+  --tier-platinum: oklch(0.9 0.05 300);
+
+  --shadow-elegant: 0 30px 90px -30px oklch(0 0 0 / 0.7);
+  --shadow-glow: 0 0 60px oklch(0.82 0.14 82 / 0.35);
+
+  --gradient-royal: linear-gradient(
+    165deg,
+    #2a0616 0%,
+    #4a0e2a 34%,
+    #2c0a3e 70%,
+    #1b0410 100%
+  );
+  --gradient-gold: linear-gradient(
+    135deg,
+    oklch(0.9 0.1 85),
+    oklch(0.75 0.15 75)
+  );
+}
+
+/* ------------------------------------------------------------
+   Template palette variants — applied via `data-palette=""`
+   on the invite root. Each palette defines the SAME variables
+   so the same invite component renders in a totally different
+   mood per country.
+   ------------------------------------------------------------ */
+
+[data-palette] {
+  --wt-bg-1: #2a0616;
+  --wt-bg-2: #4a0e2a;
+  --wt-bg-3: #2c0a3e;
+  --wt-bg-4: #1b0410;
+  --wt-ink: #fff3df;
+  --wt-ink-soft: #e9cdae;
+  --wt-ink-dim: #c79bb0;
+  --wt-gold: #e7b53c;
+  --wt-gold-lite: #f6d97e;
+  --wt-accent: #ed2460;
+  --wt-accent-deep: #c11450;
+  --wt-frame: #f6d97e;
+  --wt-veil: rgba(26, 4, 16, 0.7);
+  --wt-heading: "Playfair Display", serif;
+  --wt-display: "Cinzel Decorative", serif;
+  --wt-label: "Marcellus", serif;
+  --wt-script: "Yatra One", cursive;
+  --wt-body: "Cormorant Garamond", serif;
+  --wt-motif: "❦";
+}
+
+/* India — Royal wine + gold */
+[data-palette="india-royal"] {
+  --wt-bg-1: #2a0616;
+  --wt-bg-2: #4a0e2a;
+  --wt-bg-3: #2c0a3e;
+  --wt-bg-4: #1b0410;
+  --wt-gold: #e7b53c;
+  --wt-gold-lite: #f6d97e;
+  --wt-accent: #ed2460;
+  --wt-accent-deep: #c11450;
+  --wt-veil: rgba(26, 4, 16, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "❦";
+}
+[data-palette="india-marigold"] {
+  --wt-bg-1: #3a1a08;
+  --wt-bg-2: #5a2a0e;
+  --wt-bg-3: #3e1a08;
+  --wt-bg-4: #2a1206;
+  --wt-gold: #ffb347;
+  --wt-gold-lite: #ffd88a;
+  --wt-accent: #ff6b3d;
+  --wt-accent-deep: #c94a1c;
+  --wt-veil: rgba(58, 26, 8, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "✿";
+}
+
+/* UAE — Sand + gold + midnight */
+[data-palette="uae-desert"] {
+  --wt-bg-1: #1a0e05;
+  --wt-bg-2: #2c1a0a;
+  --wt-bg-3: #40260f;
+  --wt-bg-4: #14090a;
+  --wt-gold: #d4a862;
+  --wt-gold-lite: #f0d6a0;
+  --wt-accent: #e6835a;
+  --wt-accent-deep: #a85838;
+  --wt-veil: rgba(20, 10, 8, 0.6);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "❁";
+}
+[data-palette="uae-arabian"] {
+  --wt-bg-1: #0a1a1e;
+  --wt-bg-2: #14343a;
+  --wt-bg-3: #0e2830;
+  --wt-bg-4: #050f14;
+  --wt-gold: #e0b344;
+  --wt-gold-lite: #f5d878;
+  --wt-accent: #0f8f7a;
+  --wt-accent-deep: #086355;
+  --wt-veil: rgba(10, 26, 30, 0.7);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "✦";
+}
+[data-palette="uae-skyline"] {
+  --wt-bg-1: #05080f;
+  --wt-bg-2: #0d1220;
+  --wt-bg-3: #1a1030;
+  --wt-bg-4: #030509;
+  --wt-gold: #f0c250;
+  --wt-gold-lite: #f9dc82;
+  --wt-accent: #ff8a3d;
+  --wt-accent-deep: #d5652a;
+  --wt-veil: rgba(5, 8, 15, 0.72);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "✧";
+}
+
+/* France — Champagne + rose + noir */
+[data-palette="france-cafe"] {
+  --wt-bg-1: #1a0f14;
+  --wt-bg-2: #2a1a25;
+  --wt-bg-3: #3a2030;
+  --wt-bg-4: #100608;
+  --wt-gold: #e8b8a8;
+  --wt-gold-lite: #f5d5c8;
+  --wt-accent: #d97a94;
+  --wt-accent-deep: #a04d68;
+  --wt-veil: rgba(20, 10, 15, 0.65);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✾";
+}
+[data-palette="france-provence"] {
+  --wt-bg-1: #1e1030;
+  --wt-bg-2: #2e1a48;
+  --wt-bg-3: #3f2560;
+  --wt-bg-4: #12061e;
+  --wt-gold: #d4b880;
+  --wt-gold-lite: #ecd8a8;
+  --wt-accent: #a878c8;
+  --wt-accent-deep: #7048a0;
+  --wt-veil: rgba(30, 16, 48, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "❦";
+}
+[data-palette="france-eiffel"] {
+  --wt-bg-1: #0f0508;
+  --wt-bg-2: #1e0d14;
+  --wt-bg-3: #2a1218;
+  --wt-bg-4: #050203;
+  --wt-gold: #f4c96a;
+  --wt-gold-lite: #fae09e;
+  --wt-accent: #e8a578;
+  --wt-accent-deep: #b06d40;
+  --wt-veil: rgba(15, 5, 8, 0.68);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✦";
+}
+
+/* USA — Coastal + rustic + Beverly Hills */
+[data-palette="usa-coastal"] {
+  --wt-bg-1: #06121e;
+  --wt-bg-2: #0e2438;
+  --wt-bg-3: #143854;
+  --wt-bg-4: #020810;
+  --wt-gold: #e8cba0;
+  --wt-gold-lite: #f5e0bc;
+  --wt-accent: #f5a898;
+  --wt-accent-deep: #c76d5a;
+  --wt-veil: rgba(6, 18, 30, 0.55);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "✺";
+}
+[data-palette="usa-chapel"] {
+  --wt-bg-1: #1a0e05;
+  --wt-bg-2: #2c1a08;
+  --wt-bg-3: #3e2810;
+  --wt-bg-4: #100804;
+  --wt-gold: #e8a848;
+  --wt-gold-lite: #f5cc80;
+  --wt-accent: #c26a3a;
+  --wt-accent-deep: #8a4820;
+  --wt-veil: rgba(26, 14, 5, 0.68);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "✝";
+}
+[data-palette="usa-beverly"] {
+  --wt-bg-1: #08060a;
+  --wt-bg-2: #14101a;
+  --wt-bg-3: #201828;
+  --wt-bg-4: #030204;
+  --wt-gold: #f0d078;
+  --wt-gold-lite: #f8e5a5;
+  --wt-accent: #d4a878;
+  --wt-accent-deep: #9c7448;
+  --wt-veil: rgba(8, 6, 10, 0.72);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "◆";
+}
+
+/* Italy — Terracotta + olive + gold leaf */
+[data-palette="italy-tuscan"] {
+  --wt-bg-1: #1a1208;
+  --wt-bg-2: #2a2010;
+  --wt-bg-3: #3a2c18;
+  --wt-bg-4: #100a05;
+  --wt-gold: #d4b06a;
+  --wt-gold-lite: #e8ce90;
+  --wt-accent: #a86840;
+  --wt-accent-deep: #744628;
+  --wt-veil: rgba(26, 18, 8, 0.65);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "❦";
+}
+[data-palette="italy-amalfi"] {
+  --wt-bg-1: #0f1a24;
+  --wt-bg-2: #1a2c3e;
+  --wt-bg-3: #244056;
+  --wt-bg-4: #06101a;
+  --wt-gold: #f0c878;
+  --wt-gold-lite: #f8dc9c;
+  --wt-accent: #e88a5c;
+  --wt-accent-deep: #b05a30;
+  --wt-veil: rgba(15, 26, 36, 0.6);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✧";
+}
+[data-palette="italy-venice"] {
+  --wt-bg-1: #0a0510;
+  --wt-bg-2: #180e1e;
+  --wt-bg-3: #26182e;
+  --wt-bg-4: #050208;
+  --wt-gold: #f4d078;
+  --wt-gold-lite: #fce5a5;
+  --wt-accent: #c04868;
+  --wt-accent-deep: #802840;
+  --wt-veil: rgba(10, 5, 16, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "❈";
+}
+
+/* India — Silver & gold premium (cinematic monochrome + gold foil) */
+[data-palette="india-silver-gold"] {
+  --wt-bg-1: #14161c;
+  --wt-bg-2: #22252e;
+  --wt-bg-3: #2e323d;
+  --wt-bg-4: #0a0b0e;
+  --wt-gold: #d8b866;
+  --wt-gold-lite: #efe0b8;
+  --wt-accent: #c7ccd6;
+  --wt-accent-deep: #8b8f99;
+  --wt-veil: rgba(20, 22, 28, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "✦";
+}
+
+/* ------------------------------------------------------------
+   Regional India palettes — one distinct colour identity per
+   community/region so same-tier templates no longer share a look.
+   ------------------------------------------------------------ */
+[data-palette="india-coorg"] {
+  --wt-bg-1: #10201a;
+  --wt-bg-2: #1a3428;
+  --wt-bg-3: #24452f;
+  --wt-bg-4: #081410;
+  --wt-gold: #c9a35a;
+  --wt-gold-lite: #e6cd94;
+  --wt-accent: #7fae7a;
+  --wt-accent-deep: #4d7a4a;
+  --wt-veil: rgba(16, 32, 26, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "❧";
+}
+[data-palette="india-rajwada"] {
+  --wt-bg-1: #2c0a1c;
+  --wt-bg-2: #46122c;
+  --wt-bg-3: #5c1a3a;
+  --wt-bg-4: #180410;
+  --wt-gold: #e8b850;
+  --wt-gold-lite: #f4d888;
+  --wt-accent: #d84868;
+  --wt-accent-deep: #9c2c48;
+  --wt-veil: rgba(44, 10, 28, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "❦";
+}
+[data-palette="india-royal-reel"] {
+  --wt-bg-1: #1c0608;
+  --wt-bg-2: #300a0e;
+  --wt-bg-3: #440e14;
+  --wt-bg-4: #100304;
+  --wt-gold: #f0c458;
+  --wt-gold-lite: #f8dd8c;
+  --wt-accent: #e0303c;
+  --wt-accent-deep: #a01e26;
+  --wt-veil: rgba(28, 6, 8, 0.76);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "✦";
+}
+[data-palette="india-punjabi"] {
+  --wt-bg-1: #3a0c10;
+  --wt-bg-2: #5e1418;
+  --wt-bg-3: #7a2010;
+  --wt-bg-4: #240608;
+  --wt-gold: #f0b93c;
+  --wt-gold-lite: #f8d878;
+  --wt-accent: #e2542e;
+  --wt-accent-deep: #a8321a;
+  --wt-veil: rgba(58, 12, 16, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🪔";
+}
+[data-palette="india-bengali"] {
+  --wt-bg-1: #3a0810;
+  --wt-bg-2: #5a1018;
+  --wt-bg-3: #2c0a10;
+  --wt-bg-4: #1c0408;
+  --wt-gold: #e8c878;
+  --wt-gold-lite: #f6e3ac;
+  --wt-accent: #f2ede0;
+  --wt-accent-deep: #b0a488;
+  --wt-veil: rgba(58, 8, 16, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🐚";
+}
+[data-palette="india-gujarati"] {
+  --wt-bg-1: #200e34;
+  --wt-bg-2: #32164e;
+  --wt-bg-3: #421e64;
+  --wt-bg-4: #12061e;
+  --wt-gold: #e0b866;
+  --wt-gold-lite: #f2d798;
+  --wt-accent: #c8508a;
+  --wt-accent-deep: #90305e;
+  --wt-veil: rgba(32, 14, 52, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✦";
+}
+[data-palette="india-maharashtrian"] {
+  --wt-bg-1: #360a12;
+  --wt-bg-2: #521220;
+  --wt-bg-3: #6e1a1a;
+  --wt-bg-4: #200608;
+  --wt-gold: #f0c24a;
+  --wt-gold-lite: #f8dd88;
+  --wt-accent: #e08a3c;
+  --wt-accent-deep: #a8581e;
+  --wt-veil: rgba(54, 10, 18, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "☀";
+}
+[data-palette="india-telugu"] {
+  --wt-bg-1: #300a14;
+  --wt-bg-2: #4c1220;
+  --wt-bg-3: #601828;
+  --wt-bg-4: #1c060c;
+  --wt-gold: #e8b84a;
+  --wt-gold-lite: #f6d980;
+  --wt-accent: #e8d24a;
+  --wt-accent-deep: #a8941e;
+  --wt-veil: rgba(48, 10, 20, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🌾";
+}
+[data-palette="india-kannada"] {
+  --wt-bg-1: #240e30;
+  --wt-bg-2: #38164a;
+  --wt-bg-3: #4a1e60;
+  --wt-bg-4: #14061c;
+  --wt-gold: #d8b054;
+  --wt-gold-lite: #eed48c;
+  --wt-accent: #c060a0;
+  --wt-accent-deep: #883a70;
+  --wt-veil: rgba(36, 14, 48, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🌸";
+}
+[data-palette="india-assamese"] {
+  --wt-bg-1: #0a201c;
+  --wt-bg-2: #12342c;
+  --wt-bg-3: #1a4438;
+  --wt-bg-4: #061410;
+  --wt-gold: #d8c060;
+  --wt-gold-lite: #ecdd9c;
+  --wt-accent: #c8402c;
+  --wt-accent-deep: #8e2a1c;
+  --wt-veil: rgba(10, 32, 28, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🌾";
+}
+[data-palette="india-odia"] {
+  --wt-bg-1: #340a0c;
+  --wt-bg-2: #501214;
+  --wt-bg-3: #661a1a;
+  --wt-bg-4: #1e0506;
+  --wt-gold: #e8c04a;
+  --wt-gold-lite: #f6dd88;
+  --wt-accent: #2c2c2c;
+  --wt-accent-deep: #141414;
+  --wt-veil: rgba(52, 10, 12, 0.72);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🐚";
+}
+[data-palette="india-tamil-iyer"] {
+  --wt-bg-1: #300810;
+  --wt-bg-2: #4a1018;
+  --wt-bg-3: #601828;
+  --wt-bg-4: #1c0408;
+  --wt-gold: #e0b850;
+  --wt-gold-lite: #f2d888;
+  --wt-accent: #d84838;
+  --wt-accent-deep: #9c2e22;
+  --wt-veil: rgba(48, 8, 16, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🔱";
+}
+[data-palette="india-kerala-nair"] {
+  --wt-bg-1: #0c2416;
+  --wt-bg-2: #163a24;
+  --wt-bg-3: #204c30;
+  --wt-bg-4: #06140c;
+  --wt-gold: #e0c468;
+  --wt-gold-lite: #f2e0a0;
+  --wt-accent: #f0e6c8;
+  --wt-accent-deep: #b8a878;
+  --wt-veil: rgba(12, 36, 22, 0.68);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🌴";
+}
+[data-palette="india-kerala-christian"] {
+  --wt-bg-1: #241c14;
+  --wt-bg-2: #382c1e;
+  --wt-bg-3: #4a3a28;
+  --wt-bg-4: #140e0a;
+  --wt-gold: #e8cc7c;
+  --wt-gold-lite: #f6e6ae;
+  --wt-accent: #a83c34;
+  --wt-accent-deep: #742420;
+  --wt-veil: rgba(36, 28, 20, 0.62);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✝";
+}
+[data-palette="india-marwari"] {
+  --wt-bg-1: #0a1830;
+  --wt-bg-2: #12284a;
+  --wt-bg-3: #1a3760;
+  --wt-bg-4: #050c1c;
+  --wt-gold: #f0c24e;
+  --wt-gold-lite: #f8dd8a;
+  --wt-accent: #e2843c;
+  --wt-accent-deep: #a8541e;
+  --wt-veil: rgba(10, 24, 48, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "☀";
+}
+[data-palette="india-kashmiri-pandit"] {
+  --wt-bg-1: #341410;
+  --wt-bg-2: #4e2018;
+  --wt-bg-3: #642a20;
+  --wt-bg-4: #1e0a08;
+  --wt-gold: #e8b854;
+  --wt-gold-lite: #f4d788;
+  --wt-accent: #d8703c;
+  --wt-accent-deep: #9c481f;
+  --wt-veil: rgba(52, 20, 16, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🌸";
+}
+[data-palette="india-sindhi"] {
+  --wt-bg-1: #301408;
+  --wt-bg-2: #4c200e;
+  --wt-bg-3: #642c14;
+  --wt-bg-4: #1c0a04;
+  --wt-gold: #f0b850;
+  --wt-gold-lite: #f8d888;
+  --wt-accent: #e0703a;
+  --wt-accent-deep: #a8481f;
+  --wt-veil: rgba(48, 20, 8, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "✦";
+}
+[data-palette="india-parsi"] {
+  --wt-bg-1: #241a10;
+  --wt-bg-2: #382a1a;
+  --wt-bg-3: #4a3822;
+  --wt-bg-4: #140e08;
+  --wt-gold: #e8c478;
+  --wt-gold-lite: #f4dda8;
+  --wt-accent: #d8601e;
+  --wt-accent-deep: #a03e14;
+  --wt-veil: rgba(36, 26, 16, 0.6);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🔥";
+}
+[data-palette="india-rajput"] {
+  --wt-bg-1: #341c08;
+  --wt-bg-2: #4e2c10;
+  --wt-bg-3: #663c18;
+  --wt-bg-4: #1e1004;
+  --wt-gold: #f0c454;
+  --wt-gold-lite: #f8dd8c;
+  --wt-accent: #b8321e;
+  --wt-accent-deep: #7e1e12;
+  --wt-veil: rgba(52, 28, 8, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🗡";
+}
+[data-palette="india-himachali"] {
+  --wt-bg-1: #0a2018;
+  --wt-bg-2: #123428;
+  --wt-bg-3: #1a4636;
+  --wt-bg-4: #06140e;
+  --wt-gold: #cbb878;
+  --wt-gold-lite: #e6d8a8;
+  --wt-accent: #6fa0c0;
+  --wt-accent-deep: #446e8e;
+  --wt-veil: rgba(10, 32, 24, 0.68);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🌲";
+}
+[data-palette="india-uttarakhandi"] {
+  --wt-bg-1: #0a1c24;
+  --wt-bg-2: #12303c;
+  --wt-bg-3: #1a4050;
+  --wt-bg-4: #061014;
+  --wt-gold: #d8c078;
+  --wt-gold-lite: #ecdca8;
+  --wt-accent: #6ab0c0;
+  --wt-accent-deep: #3e7e8e;
+  --wt-veil: rgba(10, 28, 36, 0.68);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "⛰";
+}
+[data-palette="india-bihari"] {
+  --wt-bg-1: #301e08;
+  --wt-bg-2: #4a2e10;
+  --wt-bg-3: #603c18;
+  --wt-bg-4: #1c1204;
+  --wt-gold: #ecc858;
+  --wt-gold-lite: #f6e090;
+  --wt-accent: #e2789c;
+  --wt-accent-deep: #a84a6e;
+  --wt-veil: rgba(48, 30, 8, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🎨";
+}
+[data-palette="india-manipuri"] {
+  --wt-bg-1: #240c1c;
+  --wt-bg-2: #38142c;
+  --wt-bg-3: #4c1c3c;
+  --wt-bg-4: #140610;
+  --wt-gold: #e0bc60;
+  --wt-gold-lite: #f2da98;
+  --wt-accent: #d05c94;
+  --wt-accent-deep: #983868;
+  --wt-veil: rgba(36, 12, 28, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "💃";
+}
+[data-palette="india-naga"] {
+  --wt-bg-1: #1c1410;
+  --wt-bg-2: #2c201a;
+  --wt-bg-3: #3c2a22;
+  --wt-bg-4: #100c08;
+  --wt-gold: #d8a858;
+  --wt-gold-lite: #ecc88a;
+  --wt-accent: #b0342a;
+  --wt-accent-deep: #7a2018;
+  --wt-veil: rgba(28, 20, 16, 0.68);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✝";
+}
+[data-palette="india-hyderabadi"] {
+  --wt-bg-1: #0a2418;
+  --wt-bg-2: #123a28;
+  --wt-bg-3: #1a4c36;
+  --wt-bg-4: #061410;
+  --wt-gold: #ecca6a;
+  --wt-gold-lite: #f6e19c;
+  --wt-accent: #f0e6d0;
+  --wt-accent-deep: #bcae86;
+  --wt-veil: rgba(10, 36, 24, 0.72);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "☾";
+}
+[data-palette="india-lucknawi"] {
+  --wt-bg-1: #201c22;
+  --wt-bg-2: #302a34;
+  --wt-bg-3: #403846;
+  --wt-bg-4: #121014;
+  --wt-gold: #cfc4d6;
+  --wt-gold-lite: #e8e0ec;
+  --wt-accent: #d89aa8;
+  --wt-accent-deep: #9c6472;
+  --wt-veil: rgba(32, 28, 34, 0.62);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "☾";
+}
+[data-palette="india-kashmiri-muslim"] {
+  --wt-bg-1: #0e2010;
+  --wt-bg-2: #18341c;
+  --wt-bg-3: #204428;
+  --wt-bg-4: #08140a;
+  --wt-gold: #e8b850;
+  --wt-gold-lite: #f4d888;
+  --wt-accent: #8a6438;
+  --wt-accent-deep: #5c4222;
+  --wt-veil: rgba(14, 32, 16, 0.7);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "☾";
+}
+[data-palette="india-bohra"] {
+  --wt-bg-1: #221c14;
+  --wt-bg-2: #342a1e;
+  --wt-bg-3: #443828;
+  --wt-bg-4: #120e0a;
+  --wt-gold: #e8d090;
+  --wt-gold-lite: #f6e8bc;
+  --wt-accent: #3c8a80;
+  --wt-accent-deep: #245c54;
+  --wt-veil: rgba(34, 28, 20, 0.6);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "☾";
+}
+[data-palette="india-anglo-goan"] {
+  --wt-bg-1: #08141e;
+  --wt-bg-2: #10222e;
+  --wt-bg-3: #18303e;
+  --wt-bg-4: #040a10;
+  --wt-gold: #e6cf8e;
+  --wt-gold-lite: #f4e6b8;
+  --wt-accent: #e08868;
+  --wt-accent-deep: #a85a3e;
+  --wt-veil: rgba(8, 20, 30, 0.62);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✝";
+}
+[data-palette="india-chettinad"] {
+  --wt-bg-1: #360e0c;
+  --wt-bg-2: #521812;
+  --wt-bg-3: #6a2418;
+  --wt-bg-4: #200604;
+  --wt-gold: #d8a862;
+  --wt-gold-lite: #ecca94;
+  --wt-accent: #3c8a7c;
+  --wt-accent-deep: #245c52;
+  --wt-veil: rgba(54, 14, 12, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🪔";
+}
+[data-palette="india-kerala-backwater"] {
+  --wt-bg-1: #0a1e1c;
+  --wt-bg-2: #12322e;
+  --wt-bg-3: #1a4240;
+  --wt-bg-4: #05120f;
+  --wt-gold: #d8c268;
+  --wt-gold-lite: #ecdd9c;
+  --wt-accent: #4ab0ac;
+  --wt-accent-deep: #2c7e7a;
+  --wt-veil: rgba(10, 30, 28, 0.68);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🛶";
+}
+[data-palette="india-sikkimese"] {
+  --wt-bg-1: #2c1018;
+  --wt-bg-2: #421a26;
+  --wt-bg-3: #562234;
+  --wt-bg-4: #180a0e;
+  --wt-gold: #e0c060;
+  --wt-gold-lite: #f2dd98;
+  --wt-accent: #6098c8;
+  --wt-accent-deep: #3a6894;
+  --wt-veil: rgba(44, 16, 24, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "☸";
+}
+
+/* ------------------------------------------------------------
+   Additional country palettes — new destinations get their own
+   colour identity instead of reusing the original three per country.
+   ------------------------------------------------------------ */
+[data-palette="uae-sharjah"] {
+  --wt-bg-1: #201408;
+  --wt-bg-2: #34220e;
+  --wt-bg-3: #443014;
+  --wt-bg-4: #120a04;
+  --wt-gold: #d8ae66;
+  --wt-gold-lite: #ecd4a0;
+  --wt-accent: #4a9088;
+  --wt-accent-deep: #2e625c;
+  --wt-veil: rgba(32, 20, 8, 0.62);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "❁";
+}
+[data-palette="uae-abudhabi"] {
+  --wt-bg-1: #06141e;
+  --wt-bg-2: #0e242e;
+  --wt-bg-3: #16343e;
+  --wt-bg-4: #030a10;
+  --wt-gold: #e2c26a;
+  --wt-gold-lite: #f2dd9c;
+  --wt-accent: #3ea89a;
+  --wt-accent-deep: #24766c;
+  --wt-veil: rgba(6, 20, 30, 0.66);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "✦";
+}
+[data-palette="uae-rak-mountain"] {
+  --wt-bg-1: #14181e;
+  --wt-bg-2: #22282f;
+  --wt-bg-3: #303740;
+  --wt-bg-4: #0a0d10;
+  --wt-gold: #d0b46e;
+  --wt-gold-lite: #e8d5a2;
+  --wt-accent: #8098a8;
+  --wt-accent-deep: #566c7a;
+  --wt-veil: rgba(20, 24, 30, 0.68);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "⛰";
+}
+[data-palette="uae-palm-jumeirah"] {
+  --wt-bg-1: #041824;
+  --wt-bg-2: #082838;
+  --wt-bg-3: #0e3a4e;
+  --wt-bg-4: #020c14;
+  --wt-gold: #f0c860;
+  --wt-gold-lite: #f8e094;
+  --wt-accent: #3ec2c4;
+  --wt-accent-deep: #248e90;
+  --wt-veil: rgba(4, 24, 36, 0.68);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "✧";
+}
+[data-palette="france-loire"] {
+  --wt-bg-1: #14200e;
+  --wt-bg-2: #223418;
+  --wt-bg-3: #304620;
+  --wt-bg-4: #0a1208;
+  --wt-gold: #ccb878;
+  --wt-gold-lite: #e6d8a8;
+  --wt-accent: #a8905c;
+  --wt-accent-deep: #786438;
+  --wt-veil: rgba(20, 32, 14, 0.6);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✾";
+}
+[data-palette="france-nice"] {
+  --wt-bg-1: #06181c;
+  --wt-bg-2: #0e282e;
+  --wt-bg-3: #163a40;
+  --wt-bg-4: #030c0e;
+  --wt-gold: #ecd0a4;
+  --wt-gold-lite: #f8e6c4;
+  --wt-accent: #e88ca0;
+  --wt-accent-deep: #b05c70;
+  --wt-veil: rgba(6, 24, 28, 0.6);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "❦";
+}
+[data-palette="france-bordeaux"] {
+  --wt-bg-1: #2c0810;
+  --wt-bg-2: #44101c;
+  --wt-bg-3: #5c1826;
+  --wt-bg-4: #1a0408;
+  --wt-gold: #d8b478;
+  --wt-gold-lite: #ecd4a8;
+  --wt-accent: #8a2e3c;
+  --wt-accent-deep: #5c1c26;
+  --wt-veil: rgba(44, 8, 16, 0.68);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🍇";
+}
+[data-palette="france-monaco"] {
+  --wt-bg-1: #180608;
+  --wt-bg-2: #280c10;
+  --wt-bg-3: #381218;
+  --wt-bg-4: #0c0304;
+  --wt-gold: #f0c860;
+  --wt-gold-lite: #f8e094;
+  --wt-accent: #c0303c;
+  --wt-accent-deep: #841e26;
+  --wt-veil: rgba(24, 6, 8, 0.7);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✦";
+}
+[data-palette="usa-napa"] {
+  --wt-bg-1: #181c0c;
+  --wt-bg-2: #262c14;
+  --wt-bg-3: #343c1c;
+  --wt-bg-4: #0c0e06;
+  --wt-gold: #c8b364;
+  --wt-gold-lite: #e0d290;
+  --wt-accent: #8a9c50;
+  --wt-accent-deep: #5c6c30;
+  --wt-veil: rgba(24, 28, 12, 0.6);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "🍇";
+}
+[data-palette="usa-hamptons"] {
+  --wt-bg-1: #06121c;
+  --wt-bg-2: #0e2030;
+  --wt-bg-3: #163040;
+  --wt-bg-4: #030a10;
+  --wt-gold: #e6d2a4;
+  --wt-gold-lite: #f4e6c4;
+  --wt-accent: #6a8fae;
+  --wt-accent-deep: #43607c;
+  --wt-veil: rgba(6, 18, 28, 0.6);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "✺";
+}
+[data-palette="usa-aspen"] {
+  --wt-bg-1: #0a141c;
+  --wt-bg-2: #14242e;
+  --wt-bg-3: #1e3440;
+  --wt-bg-4: #050a10;
+  --wt-gold: #d8ceb0;
+  --wt-gold-lite: #ece4d0;
+  --wt-accent: #7ab0cc;
+  --wt-accent-deep: #4c7e98;
+  --wt-veil: rgba(10, 20, 28, 0.66);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "◆";
+}
+[data-palette="italy-como"] {
+  --wt-bg-1: #0a1c1e;
+  --wt-bg-2: #123030;
+  --wt-bg-3: #1a4040;
+  --wt-bg-4: #061010;
+  --wt-gold: #d4bc72;
+  --wt-gold-lite: #e8d8a4;
+  --wt-accent: #5a9a94;
+  --wt-accent-deep: #386c66;
+  --wt-veil: rgba(10, 28, 30, 0.6);
+  --wt-script: "Cormorant Garamond", serif;
+  --wt-motif: "❦";
+}
+[data-palette="italy-sicily"] {
+  --wt-bg-1: #180e08;
+  --wt-bg-2: #281810;
+  --wt-bg-3: #382218;
+  --wt-bg-4: #0c0604;
+  --wt-gold: #e8a850;
+  --wt-gold-lite: #f4cc82;
+  --wt-accent: #d05a2e;
+  --wt-accent-deep: #96381a;
+  --wt-veil: rgba(24, 14, 8, 0.68);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "✧";
+}
+[data-palette="italy-sorrento"] {
+  --wt-bg-1: #141c08;
+  --wt-bg-2: #202c10;
+  --wt-bg-3: #2c3c16;
+  --wt-bg-4: #0a0e04;
+  --wt-gold: #ecd25c;
+  --wt-gold-lite: #f6e394;
+  --wt-accent: #4a8ab0;
+  --wt-accent-deep: #2c5e7e;
+  --wt-veil: rgba(20, 28, 8, 0.6);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "🍋";
+}
+[data-palette="italy-portofino"] {
+  --wt-bg-1: #201018;
+  --wt-bg-2: #301c26;
+  --wt-bg-3: #402834;
+  --wt-bg-4: #100810;
+  --wt-gold: #e8c888;
+  --wt-gold-lite: #f4e0b4;
+  --wt-accent: #e08c74;
+  --wt-accent-deep: #a85c48;
+  --wt-veil: rgba(32, 16, 24, 0.62);
+  --wt-script: "Playfair Display", serif;
+  --wt-motif: "❈";
+}
+
+/* ------------------------------------------------------------
+   Reusable animations
+   ------------------------------------------------------------ */
+
+@keyframes wt-fall {
+  0% {
+    transform: translateY(-40px) rotate(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(112vh) rotate(540deg) translateX(60px);
+    opacity: 0.15;
+  }
+}
+@keyframes wt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wt-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+@keyframes wt-kenburns {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.14);
+  }
+}
+@keyframes wt-down {
+  50% {
+    transform: translateX(-50%) translateY(10px);
+  }
+}
+@keyframes wt-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes wt-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+@keyframes wt-firework {
+  0% {
+    transform: translateY(100vh) scale(0.3);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes site-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes wt-msg-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes wt-panel-in {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes wt-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@keyframes wt-cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes wt-fab-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wt-kb {
+  animation: wt-kenburns 20s ease-in-out infinite alternate;
+}
+.wt-spin-slow {
+  animation: wt-spin 26s linear infinite;
+}
+.wt-float {
+  animation: wt-float 4s ease-in-out infinite;
+}
+.wt-msg-in {
+  animation: wt-msg-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.wt-panel-in {
+  animation: wt-panel-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.wt-fab-pop {
+  animation: wt-fab-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.wt-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: wt-dot-bounce 1.1s ease-in-out infinite;
+}
+.wt-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  background: currentColor;
+  vertical-align: text-bottom;
+  animation: wt-cursor-blink 0.85s step-start infinite;
+}
+
+/* ------------------------------------------------------------
+   Site-wide (Home / Templates / Pricing) ambient polish
+   ------------------------------------------------------------ */
+
+@keyframes site-orb-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(3%, -4%) scale(1.08);
+  }
+  66% {
+    transform: translate(-3%, 3%) scale(0.96);
+  }
+}
+@keyframes site-underline-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.site-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: site-orb-drift 14s ease-in-out infinite;
+}
+
+/* Underline that grows from the left on hover/active, shared by header nav links */
+.site-nav-link {
+  position: relative;
+}
+.site-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1.5px;
+  background: var(--gradient-gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-nav-link:hover::after {
+  transform: scaleX(1);
+}
+.site-nav-link[data-active="true"]::after {
+  animation: site-underline-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Fallbacks matter here: --wt-gold / --wt-gold-lite only exist inside
+   [data-palette] (individual invite pages). These two utilities are also
+   used on plain showcase-site pages (Home, Templates, Pricing) where those
+   variables are undefined — without a fallback the gradient becomes
+   invalid-at-computed-value, background-image resolves to none, and with
+   color:transparent the heading renders completely invisible. */
+.wt-text-gradient {
+  background: linear-gradient(
+    180deg,
+    #fff,
+    var(--wt-gold-lite, var(--gold-soft)) 55%,
+    var(--wt-gold, var(--gold))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.wt-shimmer-gold {
+  background: linear-gradient(
+    100deg,
+    var(--wt-gold, var(--gold)) 0%,
+    var(--wt-gold-lite, var(--gold-soft)) 45%,
+    #fff 50%,
+    var(--wt-gold-lite, var(--gold-soft)) 55%,
+    var(--wt-gold, var(--gold)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: wt-shimmer 6s linear infinite;
+}
+
+/* ------------------------------------------------------------
+   Reveal collection — temple / nikkah / pastel palettes
+   ------------------------------------------------------------ */
+[data-palette="temple-saffron"] {
+  --wt-bg-1: #2b0a04;
+  --wt-bg-2: #4d1607;
+  --wt-bg-3: #6b220b;
+  --wt-bg-4: #1a0602;
+  --wt-gold: #f0a92e;
+  --wt-gold-lite: #ffd27a;
+  --wt-accent: #ff6a1a;
+  --wt-accent-deep: #c4410a;
+  --wt-veil: rgba(43, 10, 4, 0.7);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "🪔";
+}
+[data-palette="temple-meenakshi"] {
+  --wt-bg-1: #2a0712;
+  --wt-bg-2: #45101f;
+  --wt-bg-3: #0f3b2a;
+  --wt-bg-4: #16040a;
+  --wt-gold: #e6b84a;
+  --wt-gold-lite: #f7da8c;
+  --wt-accent: #1fa36a;
+  --wt-accent-deep: #137a4d;
+  --wt-veil: rgba(42, 7, 18, 0.72);
+  --wt-script: "Yatra One", cursive;
+  --wt-motif: "❁";
+}
+[data-palette="nikkah-emerald"] {
+  --wt-bg-1: #04201b;
+  --wt-bg-2: #08362d;
+  --wt-bg-3: #0c2a3a;
+  --wt-bg-4: #021310;
+  --wt-gold: #d9b45a;
+  --wt-gold-lite: #f1dc98;
+  --wt-accent: #3fbf9a;
+  --wt-accent-deep: #22886b;
+  --wt-veil: rgba(4, 32, 27, 0.74);
+  --wt-script: "Amiri", serif;
+  --wt-motif: "☪";
+}
+[data-palette="pastel-blush"] {
+  --wt-bg-1: #3a1828;
+  --wt-bg-2: #5a2840;
+  --wt-bg-3: #6e3a52;
+  --wt-bg-4: #24101a;
+  --wt-gold: #f0c8a0;
+  --wt-gold-lite: #ffe4cc;
+  --wt-accent: #ff7aa2;
+  --wt-accent-deep: #d94f7c;
+  --wt-veil: rgba(58, 24, 40, 0.62);
+  --wt-heading: "Playfair Display", serif;
+  --wt-display: "Cormorant Garamond", serif;
+  --wt-script: "Great Vibes", cursive;
+  --wt-motif: "♡";
+}
+
+/* ------------------------------------------------------------
+   Couple illustration
+   ------------------------------------------------------------ */
+.wt-couple { overflow: visible; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35)); }
+.wt-couple-ring { animation: wt-spin 40s linear infinite; }
+.wt-groom { animation: wt-sway 4.2s ease-in-out infinite; }
+.wt-bride { animation: wt-sway 4.2s ease-in-out infinite reverse; }
+.wt-couple-float { animation: wt-float-y 5s ease-in-out infinite; }
+.wt-garland { opacity: 0; animation: wt-garland-drop 0.9s cubic-bezier(0.3, 1.5, 0.5, 1) forwards; }
+.wt-garland-1 { animation-delay: 0.9s; }
+.wt-garland-2 { animation-delay: 1.5s; }
+.wt-heart { opacity: 0; animation: wt-heart-up 3.6s ease-out infinite; }
+.wt-heart-1 { animation-delay: 1.2s; }
+.wt-heart-2 { animation-delay: 2.4s; }
+@keyframes wt-spin { to { transform: rotate(360deg); } }
+@keyframes wt-sway { 0%, 100% { transform: rotate(-1.4deg); } 50% { transform: rotate(1.4deg); } }
+@keyframes wt-float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes wt-garland-drop { from { opacity: 0; transform: translateY(-70px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes wt-heart-up {
+  0% { opacity: 0; transform: translate(0, 10px) scale(0.4); }
+  15% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(var(--hx, 0px), -90px) scale(1.1); }
+}
+.wt-heart-0 { --hx: -14px; }
+.wt-heart-1 { --hx: 12px; }
+.wt-heart-2 { --hx: -4px; }
+
+/* ------------------------------------------------------------
+   Shutter intro
+   ------------------------------------------------------------ */
+.wt-shutter-shine {
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 48%, transparent 60%);
+  background-size: 250% 100%;
+  animation: wt-shine 3.4s ease-in-out infinite;
+}
+@keyframes wt-shine { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
+.wt-shutter-hint { animation: wt-nudge 1.6s ease-in-out infinite; }
+@keyframes wt-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.wt-shutter-plate { animation: wt-plate-in 0.9s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+@keyframes wt-plate-in { from { opacity: 0; transform: scale(0.85) translateY(20px); } to { opacity: 1; transform: none; } }
+
+/* ------------------------------------------------------------
+   Scratch card
+   ------------------------------------------------------------ */
+.wt-scratch-in { animation: wt-pop 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes wt-pop { from { transform: scale(0.92); } to { transform: none; } }
+.wt-scratch-coin { animation: wt-coin 1.8s ease-in-out infinite; }
+@keyframes wt-coin { 0%, 100% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-16px, -8px) rotate(-18deg); } }
+.wt-confetti { animation: wt-confetti 1.3s cubic-bezier(0.15, 0.7, 0.3, 1) forwards; }
+@keyframes wt-confetti {
+  from { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+  to { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) rotate(var(--rot)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-vertical="wedding"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

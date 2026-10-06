@@ -116,6 +116,9 @@ export function useLive() {
 }
 
 const VIDEO_CHIP = 'Video call';
+// Live AI calls (owner's plan): open the call screen (AiCallHost) instead of sending a message.
+const AI_CALL_CHIP = '📞 AI voice call';
+const AI_VIDEO_CHIP = '🎥 AI video call';
 const API = import.meta.env.VITE_API_URL;
 
 const store = {
@@ -190,6 +193,8 @@ export function useChat() {
     CARD.href?.WhatsApp ? 'Share contact on WhatsApp' : null,
     CARD.videoRoomUrl ? VIDEO_CHIP : null,
   ].filter(Boolean);
+  if (CARD.slug && CARD.ai?.calls?.video) chips.unshift(AI_VIDEO_CHIP);
+  if (CARD.slug && CARD.ai?.calls?.voice) chips.unshift(AI_CALL_CHIP);
 
   const ask = async (text, history) => {
     const next = [...history, { role: 'user', content: text }];
@@ -229,6 +234,10 @@ export function useChat() {
   const send = async (raw) => {
     const text = String(raw || '').trim().slice(0, 1000);
     if (!text || busyRef.current) return;
+    if (text === AI_CALL_CHIP || text === AI_VIDEO_CHIP) {
+      window.dispatchEvent(new CustomEvent('aicardly:call', { detail: { mode: text === AI_VIDEO_CHIP ? 'video' : 'voice' } }));
+      return;
+    }
     if (text === VIDEO_CHIP && CARD.videoRoomUrl) {
       window.open(CARD.videoRoomUrl, '_blank', 'noopener,noreferrer');
       return;
@@ -1539,6 +1548,9 @@ export function CardQR({ color = '#111111', bg = 'transparent', style }) {
     </div>
   );
 }
+
+// Read by the palette/mode recolouring (theme/themeTree.js): the QR's box always stays white.
+CardQR.keepQr = true;
 
 export function downloadQR(e) {
   if (e && e.preventDefault) e.preventDefault();

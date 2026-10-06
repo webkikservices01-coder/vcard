@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, KeyRound, LogIn, LogOut, Mail, MailCheck, Eye, EyeOff, Wand2, Copy } from 'lucide-react';
+import { Infinity as InfinityIcon, ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, KeyRound, LogIn, LogOut, Mail, MailCheck, Eye, EyeOff, Wand2, Copy } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
@@ -223,12 +223,13 @@ export default function UserDetail() {
                 {user.planActive && <Button size="sm" variant="secondary" onClick={() => open('extend')}><CalendarPlus className="h-3.5 w-3.5" /> Extend</Button>}
                 <Button size="sm" variant="secondary" onClick={() => open('change')}><Repeat className="h-3.5 w-3.5" /> Change</Button>
                 {user.planActive && <Button size="sm" variant="secondary" onClick={() => open('revoke')}><XCircle className="h-3.5 w-3.5" /> Revoke</Button>}
+                {!user.lifetimeFixed && <Button size="sm" variant="secondary" onClick={() => open('lifetime')}><InfinityIcon className="h-3.5 w-3.5" /> {user.lifetime ? 'Remove lifetime' : 'Lifetime'}</Button>}
               </div>
             )
           }
         >
-          <p className="text-lg font-semibold text-slate-900">{user.planActive ? user.plan : 'Free Trial'}</p>
-          <p className="text-sm text-slate-500">{user.planActive ? `until ${dateOnly(user.planExpiry)} (${timeLeft(user.planExpiry)})` : user.planExpiry ? `ended ${dateOnly(user.planExpiry)}` : 'No paid plan'}</p>
+          <p className="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">{user.planActive ? (user.plan && user.plan !== 'Free Trial' ? user.plan : 'AI AGENT PRO') : 'Free Trial'}{user.lifetime && <Badge color="green">Lifetime</Badge>}</p>
+          <p className="text-sm text-slate-500">{user.lifetime ? (user.lifetimeFixed ? 'Never expires (permanent account)' : 'Never expires') : user.planActive ? `until ${dateOnly(user.planExpiry)} (${timeLeft(user.planExpiry)})` : user.planExpiry ? `ended ${dateOnly(user.planExpiry)}` : 'No paid plan'}</p>
           {can('users.credits') && (
             <Button size="sm" variant="secondary" className="mt-4" onClick={() => open('credits', { credits: 1, cardLimit: user.cardLimit ?? 1 })}>
               <Layers className="h-3.5 w-3.5" /> Free cards / credits
@@ -407,6 +408,7 @@ export default function UserDetail() {
         {planPicker}
         {daysField('Days from today (optional)')}
       </ActionDialog>
+      <ActionDialog open={dialog === 'lifetime'} onClose={close} title={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} description={user.lifetime ? 'The plan follows its expiry date again.' : 'The plan never expires. With no paid plan the user gets AI Agent Pro.'} confirmLabel={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} onSubmit={run('/lifetime', { lifetime: !user.lifetime })} />
       <ActionDialog open={dialog === 'revoke'} onClose={close} title="Revoke plan" description="The user goes back to the free tier right away." confirmLabel="Revoke" danger onSubmit={run('/plan/revoke')} />
       <ActionDialog
         open={dialog === 'credits'}

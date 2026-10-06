@@ -199,7 +199,7 @@ const Products = ({ kind = 'product' }) => {
             />
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            {kind === 'service' && (
+            {(
               <Button
                 variant="ghost"
                 onClick={() => setShowImport(true)}
@@ -227,7 +227,7 @@ const Products = ({ kind = 'product' }) => {
             <ImageIcon className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--surface-text-2)', opacity: 0.5 }} />
             <p className="text-sm mb-4" style={{ color: 'var(--surface-text-2)' }}>{copy.empty}</p>
             <div className="flex flex-wrap justify-center gap-2">
-              {kind === 'service' && (
+              {(
                 <GradientButton onClick={() => setShowImport(true)} className="!w-auto px-6">
                   <Globe className="w-4 h-4" /><span>Import from my website</span>
                 </GradientButton>
@@ -381,8 +381,8 @@ const Products = ({ kind = 'product' }) => {
  document.body)}
       </div>
 
-      {kind === 'service' && (
-        <ImportServices open={showImport} onClose={() => setShowImport(false)} onImported={fetchProducts} />
+      {(
+        <ImportServices kind={kind} open={showImport} onClose={() => setShowImport(false)} onImported={fetchProducts} />
       )}
 
       <ActionPopup

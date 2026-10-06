@@ -41,6 +41,9 @@ const vCardSchema = new mongoose.Schema({
         reels:      [{ url: String, title: String }],
     },
 
+    // AI chatbot replies used on the free trial (the owner has no Smart AI Card / AI Agent Pro plan).
+    aiTrialUsed: { type: Number, default: 0 },
+
     viewCount: { type: Number, default: 0 },
     scanCount:  { type: Number, default: 0 },
 

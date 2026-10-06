@@ -14,8 +14,18 @@
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
-            { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://aicardly.com/features" }
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://aicardly.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Features",
+              "item": "https://aicardly.com/features"
+            }
           ]
         }
       ]
@@ -28,8 +38,18 @@
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
-            { "@type": "ListItem", "position": 2, "name": "Pricing", "item": "https://aicardly.com/pricing" }
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://aicardly.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Pricing",
+              "item": "https://aicardly.com/pricing"
+            }
           ]
         }
       ]
@@ -42,8 +62,18 @@
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://aicardly.com/" },
-            { "@type": "ListItem", "position": 2, "name": "Metal NFC Card", "item": "https://aicardly.com/metal-nfc-card" }
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://aicardly.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Metal NFC Card",
+              "item": "https://aicardly.com/metal-nfc-card"
+            }
           ]
         }
       ]
@@ -102,7 +132,36 @@
       "title": "Reset Password | Aicardly",
       "description": "Reset the password for your Aicardly account.",
       "noindex": true
+    },
+    "/wedding": {
+      "title": "Free Digital Wedding Invitation – 10 Beautiful Designs with RSVP | Aicardly",
+      "description": "Create a free online wedding invitation: your names, functions, venue map, photos and music. Guests RSVP and send blessings. Share one link on WhatsApp.",
+      "jsonld": [
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://aicardly.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Wedding Invitations",
+              "item": "https://aicardly.com/wedding"
+            }
+          ]
+        }
+      ]
     }
   },
-  "privatePrefixes": ["/dashboard", "/admin", "/onboarding", "/verify-email"]
+  "privatePrefixes": [
+    "/dashboard",
+    "/admin",
+    "/onboarding",
+    "/verify-email"
+  ]
 }

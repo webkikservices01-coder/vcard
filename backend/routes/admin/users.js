@@ -199,6 +199,15 @@ router.post('/:id/plan/revoke', ...act('users.plan', z.object({ reason: z.string
   res.json({ msg: 'Plan revoked. The user is on the free tier now.' });
 }));
 
+// Lifetime account: the plan never expires (AI Agent Pro when the user has no paid plan).
+router.post('/:id/lifetime', ...act('users.plan', z.object({ lifetime: z.boolean(), reason: z.string().trim().min(3, 'please give a reason').max(500) }), async (req, res) => {
+  const User = require('../../models/User');
+  const user = await User.findByIdAndUpdate(req.v.params.id, { $set: { lifetime: req.v.body.lifetime } }, { returnDocument: 'after' }).select('email lifetime');
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  await audit(req, req.v.body.lifetime ? 'plan.lifetime_on' : 'plan.lifetime_off', { targetType: 'user', targetId: user._id, summary: `${req.v.body.lifetime ? 'Made' : 'Removed'} lifetime ${req.v.body.lifetime ? 'for' : 'from'} ${user.email}`, meta: { reason: req.v.body.reason } });
+  res.json({ msg: req.v.body.lifetime ? 'Lifetime on: this plan never expires.' : 'Lifetime off: the plan follows its expiry date again.', lifetime: user.lifetime });
+}));
+
 router.post('/:id/credits', ...act('users.credits', z.object({ credits: z.coerce.number().int().min(-100).max(100).default(0), cardLimit: z.coerce.number().int().min(0).max(1000).optional(), reason: z.string().trim().min(3, 'please give a reason').max(500) }), async (req, res) => {
   const { credits, cardLimit, reason: why } = req.v.body;
   if (!credits && cardLimit === undefined) return res.status(400).json({ msg: 'Nothing to change.' });

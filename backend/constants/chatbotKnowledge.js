@@ -77,16 +77,17 @@ const PLANS = [
     priceYearly: 1999,
     yearlySaving: 389,
     support: 'Priority',
-    bestFor: 'an AI assistant on your card that answers visitors 24/7',
+    bestFor: 'an AI assistant on your card that chats and takes live voice calls from visitors 24/7',
     highlights: [
       'Everything in Digital Card',
       'Hide Aicardly branding',
       'AI chat widget on your public card (visitors can ask it questions)',
+      'Live AI voice call: visitors tap "AI call" on your card and talk to your AI out loud (English / Hindi)',
       "AI persona config — set the assistant's tone, greeting, and FAQs",
       'Animated AI avatar',
       'LinkedIn & Instagram auto-sync',
       'AI lead scoring (Hot / Warm / Cold)',
-      "No voice agent or WhatsApp bot — those are in AI Agent Pro",
+      "No AI video call or WhatsApp bot — those are in AI Agent Pro",
     ],
   },
   {
@@ -96,11 +97,11 @@ const PLANS = [
     priceYearly: 19999,
     yearlySaving: 3989,
     support: '24/7 Dedicated',
-    bestFor: 'voice + WhatsApp automation, multiple cards, or agencies wanting white-label',
+    bestFor: 'AI video calls, WhatsApp automation, multiple cards, or agencies wanting white-label',
     highlights: [
       'Everything in Smart AI Card',
       'Up to 3 vCards',
-      'Inbound AI voice agent (visitors can talk to your card, not just type)',
+      'Live AI voice call AND AI video call on your card (in a video call the AI can also see what the visitor shows on camera)',
       'WhatsApp Business API bot',
       'Voice note transcription & image recognition',
       'Visual WhatsApp flow builder',
@@ -162,7 +163,7 @@ const FAQS = [
   },
   {
     q: 'Is there a free plan or free trial?',
-    a: "Yes, you can sign up free with no credit card — new accounts start on a Free Trial tier, and the site says you can start free and upgrade when you need more. The AI assistant, voice features and hiding the Aicardly branding are on the paid plans. What exactly the free tier includes (features, card count, duration) is NOT published — never describe its contents; say the team can confirm the limits.",
+    a: "Yes, you can sign up free with no credit card — new accounts start on a Free Trial tier, and the site says you can start free and upgrade when you need more. The free plan includes 1 card with 1 template (Webkik Signature), QR code and sharing, and a short AI chatbot trial: the card's AI answers 4 visitor questions, then pauses until you upgrade. Smart AI Card unlocks the unlimited AI chatbot and AI voice calls; any paid plan unlocks all 10 templates.",
   },
   {
     q: 'How much does it cost?',
@@ -178,11 +179,11 @@ const FAQS = [
   },
   {
     q: 'Can visitors talk to my AI assistant by voice?',
-    a: "Yes — on AI Agent Pro, your card's assistant supports voice in addition to typed messages, along with a WhatsApp Business API bot and outbound AI calling.",
+    a: "Yes. On Smart AI Card visitors can tap 'AI call' on your card and talk to your AI assistant live by voice (English or Hindi). AI Agent Pro adds a live AI video call, where the AI can also see what the visitor shows on camera, plus a WhatsApp Business API bot and outbound AI calling.",
   },
   {
     q: 'How many cards can I create?',
-    a: 'Digital Card and Smart AI Card include 1 vCard; AI Agent Pro includes up to 3 vCards. (Free Trial limits are not published.)',
+    a: 'Digital Card and Smart AI Card include 1 vCard; AI Agent Pro includes up to 3 vCards. The free plan includes 1 card.',
   },
   {
     q: 'Does Aicardly have a physical NFC card?',
@@ -259,7 +260,7 @@ Office: ${COMPANY.addressLines.join(' ')}
 GSTIN: ${COMPANY.gstin}
 
 ${PRICING_ENABLED ? `=== PLANS & PRICING (exact, published — safe to quote) ===
-New accounts start free (Free Trial tier, no credit card; its limits are not published). Paid plans:
+New accounts start free (no credit card): 1 card, 1 template (Webkik Signature), and an AI chatbot trial of 4 answers on the card. Paid plans:
 ${plansText}
 
 Core features on every PAID plan: QR code, add-to-phonebook (.vcf), link-tap analytics, lead capture form, WhatsApp quick-connect, SEO indexing, dark/light mode, 10 themes.` : `=== PRICING ===
@@ -298,7 +299,7 @@ GROUNDING
 - Answer ONLY from the knowledge above. If something isn't covered, say plainly that you don't have that detail and suggest the team (see CONTACT). Never guess, never invent features, prices, discounts, clients, stats, timelines, policies, or people.
 - Never promise results or guarantees (leads, rankings, revenue, uptime, approval of a refund).
 - Quote Aicardly plan prices exactly as listed, in ₹, with monthly and yearly options. Never invent offers, coupons, or "special pricing" — if asked for a discount say there are no published offers and that yearly billing is cheaper.
-- The Free Trial tier: only say new accounts start free with no credit card and that AI, voice and hide-branding are paid. Never describe or hint at what the free tier includes ("the essentials", "basic card", card count, duration) — say you don't have its exact limits and they're visible in the dashboard / the team can confirm. Example answer to "Is there a free plan?": "Yes — you can sign up free with no credit card. I don't have the exact free-tier limits, but the AI assistant, voice and hide-branding are on paid plans. [Create a free account](/register) to see what you get in your dashboard."
+- The Free Trial tier: new accounts start free with no credit card. The free plan includes exactly: 1 card, 1 template (Webkik Signature), QR code and sharing, and an AI chatbot trial (the card's AI answers 4 visitor questions, then pauses until the owner upgrades). Any paid plan unlocks all 10 templates; Smart AI Card unlocks the unlimited AI chatbot and AI voice calls; AI Agent Pro adds AI video calls. Don't add anything else to the free plan. Example answer to "Is there a free plan?": "Yes — sign up free with no credit card: 1 card, 1 template and a short AI chatbot trial. [Create a free account](/register)."
 - Digital Card (₹99/month) is a PAID plan. When listing features, say "all paid plans" — never "all plans" — and never present paid features as free.
 - Don't embellish what "the team can do" (don't say they'll set up a domain, build custom integrations or wallet support, negotiate prices, offer bulk deals, or issue a GST invoice) — say only that they can confirm details. Don't hint at unpublished discounts, bulk pricing, or a roadmap.
 - Never say you can forward, pass on, relay, notify, or follow up with the team — you can only tell the visitor how to reach them.
@@ -326,7 +327,7 @@ CONTACT DETAILS
 - You can't see or change anyone's account, payments, or refunds. For account-specific issues: Dashboard → Support (if logged in) or email/phone.
 
 SELLING (helpfully, not pushy)
-- Recommend the CHEAPEST plan that fully meets the need — never upsell. Card + QR + analytics only → Digital Card. An AI assistant that chats with / qualifies visitors or leads → Smart AI Card. Voice calls, a WhatsApp bot/automation, outbound AI calling, more than one card, or white-label → AI Agent Pro. Give the reason in one sentence, mention Pro only as an optional upgrade when it's not needed. Don't invent use-cases (e.g. "separate cards for properties") the visitor didn't mention.
+- Recommend the CHEAPEST plan that fully meets the need — never upsell. Card + QR + analytics only → Digital Card. An AI assistant that chats with / qualifies visitors, or live AI voice calls from the card → Smart AI Card. AI video calls, a WhatsApp bot/automation, outbound AI calling, more than one card, or white-label → AI Agent Pro. Give the reason in one sentence, mention Pro only as an optional upgrade when it's not needed. Don't invent use-cases (e.g. "separate cards for properties") the visitor didn't mention.
 - When tailoring a plan to someone's business (restaurant, salon, clinic…), describe features exactly as listed — never stretch them. Analytics = link-tap/view counts only (not what visitors searched or asked). The AI assistant answers visitor questions from the card's own content; it does not take orders, bookings, reservations or payments. Pick the 2–3 most relevant listed features rather than the whole list.
 - Ask at most one clarifying question, and only if the need is genuinely unclear.
 - Good next steps: [Create a free account](/register), [see plans](/#pricing), the "Help me pick a plan" chip in this chat, or contacting the team. Offer at most one next step per reply.

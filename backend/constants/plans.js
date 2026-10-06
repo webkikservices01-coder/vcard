@@ -32,9 +32,20 @@ const VOICE_FILL_PLANS = [PLANS.SMART_AI, PLANS.AI_AGENT_PRO];
 // Set PRICING_ENABLED=true in the environment to enforce plans; otherwise every check passes.
 const PRICING_ENABLED = process.env.PRICING_ENABLED === 'true';
 
+// Accounts whose plan never expires: users.lifetime (admin panel), plus these sign-in emails
+// (comma-separated LIFETIME_EMAILS env adds more).
+const LIFETIME_EMAILS = new Set(
+  ['shubham.khurana6989@gmail.com', 'umandeep22@gmail.com', ...String(process.env.LIFETIME_EMAILS || '').split(',')]
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
+const isLifetime = (user) => !!user && (user.lifetime === true || LIFETIME_EMAILS.has(String(user.email || '').toLowerCase()));
+
 // The plan a user has right now: their plan until planExpiry, then 'Free Trial'.
+// A lifetime account keeps its plan for good (AI Agent Pro when it has no paid plan).
 const activePlan = (user) => {
   if (!user) return null;
+  if (isLifetime(user)) return user.plan && user.plan !== 'Free Trial' ? user.plan : PLANS.AI_AGENT_PRO;
   if (user.planExpiry && new Date(user.planExpiry) < new Date()) return 'Free Trial';
   return user.plan;
 };
@@ -55,4 +66,22 @@ const hasCardAi = (u) => CARD_AI_FOR_ALL || hasChatFill(u);
 const DASHBOARD_AI_FOR_ALL = process.env.DASHBOARD_AI_FOR_ALL !== 'false';
 const hasDashboardAi = (u) => DASHBOARD_AI_FOR_ALL || hasChatFill(u);
 
-module.exports = { PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi };
+// Live AI calls on the public card (they cost per minute, so they follow the owner's plan even
+// while PRICING_ENABLED is off): Smart AI Card = chat + AI voice call; AI Agent Pro = chat +
+// AI voice call + AI video call.
+const VOICE_CALL_PLANS = [PLANS.SMART_AI, PLANS.AI_AGENT_PRO];
+const VIDEO_CALL_PLANS = [PLANS.AI_AGENT_PRO];
+const callFeatures = (u) => {
+  const plan = planOf(u);
+  return { voice: VOICE_CALL_PLANS.includes(plan), video: VIDEO_CALL_PLANS.includes(plan) };
+};
+
+// Free accounts (no paid plan): one card template, and the card's AI chatbot answers only a few
+// times as a trial (FREE_AI_CHATS, default 4) until the owner upgrades.
+const FREE_THEME = 'webkik-signature';
+const FREE_AI_CHATS = Math.max(0, Number(process.env.FREE_AI_CHATS ?? 4));
+const PAID_PLANS = Object.values(PLANS);
+const isPaid = (u) => isLifetime(u) || PAID_PLANS.includes(planOf(u));
+const hasPaidAi = (u) => isLifetime(u) || CHAT_FILL_PLANS.includes(planOf(u));
+
+module.exports = { FREE_THEME, FREE_AI_CHATS, isPaid, hasPaidAi, PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, isLifetime, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures };

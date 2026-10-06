@@ -40,6 +40,8 @@ try {
     console.error('Could not create uploads directory:', err.message);
 }
 app.use('/uploads', express.static(uploadDir));
+// Brand images used in emails (the logo in every email header).
+app.use('/brand', express.static(path.join(__dirname, 'assets', 'brand'), { maxAge: '7d' }));
 
 // Admin panel pages (static build, no database needed). Switched off unless ADMIN_ENABLED=true.
 const { createAdminApi, createAdminUi } = require('./routes/admin');
@@ -90,8 +92,11 @@ app.use('/api/stats',           require('./routes/stats'));
 app.use('/api/settings',        require('./routes/settings'));
 app.use('/api/transactions',    require('./routes/transactions'));
 app.use('/api/ai',              require('./routes/ai'));
+app.use('/api/ai-call',         require('./routes/aiCall'));
+app.use('/api/geo',             require('./routes/geo'));
 app.use('/api/admin',           createAdminApi());
 app.use('/api/og',              require('./routes/og'));
+app.use('/api/wedding',         require('./routes/wedding'));
 app.use('/api/card-orders',     require('./routes/cardOrders'));
 app.use('/api/webhooks',        require('./routes/webhooks'));
 app.use('/api/cron',            require('./routes/cron'));

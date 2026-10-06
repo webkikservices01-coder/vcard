@@ -1,44 +1,30 @@
-import { motion } from 'framer-motion';
-
 // Ambient blurred gradient blobs — reused behind hero/panel sections for the "premium mesh" backdrop.
-// The first blob slowly morphs its border-radius for an organic "amoeba" feel; a slow-rotating
-// conic "aurora" wash sits behind everything for extra depth. Pass `fixed` to pin it to the
-// viewport (for a persistent app-wide ambient layer) instead of the nearest positioned ancestor.
-// Pass `rich` to layer in the grain texture + bottom wave paths used behind full-page
+// A slow-rotating conic "aurora" wash sits behind everything for extra depth. Pass `fixed` to pin it
+// to the viewport (for a persistent app-wide ambient layer) instead of the nearest positioned
+// ancestor. Pass `rich` to layer in the grain texture + bottom wave paths used behind full-page
 // marketing/auth surfaces (heavier, so left off by default for small in-card usages).
+//
+// Built to stay light on laptops (MacBook / Safari hung on the old version): the blobs are soft
+// radial gradients (no CSS blur filter, which had to be redrawn every frame), only transform and
+// opacity move (GPU-only), and the slow drift steps a few times a second instead of 60, so the
+// glass cards drawn over it don't have to re-blur constantly. It looks the same.
 const MeshBackground = ({ className = '', fixed = false, rich = false }) => (
-  <div className={`${fixed ? 'fixed' : 'absolute'} inset-0 overflow-hidden pointer-events-none ${className}`}>
-    <motion.div
-      className="absolute inset-0"
-      style={{
-        background: 'conic-gradient(from 0deg at 50% 50%, var(--mesh-a), var(--mesh-c), var(--mesh-b), var(--mesh-a))',
-        opacity: 0.07,
-        filter: 'blur(80px)',
-      }}
-      animate={{ rotate: 360 }}
-      transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+  <div className={`mesh-bg ${fixed ? 'fixed' : 'absolute'} inset-0 overflow-hidden pointer-events-none ${className}`}>
+    <div
+      className="mesh-wash absolute -inset-1/4"
+      style={{ background: 'conic-gradient(from 0deg at 50% 50%, var(--mesh-a), var(--mesh-c), var(--mesh-b), var(--mesh-a))', opacity: 0.07 }}
     />
-    <motion.div
-      className="absolute -top-24 -left-16 w-80 h-80 blur-3xl"
-      style={{ background: 'radial-gradient(circle, var(--mesh-a), transparent 70%)' }}
-      animate={{
-        opacity: [0.35, 0.55, 0.35],
-        scale: [1, 1.12, 1],
-        borderRadius: ['42% 58% 65% 35% / 45% 45% 55% 55%', '65% 35% 42% 58% / 55% 62% 38% 45%', '42% 58% 65% 35% / 45% 45% 55% 55%'],
-      }}
-      transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+    <div
+      className="mesh-blob mesh-blob-a absolute -top-40 -left-32 w-[28rem] h-[28rem]"
+      style={{ background: 'radial-gradient(circle closest-side, var(--mesh-a), color-mix(in srgb, var(--mesh-a) 45%, transparent) 45%, transparent 100%)' }}
     />
-    <motion.div
-      className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"
-      style={{ background: 'radial-gradient(circle, var(--mesh-b), transparent 70%)' }}
-      animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.15, 1] }}
-      transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+    <div
+      className="mesh-blob mesh-blob-b absolute bottom-0 right-0 w-[32rem] h-[32rem]"
+      style={{ background: 'radial-gradient(circle closest-side, var(--mesh-b), color-mix(in srgb, var(--mesh-b) 45%, transparent) 45%, transparent 100%)' }}
     />
-    <motion.div
-      className="absolute top-1/3 right-1/4 w-64 h-64 rounded-full blur-3xl"
-      style={{ background: 'radial-gradient(circle, var(--mesh-c), transparent 70%)' }}
-      animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
-      transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+    <div
+      className="mesh-blob mesh-blob-c absolute top-1/3 right-1/4 w-[24rem] h-[24rem]"
+      style={{ background: 'radial-gradient(circle closest-side, var(--mesh-c), color-mix(in srgb, var(--mesh-c) 45%, transparent) 45%, transparent 100%)' }}
     />
     <div
       className="absolute inset-0"

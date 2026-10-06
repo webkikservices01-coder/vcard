@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const AiUsageLogSchema = new mongoose.Schema({
-  route:         { type: String, enum: ['chat', 'voice-fill', 'jarvis', 'platform-chat', 'theme'], required: true },
+  route:         { type: String, enum: ['chat', 'voice-fill', 'jarvis', 'platform-chat', 'theme', 'wedding-chat', 'bio'], required: true },
   vcardId:       { type: mongoose.Schema.Types.ObjectId, ref: 'vCard' },
   userId:        { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   model:         { type: String, required: true },

@@ -9,7 +9,10 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
-const { hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi } = require('../constants/plans');
+const { hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures, hasPaidAi, FREE_AI_CHATS } = require('../constants/plans');
+
+// Free accounts: the card's chatbot answers FREE_AI_CHATS times as a trial, then pauses until the owner upgrades.
+const trialOver = (owner, card) => !hasPaidAi(owner) && (card.aiTrialUsed || 0) >= FREE_AI_CHATS;
 const { logUsage } = require('../utils/usageLogger');
 const { buildCardySystemPrompt, COMPANY } = require('../constants/chatbotKnowledge');
 const { platformChatLimiter, platformLeadLimiter, themeLimiter, cardChatLimiter, feedbackLimiter } = require('../middleware/rateLimiter');
@@ -258,6 +261,66 @@ ${safetyBlock(guard)}`;
 };
 
 // ─── GET /api/ai/persona ──────────────────────────────────────────────────────
+// ─── POST /api/ai/bio  { name, designation, notes } → { bio } ─────────────────
+// "Generate bio with AI" on the Profile page: a short card bio (max 50 words) written only from
+// what the owner gave (name, designation, their draft) and what is already on their card.
+const bioLimiter = require('express-rate-limit')({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  keyGenerator: (req) => `user:${req.user.userId}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many tries. Please wait a few minutes.' },
+});
+router.post('/bio', auth, bioLimiter, async (req, res) => {
+  try {
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'AI is not set up yet.' });
+    const clip = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+    const name = clip(req.body.name, 80);
+    const designation = clip(req.body.designation, 120);
+    const notes = clip(req.body.notes, 1500);
+    const card = await vCard.findOne({ userId: req.user.userId }).lean();
+    const [services, projects] = card
+      ? await Promise.all([
+          Product.find({ vcardId: card._id }).select('title kind').limit(12).lean(),
+          Portfolio.find({ vcardId: card._id }).select('title').limit(6).lean(),
+        ])
+      : [[], []];
+    const site = (card?.dynamicLinks || []).find((l) => /website/i.test(l.fieldType || ''))?.url || '';
+    const facts = [
+      name && `Name: ${name}`,
+      designation && `Designation / company: ${designation}`,
+      notes && `Their own words (draft bio or notes): ${notes}`,
+      services.length && `Services / products on their card: ${services.map((s) => s.title).join(', ')}`,
+      projects.length && `Projects on their card: ${projects.map((p) => p.title).join(', ')}`,
+      site && `Website: ${site}`,
+    ].filter(Boolean).join('\n');
+    if (!name && !designation && !notes) return res.status(400).json({ msg: 'Add your name and designation first, or a few words about your work.' });
+
+    const r = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 220,
+      system: `You write the short bio on a professional's digital business card (Aicardly).
+Rules:
+- 25 to 45 words, one or two sentences, written as a crisp intro (for example "Founder of X, building …"), not "I am" and not "He/She is". Plain text only: no quotes, emojis, hashtags or line breaks.
+- Use ONLY the facts given. Never invent numbers, years, awards, clients, cities or claims. Never guess what a company does or which industry it is in from its name: if the facts don't say it, leave it out and keep the bio short and general (for example "Founder of Vikrida.com, building the brand and its team.").
+- Specific beats generic: name what they do and for whom when the facts say it. No buzzword strings ("passionate, results-driven, dynamic").
+- Write in the language of their own words (English, or Hinglish/Hindi if that is how they wrote); default English.
+- If "their own words" are given, keep their meaning and key names; make it clearer and tighter.`,
+      messages: [{ role: 'user', content: `${facts}\n\nWrite the bio.` }],
+    });
+    logUsage({ route: 'bio', vcardId: card?._id, userId: req.user.userId, model: CLAUDE_MODEL, usage: r.usage });
+    let bio = r.content.filter((b) => b.type === 'text').map((b) => b.text).join(' ').replace(/^["'“]+|["'”]+$/g, '').replace(/\s+/g, ' ').trim();
+    const words = bio.split(' ');
+    if (words.length > 50) bio = words.slice(0, 50).join(' ').replace(/[,;:]$/, '') + '.';
+    res.json({ bio });
+  } catch (err) {
+    logEvent(req, 'ai.bio.error', err.message, { level: 'error' });
+    res.status(500).json({ msg: 'Could not write the bio right now. Please try again.' });
+  }
+});
+
 router.get('/persona', auth, async (req, res) => {
   try {
     const vcardId = await getCardId(req.user.userId);
@@ -277,7 +340,7 @@ router.post('/persona', auth, async (req, res) => {
     const vcardId = await getCardId(req.user.userId);
     if (!vcardId) return res.status(404).json({ msg: 'Create a vCard profile first.' });
 
-    const { enabled, aiName, tone, greeting, aboutText, faqs, knowledge, niche, consultingMode, blockedTopics, offer, npsEnabled, acceptDpa } = req.body;
+    const { enabled, aiName, tone, greeting, aboutText, faqs, knowledge, niche, consultingMode, blockedTopics, offer, npsEnabled, acceptDpa, voiceCall, videoCall, voiceName } = req.body;
     const existing = await AiPersona.findOne({ vcardId }).select('dpaAcceptedAt');
     const dpaOk = existing?.dpaAcceptedAt || acceptDpa === true;
     if (enabled !== false && !dpaOk) {
@@ -302,6 +365,9 @@ router.post('/persona', auth, async (req, res) => {
         cta: clip(offer?.cta, 40),
       },
       npsEnabled: npsEnabled !== false,
+      voiceCall: voiceCall !== false,
+      videoCall: videoCall !== false,
+      voiceName: ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'].includes(voiceName) ? voiceName : 'marin',
     };
     if (!existing?.dpaAcceptedAt && acceptDpa === true) {
       set.dpaAcceptedAt = new Date();
@@ -338,6 +404,10 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
     if (!persona.enabled) {
       return res.status(403).json({ msg: 'AI chat is disabled for this card.' });
+    }
+    if (trialOver(owner, card)) {
+      const first = card.personalInfo?.name?.split(' ')[0] || 'the owner';
+      return res.status(402).json({ msg: `The AI assistant is resting right now. You can reach ${first} directly with the Call or WhatsApp buttons on this card.`, trialOver: true });
     }
 
     const anthropic = getAnthropic();
@@ -402,6 +472,7 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     if (bad) reply = bad.reply;
     const { text, cards } = bad ? { text: reply, cards: [] } : cardsFor(reply, { products, portfolio });
     await track({ messages: 1, blocked: bad ? 1 : 0 }, showOffer ? { offerShown: true } : {});
+    if (!hasPaidAi(owner)) await vCard.updateOne({ _id: card._id }, { $inc: { aiTrialUsed: 1 } });
     res.json({ reply: text, cards, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
   } catch (err) {
     logEvent(req, 'ai.chat.error', err.message, { level: 'error' });
@@ -754,6 +825,8 @@ router.get('/public/:username', async (req, res) => {
 
     const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
     if (!persona.enabled) return res.json({ enabled: false });
+    // Free trial used up: the card hides its chatbot until the owner upgrades.
+    if (trialOver(owner, card)) return res.json({ enabled: false, trialOver: true });
 
     const niche = nicheOf(persona.niche);
     res.json({
@@ -767,6 +840,11 @@ router.get('/public/:username', async (req, res) => {
       offer: offerOf(persona),
       npsEnabled: persona.npsEnabled !== false,
       consentVersion: CHAT_CONSENT_VERSION,
+      // Live AI calls this card offers (plan + owner's switches).
+      calls: {
+        voice: !!process.env.OPENAI_API_KEY && callFeatures(owner).voice && persona.voiceCall !== false,
+        video: !!process.env.OPENAI_API_KEY && callFeatures(owner).video && persona.videoCall !== false,
+      },
     });
   } catch {
     res.json({ enabled: false });
@@ -1041,3 +1119,5 @@ router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
 
 module.exports = router;
 module.exports.cardsFor = cardsFor;
+module.exports.buildSystemPrompt = buildSystemPrompt;
+module.exports.DEFAULT_PERSONA = DEFAULT_PERSONA;

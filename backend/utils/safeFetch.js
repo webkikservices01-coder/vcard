@@ -10,14 +10,14 @@ const UA = 'Mozilla/5.0 (compatible; AicardlyBot/1.0; +https://aicardly.com)';
 
 function isPrivateIp(ip) {
   if (net.isIPv4(ip)) {
-    const [a, b] = ip.split('.').map(Number);
+    const [a, b, c] = ip.split('.').map(Number);
     return (
       a === 0 || a === 10 || a === 127 || a >= 224 ||
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
       (a === 192 && b === 168) ||
-      (a === 192 && b === 0) ||
+      (a === 192 && b === 0 && (c === 0 || c === 2)) || // 192.0.0.0/24 and TEST-NET-1 only (192.0.66.x is WordPress.com)
       (a === 198 && (b === 18 || b === 19))
     );
   }

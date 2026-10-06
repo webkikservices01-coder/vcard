@@ -29,7 +29,7 @@ const tinySquare = (url) =>
 export function faviconHref(value, card = {}) {
   const v = value || 'photo';
   const photo = getImageUrl(card.personalInfo?.profilePic);
-  if (v === 'aicardly') return '/favicon.png';
+  if (v === 'aicardly') return '/favicon.png?v=2';
   if (v === 'photo' && photo) return tinyRound(photo);
   if (v.startsWith('emoji:')) {
     return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="52">${v.slice(6)}</text></svg>`);
@@ -44,7 +44,7 @@ export function faviconHref(value, card = {}) {
 
 // Point the page's icon links at href (null restores the site icon).
 export function setPageFavicon(href) {
-  const url = href || '/favicon.png';
+  const url = href || '/favicon.png?v=2';
   for (const rel of ['icon', 'apple-touch-icon']) {
     let link = document.head.querySelector(`link[rel="${rel}"]`);
     if (!link) {

@@ -10,6 +10,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { FaInstagram, FaLinkedinIn, FaFacebookF } from "react-icons/fa";
+import LogoMark from "./ui/LogoMark";
 import { useTheme } from "../context/ThemeContext";
 
 export const COMPANY = {
@@ -59,8 +60,8 @@ function FooterLogo() {
 
   return (
     <Link to="/" className="group inline-flex items-center gap-3 transition-transform duration-300 hover:scale-105">
-      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30 transition-all duration-300 group-hover:-rotate-6">
-        <span className="text-lg font-black">P</span>
+      <span className="grid h-11 w-11 place-items-center rounded-[13px] shadow-lg shadow-[#E70C65]/30 transition-all duration-300 group-hover:-rotate-6">
+        <LogoMark size={44} />
       </span>
       <span className={`text-xl font-bold tracking-tight transition-colors ${
         isDark ? "text-white" : "text-slate-900"

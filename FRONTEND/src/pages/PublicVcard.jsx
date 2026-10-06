@@ -5,8 +5,19 @@ import WebCard, { nativeModeOf } from '../webcard/WebCard';
 import { getVideoRoomUrl } from '../utils/videoRoom';
 import { markNotFound, setCardIndexing } from '../components/Seo';
 import { faviconHref, setPageFavicon } from '../utils/favicon';
+import { getImageUrl } from '../utils/media';
+import AiCallHost, { AiCallFab } from '../webcard/AiCallHost';
 
 const API = import.meta.env.VITE_API_URL;
+
+// The owner's WhatsApp link (for "WhatsApp them" after an AI call).
+const whatsappOf = (card) => {
+  const l = (card?.dynamicLinks || []).find((x) => /whatsapp/i.test(x.fieldType || ''));
+  if (!l?.url) return '';
+  if (/^https?:\/\//i.test(l.url)) return l.url;
+  const n = String(l.url).replace(/\D/g, '');
+  return n ? `https://wa.me/${n.length === 10 ? '91' + n : n}` : '';
+};
 const _viewedSlugs = new Set();
 
 // First load of a card uses the request index.html already started (window.__cardPrefetch),
@@ -150,6 +161,20 @@ const PublicVcard = () => {
         videoRoomUrl={getVideoRoomUrl(data.card._id)}
         share
       />
+      {aiPersona?.enabled && (aiPersona.calls?.voice || aiPersona.calls?.video) && (
+        <>
+          <AiCallHost
+            slug={slug}
+            ownerName={name || 'the owner'}
+            aiName={aiPersona.aiName}
+            avatar={getImageUrl(data.card.personalInfo?.profilePic) || ''}
+            initials={(name || 'A').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+            calls={aiPersona.calls}
+            whatsapp={whatsappOf(data.card)}
+          />
+          <AiCallFab calls={aiPersona.calls} />
+        </>
+      )}
     </div>
   );
 };

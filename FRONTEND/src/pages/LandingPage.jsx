@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import PublicFooter, { COMPANY } from "../components/PublicFooter";
 import ThemeToggle from "../components/ui/ThemeToggle";
+import LogoMark from "../components/ui/LogoMark";
 import CyberCard3D from "./CyberCard3D";
 import { plans as realPlans } from "../data/plans";
 import HOME_SCHEMA from "../data/homeSchema.json";
@@ -132,8 +133,8 @@ function Logo() {
 
   return (
     <Link to="/" className="group inline-flex items-center gap-2.5 transition-transform duration-300 ease-out hover:scale-105">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-white shadow-lg shadow-[#E70C65]/30 transition-all duration-300 ease-out group-hover:-rotate-6 group-hover:shadow-xl group-hover:shadow-[#E70C65]/50">
-        <span className="text-base font-black">P</span>
+      <span className="grid h-9 w-9 place-items-center rounded-xl shadow-lg shadow-[#E70C65]/30 transition-all duration-300 ease-out group-hover:-rotate-6 group-hover:shadow-xl group-hover:shadow-[#E70C65]/50">
+        <LogoMark size={36} />
       </span>
       <span className={`text-lg font-semibold tracking-tight transition-colors ${
         isDark ? "text-white" : "text-slate-900"
@@ -693,7 +694,7 @@ export function LandingPage() {
     const video = heroVideoRef.current;
     if (!video) return;
     const start = () => {
-      video.src = "/hero-demo.mp4";
+      video.src = "/aicardly-demo.mp4";
       video.muted = true;
       video.play().catch(() => {});
     };
@@ -1126,7 +1127,7 @@ export function LandingPage() {
 
               <div className="video-beam-wrapper shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-500 ease-out group-hover:scale-[1.02] group-hover:shadow-[0_25px_60px_rgba(231,12,101,0.25)]">
                 <div className="relative overflow-hidden rounded-[26px] bg-[#0c101a] p-2 backdrop-blur-xl">
-                  <div className="absolute right-5 top-5 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-3 py-1 shadow-lg backdrop-blur-md">
+                  <div className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-3 py-1 shadow-lg backdrop-blur-md">
                     <span className="flex h-2 w-2 relative">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E70C65] opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E70C65]"></span>
@@ -1138,14 +1139,14 @@ export function LandingPage() {
 
                   <video
                     ref={heroVideoRef}
-                    poster="/hero-demo.webp"
+                    poster="/aicardly-demo.webp"
                     preload="none"
                     loop
                     playsInline
                     muted
                     controls
-                    aria-label="Aicardly metal NFC card demo video"
-                    className="h-[396px] sm:h-[440px] w-full rounded-[20px] object-cover shadow-inner transition-transform duration-700 ease-out group-hover:scale-[1.008]"
+                    aria-label="Aicardly AI business card demo video"
+                    className="mx-auto block aspect-square w-full max-w-[480px] rounded-[20px] object-cover shadow-inner transition-transform duration-700 ease-out group-hover:scale-[1.008]"
                   />
                 </div>
               </div>

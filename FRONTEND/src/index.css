@@ -427,3 +427,18 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
 }
+
+/* MeshBackground (components/ui/MeshBackground.jsx): slow drift that only moves transform and
+   opacity, in a few steps a second (steps()), so laptops — MacBook / Safari especially — don't
+   redraw blurs 60 times a second behind the glass cards. */
+.mesh-bg { contain: strict; }
+.mesh-wash { animation: mesh-spin 40s steps(160) infinite; will-change: transform; }
+.mesh-blob { border-radius: 9999px; will-change: transform, opacity; }
+.mesh-blob-a { opacity: .35; animation: mesh-a 10s steps(50) infinite; }
+.mesh-blob-b { opacity: .3; animation: mesh-b 8s steps(40) 1s infinite; }
+.mesh-blob-c { opacity: .2; animation: mesh-c 9s steps(45) 2s infinite; }
+@keyframes mesh-spin { to { transform: rotate(360deg); } }
+@keyframes mesh-a { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .55; transform: scale(1.12); } }
+@keyframes mesh-b { 0%, 100% { opacity: .3; transform: translate(33%, 33%) scale(1); } 50% { opacity: .5; transform: translate(33%, 33%) scale(1.15); } }
+@keyframes mesh-c { 0%, 100% { opacity: .2; transform: translateY(-4rem) scale(1); } 50% { opacity: .4; transform: translateY(-4rem) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .mesh-wash, .mesh-blob { animation: none; } }

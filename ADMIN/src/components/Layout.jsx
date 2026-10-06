@@ -38,7 +38,7 @@ const ROLE_LABEL = { super_admin: 'Super admin', admin: 'Admin', support: 'Suppo
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-gradient text-sm font-black text-white shadow-brand">A</span>
+      <img src="/admin/favicon.svg" alt="" width="36" height="36" className="h-9 w-9 shrink-0 rounded-xl shadow-brand" />
       <div className="leading-tight">
         <p className="text-[15px] font-bold text-slate-950">
           <span className="text-brand-gradient">Ai</span>cardly

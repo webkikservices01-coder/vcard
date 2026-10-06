@@ -86,6 +86,8 @@ const Onboarding = () => {
   const [slugTouched, setSlugTouched] = useState(false);
   const slugCheck = useUsernameCheck(form.slug.replace(/-+$/, ''));
   const [themeId, setThemeId] = useState(DEFAULT_TEMPLATE_ID);
+  // Free plan: one template (the default); the rest show a lock and open with any paid plan.
+  const [paid, setPaid] = useState(!PRICING_ENABLED);
   const selectedTemplate = templateMeta(themeId);
 
   useEffect(() => {
@@ -93,6 +95,7 @@ const Onboarding = () => {
       try {
         const res = await axios.get(`${API}/stats`, { headers: headers() });
         const { cardName, cardSlug, vcardCount, user } = res.data;
+        if (res.data.paid) setPaid(true);
 
         if (vcardCount > 0 && cardName && cardSlug) {
           navigate('/dashboard', { replace: true });
@@ -340,9 +343,15 @@ const Onboarding = () => {
                         <SelectedTemplate template={selectedTemplate} />
 
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                          {TEMPLATE_META.map((t, i) => (
-                            <TemplateSwatch key={t.id} template={t} name={form.name} index={i} selected={themeId === t.id} onClick={() => setThemeId(t.id)} />
-                          ))}
+                          {TEMPLATE_META.map((t, i) => {
+                            const locked = !paid && t.id !== DEFAULT_TEMPLATE_ID;
+                            return (
+                              <div key={t.id} className="relative">
+                                <TemplateSwatch template={t} name={form.name} index={i} selected={themeId === t.id} onClick={() => (locked ? toast('This template comes with any paid plan. The free plan includes Webkik Signature, you can upgrade any time.', { icon: '🔒' }) : setThemeId(t.id))} />
+                                {locked && <span className="pointer-events-none absolute right-1 top-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">🔒 PRO</span>}
+                              </div>
+                            );
+                          })}
                         </div>
 
                         <div className="flex items-center gap-2 pt-1">

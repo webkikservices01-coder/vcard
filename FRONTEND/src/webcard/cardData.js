@@ -310,13 +310,23 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     customSections: payload.customSections || [],
     skills: extras.skills || [],
     languages: extras.languages || [],
-    stats: (extras.stats || []).map((s) => ({ v: s.value, l: s.label })),
-    followers: (extras.followers || []).map((f) => ({
-      n: f.count,
-      l: f.platform,
-      kind: detectPlatform({ fieldType: f.platform, url: f.url || '' }),
-      href: f.url ? linkHref({ url: f.url }, 'website') : '',
-    })),
+    // Social followers ("12K Instagram followers") show with the key numbers in every template;
+    // Creator Reel has its own followers row and leaves these out (fo: true).
+    stats: [
+      ...(extras.followers || []).filter((f) => f.count).map((f) => ({ v: f.count, l: `${f.platform || 'Social'} followers`, fo: true })),
+      ...(extras.stats || []).map((s) => ({ v: s.value, l: s.label })),
+    ],
+    followers: (extras.followers || []).map((f) => {
+      const kind = detectPlatform({ fieldType: f.platform, url: f.url || '' });
+      // The count opens the profile: its own link, else the same platform's link in Contact Details.
+      const same = links.find((l) => detectPlatform(l) === kind);
+      return {
+        n: f.count,
+        l: f.platform,
+        kind,
+        href: f.url ? linkHref({ url: f.url }, 'website') : same ? linkHref(same, kind) : '',
+      };
+    }),
     brands: extras.brands || [],
     experience: (extras.experience || []).map((e) => ({ years: e.years, role: e.role, org: e.org })),
     timings: (extras.timings || []).map((t) => ({ d: t.day, h: t.hours })),
@@ -335,6 +345,8 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
       chips: aiPersona?.chips || [],
       offer: aiPersona?.offer?.title ? aiPersona.offer : null,
       nps: aiPersona?.npsEnabled !== false,
+      // Live AI calls the owner's plan includes: Smart AI Card = voice, AI Agent Pro = voice + video.
+      calls: { voice: !!aiPersona?.calls?.voice, video: !!aiPersona?.calls?.video },
     },
     videoRoomUrl,
   };
@@ -391,6 +403,14 @@ const helpers = {
       const icon = own || (/^<svg[^>]*>/.test(svg) ? { __html: svg.replace(/^(<svg[^>]*>)[\s\S]*(<\/svg>)$/, `$1${PATH[k]}$2`) } : socialIcon(k.toLowerCase()));
       return { ...slot, ...(byKey[k] || {}), key: k, label: caseLike(slot.label, k), icon, href: CARD.href[k] };
     });
+  },
+  // The name heading's font size: long names get a little smaller so the whole name fits
+  // (with up to 3 lines) instead of being cut.
+  // tight: templates with very large display type (Neo Brutal, Editorial Architect) shrink more.
+  nameSize(base, tight = false) {
+    const n = (CARD.fullName || '').length;
+    const k = n > 26 ? (tight ? 0.6 : 0.78) : n > 18 ? (tight ? 0.78 : 0.9) : n > 13 && tight ? 0.9 : 1;
+    return k === 1 ? base : `calc(${base} * ${k})`;
   },
   socialsFrom() {
     return CARD.socials.map((s) => ({ ...s, icon: socialIcon(s.kind, s.href, s.fieldType) }));

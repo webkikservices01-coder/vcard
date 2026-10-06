@@ -18,10 +18,11 @@ const DAY = 24 * 60 * 60 * 1000;
 const FREE = 'Free Trial';
 
 const statusOf = (u) => (u.deletedAt ? 'removed' : u.isBlocked ? 'blocked' : 'active');
-const planActive = (u) => !!(u.plan && u.plan !== FREE && u.planExpiry && new Date(u.planExpiry) > new Date());
+const { isLifetime } = require('../../constants/plans');
+const planActive = (u) => isLifetime(u) || !!(u.plan && u.plan !== FREE && u.planExpiry && new Date(u.planExpiry) > new Date());
 
 // Safe view of a user: never the password or reset/verification token hashes.
-const USER_FIELDS = 'name firstName lastName email phone plan planExpiry status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt';
+const USER_FIELDS = 'name firstName lastName email phone plan planExpiry lifetime status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt';
 
 function userFilter({ q, status, plan, from, to }) {
   const f = {};
@@ -73,7 +74,8 @@ async function listUsers({ page, limit, q, status, plan, from, to, sort, order }
       id,
       status: statusOf(u),
       planActive: planActive(u),
-      planName: s.plans[id]?.planName || (planActive(u) ? u.plan : FREE),
+      lifetime: isLifetime(u),
+      planName: s.plans[id]?.planName || (planActive(u) ? (u.plan !== FREE ? u.plan : 'AI AGENT PRO') : FREE),
       planStart: s.plans[id]?.startAt || null,
       cardsCount: s.cards[id] || 0,
       totalPaid: (s.orders[id] || 0) + (s.txns[id] || 0),
@@ -94,7 +96,7 @@ async function userDetail(id) {
   ]);
   const s = await statsFor([new mongoose.Types.ObjectId(String(id))]);
   return {
-    user: { ...user, id: String(user._id), status: statusOf(user), planActive: planActive(user), totalPaid: (s.orders[String(id)] || 0) + (s.txns[String(id)] || 0) },
+    user: { ...user, id: String(user._id), status: statusOf(user), planActive: planActive(user), lifetime: isLifetime(user), lifetimeFixed: isLifetime(user) && user.lifetime !== true, totalPaid: (s.orders[String(id)] || 0) + (s.txns[String(id)] || 0) },
     cards,
     orders: orders.map(orderView),
     transactions,

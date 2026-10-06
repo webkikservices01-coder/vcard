@@ -251,13 +251,14 @@ export function WebkikSignature(props) {
             style={{
               overflowWrap: 'anywhere',
               display: '-webkit-box',
-              WebkitLineClamp: '2',
+              WebkitLineClamp: '3',
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               margin: '0',
+              paddingBottom: '0.08em',
               fontFamily: "'Poppins',sans-serif",
               fontWeight: '700',
-              fontSize: 'clamp(25px, 7.2cqi, 29px)',
+              fontSize: CARD.nameSize('clamp(25px, 7.2cqi, 29px)'),
               lineHeight: '1.12',
               letterSpacing: '-0.02em',
             }}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import {
@@ -6,15 +6,15 @@ import {
   FaMapMarkerAlt, FaSpotify, FaTiktok, FaTelegram, FaGithub, FaDiscord, FaPinterest, FaSnapchat, FaGoogle
 } from 'react-icons/fa';
 import { MdEmail, MdOutlineLink } from 'react-icons/md';
-import { FiPlus, FiTrash2, FiEdit2, FiSave, FiMic } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiSave, FiMic, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
+import LocationInput from '../../components/LocationInput';
 import VoiceFillAssistant from '../../components/VoiceFillAssistant';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
 import GlassCard from '../../components/ui/GlassCard';
 import GradientButton from '../../components/ui/GradientButton';
 import MeshBackground from '../../components/ui/MeshBackground';
-import { fadeUp } from '../../utils/motion';
 
 // Smooth, premium page animations
 const slowFadeUp = (delay = 0) => ({
@@ -164,7 +164,8 @@ const ContactDetails = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (e) => {
+      if (e?.detail?.from === 'contacts') return; // our own autosave
       try {
         const token = localStorage.getItem('token');
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vcard/me`, {
@@ -189,18 +190,45 @@ const ContactDetails = () => {
     return () => window.removeEventListener('vcard:data-changed', fetchData);
   }, []);
 
+  // Every change (add, edit, delete, move) is saved straight away; saves run one after another
+  // so a quick series of changes always ends with the latest list on the card.
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
+  const saveChain = useRef(Promise.resolve());
+  const persist = (next) => {
+    setSaveState('saving');
+    saveChain.current = saveChain.current
+      .catch(() => {})
+      .then(() =>
+        axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { dynamicLinks: next }, { headers: { 'x-auth-token': localStorage.getItem('token') } })
+      )
+      .then(() => {
+        setSaveState('saved');
+        window.dispatchEvent(new CustomEvent('vcard:data-changed', { detail: { from: 'contacts' } }));
+      })
+      .catch((err) => {
+        console.error('Error saving links', err);
+        setSaveState('error');
+      });
+    return saveChain.current;
+  };
+  const update = (next) => {
+    setLinks(next);
+    persist(next);
+  };
+
   const handleAddOrUpdate = () => {
-    if (!currentLink.title || !currentLink.url) {
-      alert('Title and URL are required!');
+    if (!currentLink.url) {
+      alert('Please add the number, link or address.');
       return;
     }
+    const item = { ...currentLink, title: currentLink.title || currentLink.fieldType };
     if (editIndex !== null) {
       const updatedLinks = [...links];
-      updatedLinks[editIndex] = currentLink;
-      setLinks(updatedLinks);
+      updatedLinks[editIndex] = item;
+      update(updatedLinks);
       setEditIndex(null);
     } else {
-      setLinks([...links, currentLink]);
+      update([...links, item]);
     }
     setCurrentLink({ fieldType: 'Mobile / Phone', title: '', url: '' });
   };
@@ -211,22 +239,28 @@ const ContactDetails = () => {
   };
 
   const handleDelete = (index) => {
-    const filteredLinks = links.filter((_, i) => i !== index);
-    setLinks(filteredLinks);
+    update(links.filter((_, i) => i !== index));
+    if (editIndex === index) {
+      setEditIndex(null);
+      setCurrentLink({ fieldType: 'Mobile / Phone', title: '', url: '' });
+    }
   };
 
+  // Move a link up/down (or drag it): the card shows them in this order.
+  const move = (from, to) => {
+    if (to < 0 || to >= links.length || from === to) return;
+    const next = [...links];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    update(next);
+    if (editIndex === from) setEditIndex(to);
+  };
+  const dragFrom = useRef(null);
+
   const handleSaveAll = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, { dynamicLinks: links }, {
-        headers: { 'x-auth-token': token }
-      });
-      window.dispatchEvent(new Event('vcard:data-changed'));
-      setShowPopup(true);
-    } catch (err) {
-      console.error('Error saving links', err);
-      alert('Error saving links');
-    }
+    await persist(links);
+    window.dispatchEvent(new Event('vcard:data-changed'));
+    setShowPopup(true);
   };
 
   const handlePreview = () => {
@@ -245,11 +279,9 @@ const ContactDetails = () => {
 
   const handleVoiceFill = (fields) => {
     const newLinks = fields?.links || [];
-    setLinks(prev => {
-      const existingKeys = new Set(prev.map(l => `${l.fieldType}|${l.url}`));
-      const toAdd = newLinks.filter(l => l.url && !existingKeys.has(`${l.fieldType}|${l.url}`));
-      return [...prev, ...toAdd];
-    });
+    const existingKeys = new Set(links.map(l => `${l.fieldType}|${l.url}`));
+    const toAdd = newLinks.filter(l => l.url && !existingKeys.has(`${l.fieldType}|${l.url}`));
+    if (toAdd.length) update([...links, ...toAdd]);
   };
 
   return (
@@ -308,7 +340,15 @@ const ContactDetails = () => {
             </div>
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:space-x-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--surface-text-2)' }}>URL / Number</label>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--surface-text-2)' }}>{currentLink.fieldType === 'Location' ? 'Find your place (Google Maps)' : 'URL / Number'}</label>
+                {currentLink.fieldType === 'Location' ? (
+                  <LocationInput
+                    value={currentLink.url}
+                    onChange={(url) => setCurrentLink((c) => ({ ...c, url }))}
+                    onPlace={(p) => setCurrentLink((c) => ({ ...c, title: c.title || p.name || 'Our Location' }))}
+                    style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+                  />
+                ) : (
                 <input
                   type="text"
                   className="w-full px-3 py-2 rounded-md outline-none transition-all duration-500 text-sm focus:ring-2 focus:ring-brand-400 focus:scale-[1.01]"
@@ -317,6 +357,7 @@ const ContactDetails = () => {
                   value={currentLink.url}
                   onChange={(e) => setCurrentLink({...currentLink, url: e.target.value})}
                 />
+                )}
               </div>
               <motion.button
                 whileHover={{ scale: 1.025, y: -1 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.35, ease: "easeOut" }}
@@ -347,14 +388,20 @@ const ContactDetails = () => {
                   <AnimatePresence>
                     {links.map((link, index) => (
                       <motion.tr
-                        key={`${link.fieldType}-${link.url}-${index}`}
-                        initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.65, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                        className="fast-transition hover:bg-brand-500/5"
+                        key={`${link.fieldType}-${link.url}-${link.title}`}
+                        layout
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className={`fast-transition hover:bg-brand-500/5 ${editIndex === index ? 'bg-brand-500/10' : ''}`}
                         style={{ borderBottom: '1px solid var(--surface-border)' }}
+                        draggable
+                        onDragStart={(e) => { dragFrom.current = index; e.dataTransfer.effectAllowed = 'move'; }}
+                        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                        onDrop={(e) => { e.preventDefault(); if (dragFrom.current !== null) move(dragFrom.current, index); dragFrom.current = null; }}
                       >
                         <td className="px-4 py-3 font-medium" style={{ color: 'var(--surface-text)' }}>
                           <div className="flex items-center space-x-2">
+                            <span className="hidden cursor-grab text-base leading-none opacity-40 sm:inline" title="Drag to reorder" aria-hidden="true">⠿</span>
                             {getFieldIcon(link.fieldType, link.title, link.url)}
                             <span>{link.fieldType}</span>
                           </div>
@@ -372,7 +419,13 @@ const ContactDetails = () => {
                           </a>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end space-x-2">
+                          <div className="flex items-center justify-end space-x-1">
+                            <button type="button" onClick={() => move(index, index - 1)} disabled={index === 0} title="Move up" aria-label="Move up" className="p-1.5 rounded fast-transition hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-25" style={{ color: 'var(--surface-text-2)' }}>
+                              <FiChevronUp className="w-4 h-4" />
+                            </button>
+                            <button type="button" onClick={() => move(index, index + 1)} disabled={index === links.length - 1} title="Move down" aria-label="Move down" className="p-1.5 rounded fast-transition hover:text-brand-500 hover:bg-brand-500/10 disabled:opacity-25" style={{ color: 'var(--surface-text-2)' }}>
+                              <FiChevronDown className="w-4 h-4" />
+                            </button>
                             <motion.button
                               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                               onClick={() => handleEdit(index)}
@@ -400,11 +453,14 @@ const ContactDetails = () => {
           </GlassCard>
         )}
 
-        {/* Save Button */}
-        <motion.div {...slowFadeUp(0.2)} className="pt-2 flex justify-end">
+        {/* Autosave status + continue */}
+        <motion.div {...slowFadeUp(0.2)} className="pt-2 flex flex-wrap items-center justify-end gap-3">
+          <span className="text-xs font-medium" style={{ color: saveState === 'error' ? '#ef4444' : 'var(--surface-text-2)' }} role="status">
+            {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ All changes saved' : saveState === 'error' ? 'Could not save, check your internet and try again' : 'Changes save automatically'}
+          </span>
           <GradientButton onClick={handleSaveAll} className="sm:w-auto px-8">
             <FiSave className="w-4 h-4" />
-            <span>Save All Links</span>
+            <span>Save &amp; continue</span>
           </GradientButton>
         </motion.div>
       </div>

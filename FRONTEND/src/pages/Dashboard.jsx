@@ -11,6 +11,7 @@ import axios from 'axios';
 import LiveCardPreview from '../components/LiveCardPreview';
 import { useTheme } from '../context/ThemeContext';
 import { PRICING_ENABLED } from '../utils/plan';
+import FreePlanNotice from '../components/FreePlanNotice';
 
 const PLAN_COLORS = {
   'Free Trial':    { badge: 'border-[#E70C65]/30 bg-[#E70C65]/10 text-[#ff6b9d]', bar: 'bg-gradient-to-r from-[#ff6b9d] to-[#E70C65]' },
@@ -87,7 +88,8 @@ const Dashboard = () => {
 
   const plan       = stats?.currentPlan || 'Free Trial';
   const pc         = PLAN_COLORS[plan] || PLAN_COLORS['Free Trial'];
-  const daysLeft   = stats?.remainingDays;
+  const lifetime   = !!stats?.lifetime;
+  const daysLeft   = lifetime ? null : stats?.remainingDays;
   const cardLimit  = stats?.user?.cardLimit || 1;
   const cardCount  = stats?.vcardCount || 0;
   
@@ -184,6 +186,8 @@ const Dashboard = () => {
           </div>
         </div>
       </motion.div>
+
+      {PRICING_ENABLED && <FreePlanNotice show={['ai', 'theme']} />}
 
       <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {[
@@ -326,7 +330,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>{plan}</p>
-                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500 font-medium'}`}>{daysLeft != null ? `${daysLeft} days active` : 'Standard tier'}</p>
+                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500 font-medium'}`}>{lifetime ? 'Lifetime · never expires' : daysLeft != null ? `${daysLeft} days active` : 'Standard tier'}</p>
               </div>
             </div>
 

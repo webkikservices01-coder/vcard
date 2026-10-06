@@ -15,6 +15,8 @@ import LiveTemplatePicker from '../../webcard/components/LiveTemplatePicker';
 import { ThemeControls } from '../../webcard/components/ThemeSheet';
 import { templateIdOf, templateMeta } from '../../webcard/templates/TemplatePicker';
 import { readThemeCache, writeThemeCache, loadThemeStudio } from '../../utils/themeStudioCache';
+import FreePlanNotice from '../../components/FreePlanNotice';
+import { PRICING_ENABLED } from '../../utils/plan';
 
 const API = import.meta.env.VITE_API_URL;
 const headers = () => ({ 'x-auth-token': localStorage.getItem('token') });
@@ -83,7 +85,10 @@ const Theme = () => {
       toast.success('Template saved!');
       setShowPopup(true);
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to save template.');
+      if (err.response?.data?.upgrade) {
+        toast.error(err.response.data.msg, { duration: 6000 });
+        navigate('/dashboard/plans');
+      } else toast.error(err.response?.data?.msg || 'Failed to save template.');
     } finally {
       setSaving(false);
     }
@@ -141,6 +146,8 @@ const Theme = () => {
             </div>
           </div>
         </motion.div>
+
+        {PRICING_ENABLED && <FreePlanNotice show={['theme']} />}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <GlassCard {...fadeUp(0.05)} className="lg:col-span-7 p-5 sm:p-6">

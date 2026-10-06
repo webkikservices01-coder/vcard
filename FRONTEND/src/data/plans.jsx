@@ -15,7 +15,7 @@ export const plans = [
     features: {
       vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: false,
-      aiChatWidget: false, aiPersonaConfig: false, animatedAvatar: false, linkedinSync: false, aiLeadScoring: false,
+      aiChatWidget: false, aiVoiceCall: false, aiVideoCall: false, aiPersonaConfig: false, animatedAvatar: false, linkedinSync: false, aiLeadScoring: false,
       aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
       whatsappFlowBuilder: false, outboundCalling: false, whiteLabelOption: false,
       support: 'Email',
@@ -33,7 +33,7 @@ export const plans = [
     features: {
       vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
-      aiChatWidget: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
+      aiChatWidget: true, aiVoiceCall: true, aiVideoCall: false, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
       aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
       whatsappFlowBuilder: false, outboundCalling: false, whiteLabelOption: false,
       support: 'Priority',
@@ -52,7 +52,7 @@ export const plans = [
     features: {
       vCards: 3, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
-      aiChatWidget: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
+      aiChatWidget: true, aiVoiceCall: true, aiVideoCall: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
       aiVoiceAgent: true, whatsappBot: true, voiceNoteTranscription: true, imageRecognition: true,
       whatsappFlowBuilder: true, outboundCalling: true, whiteLabelOption: true,
       support: '24/7 Dedicated',
@@ -81,6 +81,8 @@ export const featureSections = [
     highlight: true,
     features: [
       { key: 'aiChatWidget', label: 'AI Chat Widget', type: 'bool' },
+      { key: 'aiVoiceCall', label: 'Live AI Voice Call on your card', type: 'bool' },
+      { key: 'aiVideoCall', label: 'Live AI Video Call on your card', type: 'bool' },
       { key: 'aiPersonaConfig', label: 'AI Persona Config (tone, greeting, fallback)', type: 'bool' },
       { key: 'animatedAvatar', label: 'Animated AI Avatar', type: 'bool' },
       { key: 'linkedinSync', label: 'LinkedIn & Instagram Auto-Sync', type: 'bool' },

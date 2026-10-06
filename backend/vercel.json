@@ -9,7 +9,8 @@
           "uploads/**",
           "constants/**",
           "admin-ui/index.html",
-          "admin-ui/favicon.svg"
+          "admin-ui/favicon.svg",
+          "assets/brand/**"
         ]
       }
     },

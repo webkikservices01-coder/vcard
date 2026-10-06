@@ -65,7 +65,7 @@ class Logic extends DCLogic {
         { bg: 'linear-gradient(160deg,#3D1640,#120A14)' },
         { bg: 'linear-gradient(160deg,#4A1A22,#140B0D)' },
       ]).map((r) => ({ ...r, pIcon: s14(r.platform === 'YouTube' ? 'youtube' : 'instagram') })),
-      stats: CARD.stats,
+      stats: CARD.stats.filter((s) => !s.fo), // followers have their own row here
       highlights: services.map((sv, i) => ({
         ...sv,
         short: sv.title,
@@ -209,24 +209,23 @@ export function CreatorReel(props) {
               style={{
                 overflowWrap: 'anywhere',
                 display: '-webkit-box',
-                WebkitLineClamp: '2',
+                WebkitLineClamp: '3',
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
                 margin: '0',
+                paddingBottom: '0.08em',
                 fontFamily: "'Sora',sans-serif",
                 fontWeight: '800',
-                fontSize: 'clamp(26px, 7.4cqi, 30px)',
+                fontSize: CARD.nameSize('clamp(26px, 7.4cqi, 30px)'),
                 lineHeight: '1.08',
                 letterSpacing: '-0.02em',
               }}
             >
               {CARD.fullName}
+              {/* The verified tick sits right after the last word of the name. */}
+              <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '6px', color: '#FF9A3D' }}></span>
             </h1>
-            <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'flex', color: '#FF9A3D' }}></span>
           </div>
-          {CARD.slug ? (
-            <div style={{ fontSize: '14.5px', fontWeight: '600', color: '#FFB38A', marginTop: '2px' }}>{'@' + CARD.slug}</div>
-          ) : null}
         </div>
         <div style={{ position: 'relative', flexShrink: '0', width: 'clamp(96px, 28cqi, 108px)', aspectRatio: '1' }}>
           <span
@@ -298,7 +297,11 @@ export function CreatorReel(props) {
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
           {(V.followers || []).map((fo, $index) => (
             <React.Fragment key={$index}>
-              <span
+              <a
+                href={fo?.href || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${fo?.n} on ${fo?.l}`}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -310,12 +313,14 @@ export function CreatorReel(props) {
                   border: '1px solid #2C2C2C',
                   fontSize: '12.5px',
                   color: '#C9C9C9',
+                  textDecoration: 'none',
+                  cursor: fo?.href ? 'pointer' : 'default',
                 }}
               >
                 <span dangerouslySetInnerHTML={fo?.icon} style={{ display: 'flex', color: '#fff' }}></span>
                 <b style={{ color: '#fff' }}>{fo?.n}</b>
                 {fo?.l}
-              </span>
+              </a>
             </React.Fragment>
           ))}
           {CARD.ai.enabled ? (
@@ -346,33 +351,7 @@ export function CreatorReel(props) {
           ) : null}
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '12px 16px 0' }}>
-        {(V.socials || []).map((s, $index) => (
-          <React.Fragment key={$index}>
-            <a
-              href={s?.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={s?.name}
-              dangerouslySetInnerHTML={s?.icon}
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                border: '1.5px solid transparent',
-                background: `linear-gradient(#1A1A1A,#1A1A1A) padding-box, ${s?.ring} border-box`,
-                boxSizing: 'border-box',
-              }}
-              className="dcp-c1"
-            ></a>
-          </React.Fragment>
-        ))}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: '8px', padding: '10px 16px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: '8px', padding: '12px 16px 0' }}>
         {(V.quick || []).map((q, $index) => (
           <React.Fragment key={$index}>
             <a
@@ -397,6 +376,32 @@ export function CreatorReel(props) {
               ></span>
               <span style={{ fontSize: '12px', fontWeight: '500', color: '#B8B8B8' }}>{q?.label}</span>
             </a>
+          </React.Fragment>
+        ))}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', padding: '10px 16px 0' }}>
+        {(V.socials || []).map((s, $index) => (
+          <React.Fragment key={$index}>
+            <a
+              href={s?.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={s?.name}
+              dangerouslySetInnerHTML={s?.icon}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+                border: '1.5px solid transparent',
+                background: `linear-gradient(#1A1A1A,#1A1A1A) padding-box, ${s?.ring} border-box`,
+                boxSizing: 'border-box',
+              }}
+              className="dcp-c1"
+            ></a>
           </React.Fragment>
         ))}
       </div>

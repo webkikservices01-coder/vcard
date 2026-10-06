@@ -5,7 +5,7 @@ const User = require('../models/User');
 const vCard = require('../models/vCard');
 const Product = require('../models/Product');
 const Testimonial = require('../models/Testimonial');
-const { activePlan } = require('../constants/plans');
+const { activePlan, isLifetime, hasPaidAi, isPaid, FREE_AI_CHATS, FREE_THEME } = require('../constants/plans');
 
 router.get('/', auth, async (req, res) => {
     try {
@@ -40,7 +40,15 @@ router.get('/', auth, async (req, res) => {
             }
         };
 
-        if (user.planExpiry) {
+        stats.lifetime = isLifetime(user);
+        // Free plan limits, for the dashboard's upgrade prompts.
+        stats.paid = isPaid(user);
+        stats.freeTheme = FREE_THEME;
+        stats.aiTrial = hasPaidAi(user)
+            ? { paid: true }
+            : { paid: false, limit: FREE_AI_CHATS, used: Math.min(FREE_AI_CHATS, card?.aiTrialUsed || 0), left: Math.max(0, FREE_AI_CHATS - (card?.aiTrialUsed || 0)) };
+        if (stats.lifetime) stats.planExpiry = null;
+        else if (user.planExpiry) {
             const diff = new Date(user.planExpiry) - new Date();
             stats.remainingDays = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
         }

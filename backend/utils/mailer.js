@@ -52,9 +52,11 @@ const SOCIALS = [
   ['LinkedIn', process.env.SOCIAL_LINKEDIN ?? 'https://www.linkedin.com/company/webkik-services'],
 ].filter(([, url]) => /^https:\/\//.test(url));
 
-// The logo is drawn with HTML (no image), so it shows even where email images are blocked.
+// The Aicardly logo (served by this backend at /brand/email-logo.png). Its cell is white with a
+// pink "A" as alt text, so it still reads as the logo where email images are blocked.
+const LOGO_URL = process.env.EMAIL_LOGO_URL || 'https://backend-nine-omega-26.vercel.app/brand/email-logo.png';
 const logoHtml = `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="width:38px;height:38px;border-radius:11px;background:#ffffff;color:#E70C65;font-size:22px;font-weight:800;text-align:center;line-height:38px;font-family:Arial,Helvetica,sans-serif">A</td>
+<td style="width:40px;height:40px;border-radius:11px;background:#ffffff;text-align:center;vertical-align:middle"><img src="${LOGO_URL}" width="40" height="40" alt="A" style="display:block;width:40px;height:40px;border:0;border-radius:11px;color:#E70C65;font-size:22px;font-weight:800;line-height:40px;text-align:center;font-family:Arial,Helvetica,sans-serif"></td>
 <td style="padding-left:10px;color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.2px;font-family:Arial,Helvetica,sans-serif">Ai<span style="font-weight:700">Cardly</span></td>
 </tr></table>`;
 

@@ -15,6 +15,7 @@ const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
 const User = require('../models/User');
+const { FREE_THEME, isPaid } = require('../constants/plans');
 const { accountStatus } = require('../utils/accountStatus');
 const { sendMail, emailHtml } = require('../utils/mailer');
 const background = require('../utils/background');
@@ -35,7 +36,7 @@ const words = (list, max = 40) => (Array.isArray(list) ? list : []).map(v => str
 const RESERVED_USERNAMES = new Set([
     'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'onboarding', 'c', 'www', 'support', 'help',
     'about', 'about-us', 'contact', 'contact-us', 'faqs', 'privacy-policy', 'terms-conditions', 'refund-policy',
-    'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined',
+    'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined', 'wedding', 'invite', 'wedding-preview',
 ]);
 const usernameProblem = (u) => {
     if (!u) return 'Please choose a username.';
@@ -64,7 +65,23 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         if (req.body.title !== undefined) updateFields['personalInfo.name'] = req.body.title;
         if (req.body.designation !== undefined) updateFields['personalInfo.designation'] = req.body.designation;
         if (req.body.bio !== undefined) updateFields['personalInfo.bio'] = req.body.bio;
-        if (req.body.theme !== undefined) updateFields.theme = req.body.theme;
+        if (req.body.theme !== undefined) {
+            // Free accounts get one template; the others come with any paid plan. A card that
+            // already uses another template keeps it (re-saving it is fine).
+            const theme = String(req.body.theme);
+            if (theme !== FREE_THEME) {
+                const [owner, current] = await Promise.all([
+                    User.findById(req.user.userId).select('plan planExpiry lifetime email'),
+                    vCard.findOne({ userId: req.user.userId }).select('theme').lean(),
+                ]);
+                // A brand-new card (onboarding) simply starts on the free template.
+                if (!isPaid(owner) && !current) {
+                    updateFields.theme = FREE_THEME;
+                } else if (!isPaid(owner) && current.theme !== theme) {
+                    return res.status(402).json({ msg: 'This template is on paid plans. Upgrade to use all 10 templates — the free plan includes Webkik Signature.', upgrade: true, freeTheme: FREE_THEME });
+                } else updateFields.theme = theme;
+            } else updateFields.theme = theme;
+        }
         if (req.body.themeOptions && typeof req.body.themeOptions === 'object') {
             const o = req.body.themeOptions;
             if (o.palette !== undefined) updateFields['themeOptions.palette'] = Math.max(0, Math.min(4, parseInt(o.palette, 10) || 0));
@@ -321,6 +338,31 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
                 }),
             });
             logEvent(req, sent ? 'enquiry.emailed' : 'enquiry.email_failed', `Enquiry on /${card.username} ${sent ? 'emailed to' : 'NOT emailed to'} ${to.join(', ')}`, { level: sent ? 'info' : 'warn', userId: card.userId });
+
+            // A copy for the visitor at the email they typed, so they have what they sent. Replies
+            // go to the email shown on the card (never the owner's private sign-in email).
+            if (!email || to.includes(email.toLowerCase())) return;
+            const ownerName = card.personalInfo?.name || owner?.name || card.username;
+            const publicEmail = (card.dynamicLinks || [])
+                .map((l) => String(l.url || '').replace(/^mailto:/i, '').trim())
+                .find((v, i) => /mail/i.test(card.dynamicLinks[i].fieldType || '') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+            const copySent = await sendMail({
+                to: email,
+                replyTo: publicEmail || undefined,
+                subject: `Your message to ${ownerName} was sent`,
+                text: `Hi ${name},\n\nThanks for getting in touch. Your message has reached ${ownerName} (aicardly.com/${card.username}).\n\nYour details:\nName: ${name}\nEmail: ${email}\nPhone: ${mobile || '—'}\n\nYour message:\n${message}\n\n${publicEmail ? `You can reply to this email to write to ${ownerName} directly.` : `${ownerName} will get back to you soon.`}\n\n– Team AiCardly`,
+                html: emailHtml({
+                    heading: `Your message to ${esc(ownerName)} was sent`,
+                    paragraphs: [
+                        `Hi ${esc(name)}, thanks for getting in touch. Your message has reached <b>${esc(ownerName)}</b>.`,
+                        [row('Name', esc(name)), row('Email', esc(email)), row('Phone', mobile ? esc(mobile) : '—')].join('<br>'),
+                        `<b>Your message:</b><br>${esc(message).replace(/\n/g, '<br>')}`,
+                        publicEmail ? `You can reply to this email to write to ${esc(ownerName)} directly.` : `${esc(ownerName)} will get back to you soon.`,
+                    ],
+                    button: { label: `View ${esc(ownerName)}'s card`, url: `${site}/${encodeURIComponent(card.username)}` },
+                }),
+            });
+            logEvent(req, copySent ? 'enquiry.copy_sent' : 'enquiry.copy_failed', `Enquiry copy for /${card.username} ${copySent ? 'emailed to' : 'NOT emailed to'} the visitor`, { level: copySent ? 'info' : 'warn', userId: card.userId, email });
         })());
         res.json({ msg: 'Enquiry submitted', enquiry });
     } catch (err) { res.status(500).json({ msg: 'Could not send your message. Please try again.' }); }

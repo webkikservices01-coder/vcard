@@ -95,4 +95,52 @@ router.get('/:username', async (req, res) => {
   }
 });
 
+// ─── GET /api/og/invite/:link → { head } for a wedding invitation (/invite/<link>) ──────────
+// WhatsApp / Facebook previews show the couple's names, date, venue and their photo.
+router.get('/invite/:link', async (req, res) => {
+  try {
+    const { publicInvite } = require('./wedding');
+    const inv = await publicInvite(req.params.link);
+    if (!inv) return res.status(404).json({ msg: 'Invitation not found' });
+    const couple = oneLine(`${inv.coupleOne || ''} ${inv.amp || '&'} ${inv.coupleTwo || ''}`, 80);
+    const url = `${SITE}/invite/${inv.link}`;
+    const title = `${couple} – Wedding Invitation`;
+    const description = oneLine(
+      [`You are invited to the wedding of ${couple}`, inv.date, inv.venueName && `at ${inv.venueName}`].filter(Boolean).join(' · ') + '. Tap to see the events, venue and RSVP.',
+      200
+    );
+    // Cloudinary photos are cut to the 1200×630 preview size.
+    const photo = inv.image || '';
+    const image = /res\.cloudinary\.com\/.+\/image\/upload\//.test(photo)
+      ? photo.replace('/image/upload/', '/image/upload/c_fill,g_auto,w_1200,h_630,f_jpg,q_auto/')
+      : photo || DEFAULT_IMAGE;
+    const tags = [
+      `<title>${esc(title)}</title>`,
+      `<meta name="description" content="${esc(description)}" />`,
+      `<meta name="robots" content="noindex, follow" />`,
+      `<link rel="canonical" href="${esc(url)}" />`,
+      `<meta property="og:type" content="website" />`,
+      `<meta property="og:site_name" content="Aicardly" />`,
+      `<meta property="og:locale" content="en_IN" />`,
+      `<meta property="og:url" content="${esc(url)}" />`,
+      `<meta property="og:title" content="${esc(title)}" />`,
+      `<meta property="og:description" content="${esc(description)}" />`,
+      `<meta property="og:image" content="${esc(image)}" />`,
+      `<meta property="og:image:secure_url" content="${esc(image)}" />`,
+      `<meta property="og:image:width" content="1200" />`,
+      `<meta property="og:image:height" content="630" />`,
+      `<meta property="og:image:alt" content="${esc(title)}" />`,
+      `<meta name="twitter:card" content="summary_large_image" />`,
+      `<meta name="twitter:title" content="${esc(title)}" />`,
+      `<meta name="twitter:description" content="${esc(description)}" />`,
+      `<meta name="twitter:image" content="${esc(image)}" />`,
+    ];
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+    res.json({ head: tags.join('\n    '), title, description, image, url });
+  } catch (err) {
+    console.error('OG invite error:', err.message);
+    res.status(500).json({ msg: 'Could not build preview' });
+  }
+});
+
 module.exports = router;

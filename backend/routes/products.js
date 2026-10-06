@@ -10,6 +10,7 @@ const vCard = require('../models/vCard');
 const rateLimit = require('express-rate-limit');
 const { upload, fileUrl } = require('../utils/upload');
 const { previewServices } = require('../services/serviceImport');
+const { previewProducts } = require('../services/productImport');
 
 // Helper: Get or Automatically Create vCard if missing so product saving never fails
 const getOrCreateCardId = async (userId) => {
@@ -52,10 +53,12 @@ const importLimiter = rateLimit({
     message: { msg: 'Too many imports. Please wait a few minutes and try again.' },
 });
 
-// POST /import/preview { url } → { source, services: [{ title, description, link, image }] }
+// POST /import/preview { url, kind } → services: { source, services: [{ title, description, link, image }] }
+// kind=product → { source, products: [{ title, description, price, link, image }] } from their online shop.
 router.post('/import/preview', auth, importLimiter, async (req, res) => {
     try {
-        res.json(await previewServices(String(req.body?.url || '').slice(0, 500)));
+        const url = String(req.body?.url || '').slice(0, 500);
+        res.json(req.body?.kind === 'product' ? await previewProducts(url) : await previewServices(url));
     } catch (err) {
         res.status(err.status || 500).json({ msg: err.status ? err.message : "Couldn't read that website. Please try again." });
     }
@@ -65,8 +68,9 @@ router.post('/import/preview', auth, importLimiter, async (req, res) => {
 // (one already on the card, same link and name, is skipped).
 router.post('/import', auth, async (req, res) => {
     try {
-        const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 20) : [];
-        if (!items.length) return res.status(400).json({ msg: 'Choose at least one service.' });
+        const product = req.body?.kind === 'product';
+        const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 30) : [];
+        if (!items.length) return res.status(400).json({ msg: product ? 'Choose at least one product.' : 'Choose at least one service.' });
         const vcardId = await getOrCreateCardId(req.user.userId);
         // Same link and same name = already on the card (two services may share one page).
         const keyOf = (link, title) => `${link}|${String(title).trim().toLowerCase()}`;
@@ -77,15 +81,16 @@ router.post('/import', auth, async (req, res) => {
         for (const it of items) {
             const title = String(it?.title || '').trim().slice(0, 120);
             const link = webLink(it?.link);
-            if (!title || !link || existing.has(keyOf(link, title))) {
+            if (!title || (!link && !product) || existing.has(keyOf(link, title))) {
                 skipped++;
                 continue;
             }
             await Product.create({
                 vcardId,
-                kind: 'service',
+                kind: product ? 'product' : 'service',
                 title,
                 description: String(it.description || '').trim().slice(0, 400),
+                price: product ? String(it.price || '').replace(/[^\d.]/g, '').slice(0, 12) : '',
                 coverImage: webLink(it.image),
                 link,
                 order: order++,

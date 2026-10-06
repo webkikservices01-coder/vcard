@@ -69,14 +69,14 @@ function noindex($title) {
 
 // Card tags from the backend, cached on disk for 10 minutes. Without $wait, only the cache is
 // used (null on a miss), so people opening a card never wait for the backend.
-function fetch_card($username, $wait) {
-  $cacheFile = sys_get_temp_dir() . '/aicardly-og-' . $username . '.json';
+function fetch_card($username, $wait, $kind = '') {
+  $cacheFile = sys_get_temp_dir() . '/aicardly-og-' . ($kind ? $kind . '-' : '') . $username . '.json';
   if (is_file($cacheFile) && time() - filemtime($cacheFile) < 600) {
     $cached = json_decode(@file_get_contents($cacheFile), true);
     if (is_array($cached) && isset($cached['status'])) return $cached['status'] === 404 ? 404 : $cached['head'];
   }
   if (!$wait) return null;
-  $url = BACKEND . '/api/og/' . rawurlencode($username);
+  $url = BACKEND . '/api/og/' . ($kind ? $kind . '/' : '') . rawurlencode($username);
   $body = false;
   $status = 0;
   if (function_exists('curl_init')) {
@@ -119,6 +119,22 @@ if ($isPrivate) {
     // "<" escaped so text inside the JSON can never close the script tag.
     $head .= "\n    " . '<script type="application/ld+json">' . str_replace('<', '<', json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</script>';
   }
+} elseif (preg_match('#^/invite/([A-Za-z0-9-]{3,50})$#', $path, $m)) {
+  // Wedding invitation: the couple's names, date and photo for WhatsApp / social previews.
+  $inv = fetch_card(strtolower($m[1]), $isBot, 'invite');
+  if ($inv === 404) {
+    if ($isBot) http_response_code(404);
+    $head = noindex('Invitation not found | Aicardly');
+  } elseif ($inv !== null) {
+    $head = $inv;
+  } else {
+    $head = tags('Wedding Invitation | Aicardly', 'You are invited! Tap to see the wedding events, venue and RSVP.', $site . '/invite/' . strtolower($m[1]), $site);
+  }
+} elseif (preg_match('#^/wedding/([a-z0-9-]{3,60})$#', $path, $m)) {
+  // A wedding invitation design (template preview).
+  $head = tags('Wedding Invitation Design | Aicardly', 'Preview this wedding invitation design and make yours free on Aicardly: names, functions, venue map, photos, music and RSVP.', $site . $path, $site);
+} elseif ($path === '/wedding-preview') {
+  $head = noindex('Invitation preview | Aicardly');
 } elseif (preg_match('#^/(?:c/)?([A-Za-z0-9-]{3,30})$#', $path, $m)) {
   $card = fetch_card(strtolower($m[1]), $isBot);
   if ($card === 404) {
