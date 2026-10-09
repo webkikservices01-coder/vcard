@@ -2,19 +2,19 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { MessageCircleHeart, Send, X, Mic, Volume2, Square, CalendarHeart, MapPin, Phone, HeartHandshake } from "lucide-react";
 import type { Template } from "./data/templates";
 import type { InviteExtras } from "./rsvp";
+import { occasionOf, namesLine } from "./data/occasions";
 // Shared with Aicardly's other chats (Cardy, card AI): speech in/out.
 import { useSpeechInput, speak, stopSpeaking, canSpeak } from "../components/platformChat/speech";
 
 /* =========================================================
-   WeddingChat — the AI assistant on every wedding invitation. Guests ask about the date,
-   functions, venue, directions and RSVP; it answers only from the couple's own details
+   WeddingChat — the AI assistant on every Digital Invite ("Your Wedding Manager", "Your Party
+   Host" …, by occasion). Guests ask about the date, programme, venue, directions and RSVP; it
+   answers only from the hosts' own details
    (POST /api/wedding/chat). Replies can come with buttons: RSVP, Map, Call, Functions.
    ========================================================= */
 
 const API = import.meta.env.VITE_API_URL as string;
 type Msg = { role: "user" | "assistant"; content: string; actions?: string[] };
-
-const CHIPS = ["When is the wedding?", "Where is the venue?", "What are the functions?", "How do I RSVP?", "Dress code?"];
 
 // The details the assistant may use, from what is on screen (design previews, dashboard editor).
 const draftOf = (t: Template, x: InviteExtras) => ({
@@ -39,12 +39,12 @@ const draftOf = (t: Template, x: InviteExtras) => ({
 function localAnswer(q: string, t: Template, x: InviteExtras): Msg {
   const s = q.toLowerCase();
   const venue = [t.venue.name, t.venue.address].filter(Boolean).join(", ");
-  if (/(kab|when|date|day|din|तारीख|कब)/.test(s) && t.date) return { role: "assistant", content: `The wedding is on ${t.date}${venue ? ` at ${venue}` : ""}. 💍`, actions: ["rsvp"] };
+  if (/(kab|when|date|day|din|तारीख|कब)/.test(s) && t.date) return { role: "assistant", content: `${occasionOf(t).event.replace(/^the /, "The ")} is on ${t.date}${venue ? ` at ${venue}` : ""}. 💍`, actions: ["rsvp"] };
   if (/(where|venue|kahan|kahaan|address|map|location|reach|कहाँ|पता)/.test(s) && venue) return { role: "assistant", content: `The venue is ${venue}.`, actions: ["map"] };
   if (/(function|event|haldi|mehndi|sangeet|reception|schedule|program|कार्यक्रम)/.test(s) && t.ceremonies.length)
     return { role: "assistant", content: t.ceremonies.map((c) => `${c.icon || "•"} ${c.name}${c.date ? ` — ${c.date}` : ""}${c.time ? `, ${c.time}` : ""}${c.venue ? ` at ${c.venue}` : ""}`).join("\n"), actions: ["events"] };
   if (/(rsvp|confirm|coming|aa raha|aaunga|attend)/.test(s) && x.rsvpOpen !== false) return { role: "assistant", content: "You can reply with the RSVP form on this invite.", actions: ["rsvp"] };
-  return { role: "assistant", content: `I can't reach the assistant right now.${x.hostPhone ? " You can call the family for anything else." : " Please try again in a moment."}`, actions: x.hostPhone ? ["call"] : [] };
+  return { role: "assistant", content: `I can't reach the assistant right now.${x.hostPhone ? " You can call the hosts for anything else." : " Please try again in a moment."}`, actions: x.hostPhone ? ["call"] : [] };
 }
 
 // **bold** and line breaks from the assistant.
@@ -74,7 +74,12 @@ const scrollToFirst = (ids: string[]) => {
 export function WeddingChat({ template, extras }: { template: Template; extras: InviteExtras }) {
   const key = `wedding-chat-${extras.link || "preview-" + template.slug}`;
   const hello = template.scriptFont === "devanagari" ? "Namaste! 🙏" : template.scriptFont === "arabic" ? "Assalamu alaikum! 🌙" : "Hello! 💐";
-  const greeting = `${hello} I'm Your Wedding Manager for ${template.couple.one} ${template.couple.amp} ${template.couple.two}. Ask me about the date, functions, venue or RSVP — in English or Hindi.`;
+  const o = occasionOf(template);
+  const names = namesLine(template);
+  const CHIPS = o.chips;
+  const greeting = o.rsvp
+    ? `${hello} I'm ${o.manager} for ${names}. Ask me about the date, programme, venue or RSVP — in English or Hindi.`
+    : `${hello} I'm ${o.manager}. ${names} sent you this wish — ask me anything about it.`;
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>(() => {
     try {
@@ -209,29 +214,28 @@ export function WeddingChat({ template, extras }: { template: Template; extras: 
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Chat with Your Wedding Manager"
+          aria-label={`Chat with ${o.manager}`}
           className="wt-fab-pop fixed bottom-[76px] right-4 z-[8000] flex items-center gap-2 rounded-full py-3 pl-3 pr-4 text-sm font-semibold text-white shadow-2xl"
           style={{ background: "linear-gradient(135deg, var(--wt-accent), var(--wt-accent-deep))", boxShadow: "0 14px 40px rgba(0,0,0,.45)" }}
         >
-          <MessageCircleHeart className="h-5 w-5" /> Your Wedding Manager
+          <MessageCircleHeart className="h-5 w-5" /> {o.manager}
         </button>
       )}
       {open && (
         <div
           role="dialog"
-          aria-label="Your Wedding Manager"
+          aria-label={o.manager}
           className="wt-panel-in fixed inset-x-2 bottom-2 z-[9500] flex max-h-[min(640px,calc(100dvh-16px))] flex-col overflow-hidden rounded-3xl sm:inset-x-auto sm:right-4 sm:w-[380px]"
           style={{ background: "linear-gradient(170deg, var(--wt-bg-2), var(--wt-bg-1))", border: "1px solid color-mix(in oklab, var(--wt-gold) 45%, transparent)", color: "var(--wt-ink)", boxShadow: "0 30px 80px rgba(0,0,0,.55)" }}
         >
           <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: "1px solid color-mix(in oklab, var(--wt-gold) 25%, transparent)" }}>
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold" style={{ background: "linear-gradient(135deg, var(--wt-gold-lite), var(--wt-gold))", color: "var(--wt-bg-1)" }}>
-              {template.couple.one[0]}
-              {template.couple.two[0]}
+              {o.couple ? `${template.couple.one[0] || ""}${template.couple.two[0] || ""}` : o.emoji}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">Your Wedding Manager</p>
+              <p className="truncate text-sm font-bold">{o.manager}</p>
               <p className="text-[11px]" style={{ color: "var(--wt-ink-soft)" }}>
-                <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" /> {template.couple.one} {template.couple.amp} {template.couple.two} · online
+                <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" /> {names} · online
               </p>
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-full p-1.5 hover:bg-white/10">
@@ -278,7 +282,7 @@ export function WeddingChat({ template, extras }: { template: Template; extras: 
                 </div>
                 <div className="rounded-2xl p-3.5 text-xs leading-relaxed" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid var(--wt-gold)" }}>
                   <b className="block text-sm">Before we chat</b>
-                  Your questions go to an AI service so it can answer for the couple. Please don't share ID or bank numbers here. See our{" "}
+                  Your questions go to an AI service so it can answer for the hosts. Please don't share ID or bank numbers here. See our{" "}
                   <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>.
                   <button type="button" onClick={accept} className="mt-2 block rounded-full px-3 py-1.5 text-xs font-semibold" style={{ border: "1px solid var(--wt-gold)", color: "var(--wt-gold-lite)" }}>
                     I agree, continue
@@ -324,7 +328,7 @@ export function WeddingChat({ template, extras }: { template: Template; extras: 
                   </button>
                 </>
               )}
-              <input value={input} onChange={(e) => setInput(e.target.value)} maxLength={600} placeholder="Ask about the wedding…" className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] outline-none sm:text-sm" style={{ color: "var(--wt-ink)" }} />
+              <input value={input} onChange={(e) => setInput(e.target.value)} maxLength={600} placeholder={`Ask about ${o.event}…`} className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] outline-none sm:text-sm" style={{ color: "var(--wt-ink)" }} />
             </div>
             <button type="submit" disabled={!input.trim() || busy} aria-label="Send" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white disabled:opacity-50" style={{ background: "linear-gradient(135deg, var(--wt-accent), var(--wt-accent-deep))" }}>
               <Send className="h-4 w-4" />

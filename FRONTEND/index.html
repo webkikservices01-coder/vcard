@@ -3,20 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Google Tag Manager -->
-    <!-- Loaded right after the page has loaded (not before), so it doesn't slow the first view on phones.
-         Events pushed to dataLayer before that are kept and sent once it loads. -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var go=function(){var f=d.getElementsByTagName(s)[0],
+    <!-- GTM + Google Analytics run in a web worker (Partytown, files in /~partytown/): their ~900 KB
+         of script used to freeze phones for over a second. The site's dataLayer.push (page views)
+         is forwarded to the worker. -->
+    <script>partytown = { lib: '/~partytown/', forward: ['dataLayer.push'] };</script>
+    <script src="/~partytown/partytown.js" async></script>
+    <script type="text/partytown">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);};
-    if(d.readyState==='complete')setTimeout(go,300);else w.addEventListener('load',function(){setTimeout(go,300);});
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-P3FLDR2N');</script>
     <!-- End Google Tag Manager -->
     <!-- On a card page (/username), start loading the card's data now, in parallel with the app
          code; PublicVcard picks it up (window.__cardPrefetch). -->
     <script>(function(){try{
       var p=location.pathname.toLowerCase().replace(/^\/c\//,'/');var m=/^\/([a-z0-9-]{3,30})$/.exec(p);if(!m)return;
-      var site=['wedding','wedding-preview','invite','login','register','forgot-password','reset-password','verify-email','features','pricing','metal-nfc-card','about-us','contact-us','faqs','privacy-policy','terms-conditions','refund-policy','cancellation-policy','data-processing-addendum','ai-data-privacy','dashboard','onboarding','admin'];
+      var site=['wedding','wedding-preview','invite','invites','upgrade','login','register','forgot-password','reset-password','verify-email','features','pricing','metal-nfc-card','about-us','contact-us','faqs','privacy-policy','terms-conditions','refund-policy','cancellation-policy','data-processing-addendum','ai-data-privacy','dashboard','onboarding','admin'];
       if(site.indexOf(m[1])>=0)return;
       var api='%VITE_API_URL%',j=function(u){return fetch(u).then(function(r){return r.ok?r.json():Promise.reject(r.status);});};
       var pre={slug:m[1],data:j(api+'/api/vcard/public/'+m[1]),ai:j(api+'/api/ai/public/'+m[1])};
@@ -25,7 +27,7 @@
       // rewrite as src/utils/media.js optimizeImage), so they're ready when the card renders.
       pre.data.then(function(d){var pi=(d&&d.card&&d.card.personalInfo)||{};[pi.bannerImage,pi.profilePic].forEach(function(u,i){
         if(!u||u.indexOf('https://')!==0)return;
-        u=u.replace(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/,i?'$1f_auto,q_auto,c_limit,w_1200/$2':'$1e_trim:10/f_auto,q_auto,c_limit,w_1200/$2');
+        u=u.replace(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/,i?'$1f_auto,q_auto,c_limit,w_480/$2':'$1e_trim:10/f_auto,q_auto,c_limit,w_1200/$2');
         var l=document.createElement('link');l.rel='preload';l.as='image';l.href=u;l.fetchPriority='high';document.head.appendChild(l);});}).catch(function(){});
     }catch(e){}})();</script>
     <link rel="icon" type="image/png" href="/favicon.png?v=2" />

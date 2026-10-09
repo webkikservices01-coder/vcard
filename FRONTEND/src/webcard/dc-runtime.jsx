@@ -520,6 +520,48 @@ function AnswerTools({ text }) {
 
 // Mic next to the chat box in every template: speak the question (English or Hindi), it is typed
 // in and sent when you stop. Hidden where the browser can't do speech input.
+// AI voice / video call buttons for the top-right corner of every template's chat panel
+// (next to close). They open AiCallHost; shown only when the card's plan offers the call.
+const CALL_ICONS = {
+  voice: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  video: '<path d="m16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.94a.5.5 0 0 0-.76-.43L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+};
+export function ChatCallButtons() {
+  const calls = CARD.slug ? CARD.ai?.calls : null;
+  const modes = ['video', 'voice'].filter((m) => calls?.[m]);
+  if (!modes.length) return null;
+  const open = (mode) => window.dispatchEvent(new CustomEvent('aicardly:call', { detail: { mode } }));
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      {modes.map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => open(mode)}
+          aria-label={mode === 'video' ? 'AI video call' : 'AI voice call'}
+          title={mode === 'video' ? 'AI video call' : 'AI voice call'}
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            border: 0,
+            padding: 0,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            background: mode === 'video' ? 'linear-gradient(135deg,#F03276,#A9123F)' : 'linear-gradient(135deg,#10b981,#059669)',
+            boxShadow: mode === 'video' ? '0 6px 16px rgba(169,18,63,.35)' : '0 6px 16px rgba(5,150,105,.35)',
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: CALL_ICONS[mode] }} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ChatMic({ chat }) {
   const [lang, setLang] = useState('en-IN');
   const onText = useCallback(
@@ -1258,6 +1300,83 @@ export function ServiceSlides({ items, pad = 16, accent }) {
         </div>
       ))}
     </SwipeRow>
+  );
+}
+
+export function ProductCatalog({ items }) {
+  const list = items || [];
+  if (!list.length) return null;
+  const tint = (pct) => `color-mix(in srgb, currentColor ${pct}%, transparent)`;
+  return (
+    <section id="products" aria-labelledby="wc-products-heading" style={{ padding: '28px 16px 0', scrollMarginTop: '16px' }}>
+      <h3 id="wc-products-heading" style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: 800 }}>
+        Products
+      </h3>
+      <SwipeRow
+        label="Products"
+        itemLabel="Product"
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: '12px',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+          margin: '0 -16px',
+          padding: '0 16px 6px',
+          scrollPadding: '0 16px',
+        }}
+      >
+        {list.map((product, i) => {
+          const content = (
+            <>
+              <div style={{ position: 'relative', aspectRatio: '4 / 3', overflow: 'hidden', background: tint(8) }}>
+                {product.image ? (
+                  <Fill src={product.image} alt={product.title} />
+                ) : (
+                  <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: '34px', fontWeight: 800, opacity: 0.35 }}>
+                    {(product.title || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '12px', flex: 1 }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, lineHeight: 1.3 }}>{product.title}</div>
+                {product.desc ? (
+                  <div style={{ fontSize: '13px', lineHeight: 1.45, opacity: 0.72, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {product.desc}
+                  </div>
+                ) : null}
+                {product.price ? <div style={{ marginTop: 'auto', paddingTop: '4px', fontSize: '13px', fontWeight: 700 }}>{/^\d/.test(String(product.price)) ? `₹${product.price}` : product.price}</div> : null}
+                {product.link ? <span style={{ paddingTop: '4px', fontSize: '13px', fontWeight: 700 }}>View product ↗</span> : null}
+              </div>
+            </>
+          );
+          const style = {
+            minWidth: 0,
+            flex: '0 0 78%',
+            maxWidth: '340px',
+            scrollSnapAlign: 'start',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            borderRadius: '16px',
+            border: `1px solid ${tint(14)}`,
+            background: tint(5),
+            color: 'inherit',
+            textDecoration: 'none',
+          };
+          return product.link ? (
+            <a key={i} href={product.link} target="_blank" rel="noopener noreferrer" style={style}>
+              {content}
+            </a>
+          ) : (
+            <div key={i} style={style}>
+              {content}
+            </div>
+          );
+        })}
+      </SwipeRow>
+    </section>
   );
 }
 

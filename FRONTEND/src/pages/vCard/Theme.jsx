@@ -47,6 +47,16 @@ const Theme = () => {
   const [loading, setLoading] = useState(!cached);
   const [saving, setSaving] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  // Templates the plan unlocks (1 / 3 / 10); the others preview with a lock. null = all.
+  const [allowedThemes, setAllowedThemes] = useState(null);
+
+  useEffect(() => {
+    if (!PRICING_ENABLED) return;
+    axios
+      .get(`${API}/api/stats`, { headers: headers() })
+      .then((r) => Array.isArray(r.data.allowedThemes) && setAllowedThemes(r.data.allowedThemes))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -158,7 +168,7 @@ const Theme = () => {
                 </span>
               )}
             </div>
-            <LiveTemplatePicker value={choice} onChange={(c) => onChoice({ ...c, counter: look.counter })} dark={isDark} />
+            <LiveTemplatePicker value={choice} onChange={(c) => onChoice({ ...c, counter: look.counter })} dark={isDark} allowed={allowedThemes} />
 
             {/* Theme: 5 palettes, Light/Dark, live visitor counter (upstream Theme sheet) */}
             <div className={`mt-8 pt-5 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>

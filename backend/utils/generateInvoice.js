@@ -15,7 +15,7 @@ const COMPANY = {
 const ACCENT = '#db2777';
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-const formatMoney = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
+const formatMoney = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2, maximumFractionDigits: 2 })}`;
 
 // Streams a one-page invoice PDF for a completed transaction directly to the given writable stream (e.g. an Express response).
 function generateInvoice(txn, user, res) {
@@ -62,19 +62,29 @@ function generateInvoice(txn, user, res) {
     end.setDate(end.getDate() + (txn.expireDays || 365));
     doc.fillColor('#6b7280').font('Helvetica').fontSize(9)
         .text(`Aicardly subscription · ${txn.expireDays || 365} days (${formatDate(start)} – ${formatDate(end)})`, 62, rowY + 27, { width: 260 });
+    // Payments since GST was added keep the plan price (base) and the GST apart; older ones
+    // only have the total.
+    const base = txn.base ?? txn.amount;
+    const gst = txn.base != null ? txn.gst || 0 : 0;
     doc.fillColor('#374151').font('Helvetica').fontSize(9).text(txn.billingType || 'Yearly', 330, rowY + 12);
-    doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text(formatMoney(txn.amount), 460, rowY + 12, { width: 75, align: 'right' });
+    doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10).text(formatMoney(base), 460, rowY + 12, { width: 75, align: 'right' });
 
     doc.moveTo(50, rowY + 55).lineTo(545, rowY + 55).strokeColor('#e5e7eb').stroke();
 
     // Totals
     const totalsY = rowY + 70;
     doc.fontSize(10).fillColor('#6b7280').font('Helvetica').text('Subtotal', 380, totalsY, { width: 90, align: 'right' });
-    doc.fillColor('#111827').font('Helvetica-Bold').text(formatMoney(txn.amount), 460, totalsY, { width: 75, align: 'right' });
+    doc.fillColor('#111827').font('Helvetica-Bold').text(formatMoney(base), 460, totalsY, { width: 75, align: 'right' });
+    let y = totalsY;
+    if (gst) {
+        y += 18;
+        doc.fontSize(10).fillColor('#6b7280').font('Helvetica').text('GST @ 18%', 380, y, { width: 90, align: 'right' });
+        doc.fillColor('#111827').font('Helvetica-Bold').text(formatMoney(gst), 460, y, { width: 75, align: 'right' });
+    }
 
     doc.fontSize(12).fillColor(ACCENT).font('Helvetica-Bold')
-        .text('Total Paid', 380, totalsY + 22, { width: 90, align: 'right' })
-        .text(formatMoney(txn.amount), 460, totalsY + 22, { width: 75, align: 'right' });
+        .text('Total Paid', 380, y + 22, { width: 90, align: 'right' })
+        .text(formatMoney(txn.amount), 460, y + 22, { width: 75, align: 'right' });
 
     // Footer
     doc.fontSize(8).fillColor('#9ca3af').font('Helvetica')

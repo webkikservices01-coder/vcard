@@ -1,0 +1,12 @@
+# Secrets never go into the image: App Runner reads them from AWS Secrets Manager.
+.env
+.env.*
+!.env.example
+node_modules
+.vercel
+tests
+uploads
+deploy
+scratch-*.js
+*.log
+.git

@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -81,6 +81,7 @@ class Logic extends DCLogic {
         [
           ['Profile', 'profile.md'],
           ['Services', 'services.ts'],
+          ['Products', 'products/'],
           ['Projects', 'projects/'],
           ['Videos', 'videos.mp4'],
           ['Portfolio', 'portfolio/'],
@@ -670,6 +671,7 @@ export function DevTerminal(props) {
               <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'JetBrains Mono',monospace", fontSize: '18px', fontWeight: '700' }}>
@@ -1238,6 +1240,7 @@ export function DevTerminal(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

@@ -15,8 +15,9 @@ const CustomSection = require('../models/CustomSection');
 const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
 const User = require('../models/User');
-const { FREE_THEME, isPaid } = require('../constants/plans');
+const { FREE_THEME, isPaid, allowedThemes } = require('../constants/plans');
 const { accountStatus } = require('../utils/accountStatus');
+const { trialState, nudge } = require('../services/trial');
 const { sendMail, emailHtml } = require('../utils/mailer');
 const background = require('../utils/background');
 const { enquiryLimiter } = require('../middleware/rateLimiter');
@@ -66,20 +67,29 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
         if (req.body.designation !== undefined) updateFields['personalInfo.designation'] = req.body.designation;
         if (req.body.bio !== undefined) updateFields['personalInfo.bio'] = req.body.bio;
         if (req.body.theme !== undefined) {
-            // Free accounts get one template; the others come with any paid plan. A card that
-            // already uses another template keeps it (re-saving it is fine).
+            // Templates follow the plan: free trial and Digital Card 1, Smart AI Card 3, AI Agent
+            // Pro all 10 (see allowedThemes). A card that already uses a template keeps it
+            // (re-saving it is fine), so a downgrade never breaks a live card.
             const theme = String(req.body.theme);
             if (theme !== FREE_THEME) {
                 const [owner, current] = await Promise.all([
                     User.findById(req.user.userId).select('plan planExpiry lifetime email'),
                     vCard.findOne({ userId: req.user.userId }).select('theme').lean(),
                 ]);
-                // A brand-new card (onboarding) simply starts on the free template.
-                if (!isPaid(owner) && !current) {
+                const allowed = allowedThemes(owner);
+                if (allowed.includes(theme) || (current && current.theme === theme)) {
+                    updateFields.theme = theme;
+                } else if (!current) {
+                    // A brand-new card (onboarding) simply starts on the free template.
                     updateFields.theme = FREE_THEME;
-                } else if (!isPaid(owner) && current.theme !== theme) {
-                    return res.status(402).json({ msg: 'This template is on paid plans. Upgrade to use all 10 templates — the free plan includes Webkik Signature.', upgrade: true, freeTheme: FREE_THEME });
-                } else updateFields.theme = theme;
+                } else {
+                    const msg = allowed.length >= 3
+                        ? 'This template is on AI Agent Pro. Upgrade to use all 10 templates.'
+                        : isPaid(owner)
+                            ? 'This template is on higher plans: Smart AI Card has 3 templates and AI Agent Pro all 10.'
+                            : 'This template is on paid plans. The free plan includes Webkik Signature; Smart AI Card has 3 templates and AI Agent Pro all 10.';
+                    return res.status(402).json({ msg, upgrade: true, freeTheme: FREE_THEME, allowedThemes: allowed });
+                }
             } else updateFields.theme = theme;
         }
         if (req.body.themeOptions && typeof req.body.themeOptions === 'object') {
@@ -234,6 +244,14 @@ router.get('/public/:username', async (req, res) => {
         const card = await vCard.findOne({ username: req.params.username });
         // A user removed in the admin panel no longer has a public card.
         if (!card || (await accountStatus(card.userId)) === 'removed') return res.status(404).json({ msg: 'Card not found' });
+        // Free trial over and not paid: the card is paused until the owner upgrades (services/trial.js).
+        const owner = await User.findById(card.userId).select('name email phone plan planExpiry lifetime isAdmin upgrade');
+        const trial = owner ? await trialState(owner) : { active: false };
+        // Upgrade link due (trial over, or a card from before the trial rule): send it now.
+        if (trial.linkDue) background(nudge(owner, trial));
+        if (trial.paused) {
+            return res.status(402).json({ msg: 'This card is paused', paused: true, name: card.title || owner.name || '' });
+        }
 
         const [products, portfolio, testimonials, gallery, customSections, settings] = await Promise.all([
             Product.find({ vcardId: card._id }).sort('order'),

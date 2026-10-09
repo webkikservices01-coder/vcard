@@ -11,6 +11,11 @@ const TEMPLATES = {
   payment_link: () => process.env.WA_TEMPLATE_PAYMENT_LINK || 'payment_link_template',
   card_delivery: () => process.env.WA_TEMPLATE_CARD_DELIVERY || 'card_delivery_template',
   payment_reminder: () => process.env.WA_TEMPLATE_REMINDER || 'payment_reminder_template',
+  // AI "send me your services on WhatsApp" (services/whatsappInfo.js):
+  // card_info body: {{1}} visitor name, {{2}} owner name, {{3}} the details, {{4}} card link
+  card_info: () => process.env.WA_TEMPLATE_CARD_INFO || 'card_info',
+  // lead_alert body: {{1}} owner first name, {{2}} visitor name, {{3}} visitor number, {{4}} what they asked
+  lead_alert: () => process.env.WA_TEMPLATE_LEAD_ALERT || 'lead_alert',
 };
 
 // type: payment_link | card_delivery | payment_reminder

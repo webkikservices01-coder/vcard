@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -187,7 +187,7 @@ class Logic extends DCLogic {
       chipTopM: f.statusH + 12,
     }));
 
-    const navLabels = ['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
+    const navLabels = ['Profile', 'Services', 'Products', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
     const bar = CARD.barFrom([
       { label: 'Call', icon: ic.phone, cA: '#F5F5FA', cM: '#0F172A' },
       { label: 'WhatsApp', icon: ic.wa, cA: '#4ADE80', cM: '#15803D' },
@@ -759,6 +759,7 @@ export function AuroraAI(props) {
               <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontFamily: "'Space Grotesk',sans-serif", fontSize: '20px', fontWeight: '600' }}>
@@ -1354,6 +1355,7 @@ export function AuroraAI(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}
@@ -1947,6 +1949,7 @@ export function MinimalPro(props) {
               <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '32px 16px 0' }}>
               <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '600' }}>{'Testimonials'}</h3>
@@ -2487,6 +2490,7 @@ export function MinimalPro(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}
@@ -3197,6 +3201,7 @@ export function NeoBrutal(props) {
               <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '32px 16px 0' }}>
               <h3
@@ -3834,6 +3839,7 @@ export function NeoBrutal(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

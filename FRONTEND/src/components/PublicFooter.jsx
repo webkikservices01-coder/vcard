@@ -10,6 +10,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { FaInstagram, FaLinkedinIn, FaFacebookF } from "react-icons/fa";
+import { FaThreads } from "react-icons/fa6";
 import LogoMark from "./ui/LogoMark";
 import { useTheme } from "../context/ThemeContext";
 
@@ -33,23 +34,40 @@ const FULL_ADDRESS = `${COMPANY.name}, ${COMPANY.addressLines.join(" ")}`;
 const MAPS_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(FULL_ADDRESS)}&output=embed`;
 const MAPS_DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(FULL_ADDRESS)}`;
 
-const quickLinks = [
-  { label: "Features", to: "/features" },
-  { label: "Pricing", to: "/pricing" },
-  { label: "Metal NFC Card", to: "/metal-nfc-card" },
-  { label: "About Us", to: "/about-us" },
-  { label: "Contact Us", to: "/contact-us" },
-  { label: "FAQs", to: "/faqs" },
-  { label: "Privacy Policy", to: "/privacy-policy" },
-  { label: "Terms & Conditions", to: "/terms-conditions" },
-  { label: "Refund Policy", to: "/refund-policy" },
-  { label: "Cancellation Policy", to: "/cancellation-policy" },
-  { label: "Data Processing Addendum", to: "/data-processing-addendum" },
-  { label: "How our AI uses data", to: "/ai-data-privacy" },
+// Footer links in separate groups (one long list was hard to scan).
+const linkGroups = [
+  {
+    title: "Product",
+    links: [
+      { label: "Features", to: "/features" },
+      { label: "Pricing", to: "/pricing" },
+      { label: "Metal NFC Card", to: "/metal-nfc-card" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About Us", to: "/about-us" },
+      { label: "Contact Us", to: "/contact-us" },
+      { label: "FAQs", to: "/faqs" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", to: "/privacy-policy" },
+      { label: "Terms & Conditions", to: "/terms-conditions" },
+      { label: "Refund Policy", to: "/refund-policy" },
+      { label: "Cancellation Policy", to: "/cancellation-policy" },
+      { label: "Data Processing Addendum", to: "/data-processing-addendum" },
+      { label: "How our AI uses data", to: "/ai-data-privacy" },
+    ],
+  },
 ];
 
 const socials = [
-  { icon: FaInstagram, href: "https://www.instagram.com/webkik_services/", label: "Instagram" },
+  { icon: FaInstagram, href: "https://www.instagram.com/aicardly/", label: "Instagram" },
+  { icon: FaThreads, href: "https://www.threads.net/@aicardly", label: "Threads" },
   { icon: FaLinkedinIn, href: "https://www.linkedin.com/company/webkik-services", label: "LinkedIn" },
   { icon: FaFacebookF, href: "https://www.facebook.com/webkikservices/", label: "Facebook" },
 ];
@@ -109,7 +127,7 @@ export function PublicFooter() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_1.3fr] items-start">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_1.6fr_1.2fr] items-start">
           
           {/* Brand Column */}
           <div 
@@ -162,24 +180,28 @@ export function PublicFooter() {
               isFooterVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
             }`}
           >
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b9d]">
-              Quick links
-            </p>
-            <ul className="space-y-2.5">
-              {quickLinks.map((l) => (
-                <li key={l.label}>
-                  <Link
-                    to={l.to}
-                    className={`group inline-flex items-center text-xs sm:text-sm transition-all duration-300 hover:translate-x-1 ${
-                      isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-[#9F1C44] font-medium"
-                    }`}
-                  >
-                    <span className="mr-2 h-1 w-1 rounded-full bg-[#E70C65] opacity-0 transition-all duration-300 group-hover:opacity-100" />
-                    <span>{l.label}</span>
-                  </Link>
-                </li>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3">
+              {linkGroups.map((g) => (
+                <nav key={g.title} aria-label={g.title} className={g.title === "Legal" ? "col-span-2 sm:col-span-1" : ""}>
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b9d]">{g.title}</p>
+                  <ul className="space-y-2.5">
+                    {g.links.map((l) => (
+                      <li key={l.label}>
+                        <Link
+                          to={l.to}
+                          className={`group inline-flex items-center text-xs sm:text-sm transition-all duration-300 hover:translate-x-1 ${
+                            isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-[#9F1C44] font-medium"
+                          }`}
+                        >
+                          <span className="mr-2 h-1 w-1 rounded-full bg-[#E70C65] opacity-0 transition-all duration-300 group-hover:opacity-100" />
+                          <span>{l.label}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
               ))}
-            </ul>
+            </div>
           </div>
 
           {/* Company Details + Map Column */}

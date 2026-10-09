@@ -39,7 +39,8 @@ const breadcrumbMap = {
   '/dashboard/transactions': 'Transactions',
   '/dashboard/support': 'Support',
   '/dashboard/get-card': 'Get my card',
-  '/dashboard/wedding': 'Wedding Invite',  
+  '/dashboard/invites': 'Digital Invite',
+  '/dashboard/wedding': 'Digital Invite',  
   '/dashboard/profile': 'My Profile',
 };
 
@@ -106,8 +107,8 @@ const DashboardLayout = () => {
         if (res.data?.cardSlug) setCardSlug(res.data.cardSlug);
 
         const { vcardCount, cardName, cardSlug } = res.data || {};
-        // A wedding invite doesn't need a business card first.
-        if ((!vcardCount || !cardName || !cardSlug) && !window.location.pathname.startsWith('/dashboard/wedding')) {
+        // A digital invite doesn't need a business card first.
+        if ((!vcardCount || !cardName || !cardSlug) && !/^\/dashboard\/(wedding|invites)/.test(window.location.pathname)) {
           navigate('/onboarding', { replace: true });
         }
       } catch { /* ignore */ }

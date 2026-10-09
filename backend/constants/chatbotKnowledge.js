@@ -54,25 +54,26 @@ const TEAM = [
 const PLANS = [
   {
     name: 'DIGITAL CARD',
-    tagline: 'Perfect for professionals',
+    tagline: '1 card with a starter AI chatbot',
     priceMonthly: 99,
     priceYearly: 999,
     yearlySaving: 189,
     support: 'Email',
-    bestFor: 'a great-looking card with QR code and analytics, without AI',
+    bestFor: 'one great-looking card with QR code, analytics and a small AI chatbot',
     highlights: [
-      '1 digital vCard, 10 themes',
+      '1 digital card, 1 card theme (Webkik Signature)',
+      'AI chatbot on the card: 10 chats a month, then it asks the owner to upgrade (resets on the 1st)',
       'QR code + "Add to Phonebook" (.vcf) download',
       'Link-tap analytics',
       'Lead capture form on your card',
       'WhatsApp quick-connect button',
       'SEO indexing, dark/light mode',
-      'No AI features; Aicardly branding stays visible',
+      'No AI calls; Aicardly branding stays visible',
     ],
   },
   {
     name: 'SMART AI CARD',
-    tagline: 'AI-powered digital presence — Most Popular',
+    tagline: '3 cards, AI chatbot + AI voice call — Most Popular',
     priceMonthly: 199,
     priceYearly: 1999,
     yearlySaving: 389,
@@ -80,8 +81,10 @@ const PLANS = [
     bestFor: 'an AI assistant on your card that chats and takes live voice calls from visitors 24/7',
     highlights: [
       'Everything in Digital Card',
+      '3 digital cards, 3 card themes (Webkik Signature, Aurora AI, Minimal Pro)',
+      'AI chatbot: 25 chats a month, then it asks the owner to upgrade (resets on the 1st)',
       'Hide Aicardly branding',
-      'AI chat widget on your public card (visitors can ask it questions)',
+      'The AI books meetings (calendar invite by email) and sends your services on WhatsApp',
       'Live AI voice call: visitors tap "AI call" on your card and talk to your AI out loud (English / Hindi)',
       "AI persona config — set the assistant's tone, greeting, and FAQs",
       'Animated AI avatar',
@@ -92,15 +95,17 @@ const PLANS = [
   },
   {
     name: 'AI AGENT PRO',
-    tagline: 'Full AI sales & support automation',
+    tagline: '7 cards + a metal NFC card, unlimited AI, voice + video calls',
     priceMonthly: 1999,
-    priceYearly: 19999,
-    yearlySaving: 3989,
+    priceYearly: 9999,
+    yearlySaving: 13989,
     support: '24/7 Dedicated',
     bestFor: 'AI video calls, WhatsApp automation, multiple cards, or agencies wanting white-label',
     highlights: [
       'Everything in Smart AI Card',
-      'Up to 3 vCards',
+      '7 digital cards, all 10 card themes',
+      'A premium metal NFC business card included (tap any phone to open your card)',
+      'Unlimited AI chats for the plan period (monthly plan ends at the end of the month unless renewed)',
       'Live AI voice call AND AI video call on your card (in a video call the AI can also see what the visitor shows on camera)',
       'WhatsApp Business API bot',
       'Voice note transcription & image recognition',
@@ -163,15 +168,15 @@ const FAQS = [
   },
   {
     q: 'Is there a free plan or free trial?',
-    a: "Yes, you can sign up free with no credit card — new accounts start on a Free Trial tier, and the site says you can start free and upgrade when you need more. The free plan includes 1 card with 1 template (Webkik Signature), QR code and sharing, and a short AI chatbot trial: the card's AI answers 4 visitor questions, then pauses until you upgrade. Smart AI Card unlocks the unlimited AI chatbot and AI voice calls; any paid plan unlocks all 10 templates.",
+    a: "Yes, you can sign up free with no credit card — new accounts start on a Free Trial tier, and the site says you can start free and upgrade when you need more. The free plan includes 1 card with 1 template (Webkik Signature), QR code and sharing, and a short AI chatbot trial: the card's AI answers 4 visitor questions, then pauses until you upgrade. Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10. Smart AI Card adds the AI chatbot and AI voice calls.",
   },
   {
     q: 'How much does it cost?',
-    a: 'Digital Card ₹99/month (₹999/year), Smart AI Card ₹199/month (₹1,999/year), AI Agent Pro ₹1,999/month (₹19,999/year) with every AI feature. Yearly billing is cheaper than paying monthly (saves ₹189, ₹389 and ₹3,989 a year respectively). Prices shown are final at the time of purchase.',
+    a: 'Digital Card ₹99/month (₹999/year), Smart AI Card ₹199/month (₹1,999/year), AI Agent Pro ₹1,999/month (₹9,999/year) with every AI feature. All prices are before GST: 18% GST is added at checkout and shown on the invoice. Yearly billing is cheaper than paying monthly (saves ₹189, ₹389 and ₹13,989 a year respectively).',
   },
   {
     q: 'Which plan should I choose?',
-    a: 'Digital Card if you just want a great-looking card with QR code and analytics. Smart AI Card if you want an AI assistant answering visitors on your card (the most popular). AI Agent Pro if you want voice/WhatsApp automation, up to 3 cards, or white-label for an agency.',
+    a: 'Digital Card if you just want a great-looking card with QR code and analytics. Smart AI Card if you want an AI assistant answering visitors on your card (the most popular). AI Agent Pro if you want AI video calls, WhatsApp automation, up to 7 cards, all 10 templates, a premium metal NFC card included, or white-label for an agency.',
   },
   {
     q: 'How does the AI chat widget work?',
@@ -183,15 +188,15 @@ const FAQS = [
   },
   {
     q: 'How many cards can I create?',
-    a: 'Digital Card and Smart AI Card include 1 vCard; AI Agent Pro includes up to 3 vCards. The free plan includes 1 card.',
+    a: 'Digital Card includes 1 card, Smart AI Card 3 cards and AI Agent Pro 7 cards. The free plan includes 1 card. Card templates: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10.',
   },
   {
     q: 'Does Aicardly have a physical NFC card?',
-    a: "The website showcases a premium contactless NFC business card (metal / frosted-satin finish with an embedded chip): tap it on a modern iPhone or Android phone and it opens your digital card, contact file and AI assistant, with no app needed. Ordering, pricing and delivery details for the physical card aren't published on the site, so the team has to confirm them — don't say flatly that it can be ordered.",
+    a: "Yes. A premium metal NFC business card (with an embedded chip) comes included with the AI Agent Pro plan: tap it on a modern iPhone or Android phone and it opens your digital card, contact file and AI assistant, with no app needed. On other plans it can be ordered separately — pricing and delivery details aren't published on the site, so the team confirms them.",
   },
   {
     q: 'Do I get an invoice?',
-    a: "A PDF invoice is generated for each completed payment and can be downloaded from Dashboard → Transactions (Invoice column). Webkik Services' GSTIN is " + COMPANY.gstin + ", but it is NOT confirmed that the downloadable invoice is a GST tax invoice showing the GSTIN — for GST-specific invoice needs, ask support. Don't promise a GST invoice.",
+    a: "A PDF invoice is generated for each completed payment and can be downloaded from Dashboard → Transactions (Invoice column). Webkik Services' GSTIN is " + COMPANY.gstin + ", and the invoice shows the GSTIN, the plan price and 18% GST as separate lines. For any other GST invoice needs (e.g. adding the buyer's GSTIN), ask support.",
   },
   {
     q: 'Can I change my plan later?',
@@ -298,13 +303,13 @@ ${buildKnowledgeBaseText()}
 GROUNDING
 - Answer ONLY from the knowledge above. If something isn't covered, say plainly that you don't have that detail and suggest the team (see CONTACT). Never guess, never invent features, prices, discounts, clients, stats, timelines, policies, or people.
 - Never promise results or guarantees (leads, rankings, revenue, uptime, approval of a refund).
-- Quote Aicardly plan prices exactly as listed, in ₹, with monthly and yearly options. Never invent offers, coupons, or "special pricing" — if asked for a discount say there are no published offers and that yearly billing is cheaper.
-- The Free Trial tier: new accounts start free with no credit card. The free plan includes exactly: 1 card, 1 template (Webkik Signature), QR code and sharing, and an AI chatbot trial (the card's AI answers 4 visitor questions, then pauses until the owner upgrades). Any paid plan unlocks all 10 templates; Smart AI Card unlocks the unlimited AI chatbot and AI voice calls; AI Agent Pro adds AI video calls. Don't add anything else to the free plan. Example answer to "Is there a free plan?": "Yes — sign up free with no credit card: 1 card, 1 template and a short AI chatbot trial. [Create a free account](/register)."
+- Quote Aicardly plan prices exactly as listed, in ₹, with monthly and yearly options, and say "+ GST" (18% GST is added at checkout). Never invent offers, coupons, or "special pricing" — if asked for a discount say there are no published offers and that yearly billing is cheaper.
+- The Free Trial tier: new accounts start free with no credit card. The free plan includes exactly: 1 card, 1 template (Webkik Signature), QR code and sharing, and an AI chatbot trial (the card's AI answers 4 visitor questions, then pauses until the owner upgrades). Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10; Smart AI Card unlocks the unlimited AI chatbot and AI voice calls; AI Agent Pro adds AI video calls. Don't add anything else to the free plan. Example answer to "Is there a free plan?": "Yes — sign up free with no credit card: 1 card, 1 template and a short AI chatbot trial. [Create a free account](/register)."
 - Digital Card (₹99/month) is a PAID plan. When listing features, say "all paid plans" — never "all plans" — and never present paid features as free.
 - Don't embellish what "the team can do" (don't say they'll set up a domain, build custom integrations or wallet support, negotiate prices, offer bulk deals, or issue a GST invoice) — say only that they can confirm details. Don't hint at unpublished discounts, bulk pricing, or a roadmap.
 - Never say you can forward, pass on, relay, notify, or follow up with the team — you can only tell the visitor how to reach them.
 - Never say data is "100% safe" or "secure" as a guarantee: say encrypted passwords and secure connections are used, and that no system is 100% secure.
-- Invoices: a PDF invoice per payment is available in Dashboard → Transactions; don't promise it is a GST invoice.
+- Invoices: a PDF invoice per payment is available in Dashboard → Transactions; it shows the GSTIN and the 18% GST separately. Adding the buyer's own GSTIN is not automatic — say support can help.
 - NFC card: begin with "Our website showcases…" (not "Yes"), and say the team must confirm ordering/pricing. Don't present it as an optional add-on you can buy.
 - Comparisons with other products: reply with "I can't compare with other products, but here's what Aicardly offers:" and then describe Aicardly's own features factually. Never say it "stands out", is unique, or is better/more than others, never start a sentence with "Unlike…", and don't disparage link-in-bio tools.
 

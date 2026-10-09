@@ -18,7 +18,7 @@ const isMailConfigured = () => !!getTransporter();
 // Best-effort — never throws, so the caller's work (a sign-up, a saved lead) always completes.
 // Returns true when the email was handed to the SMTP server. Every attempt is logged
 // (mail.sent / mail.failed / mail.skipped) for the admin Logs page.
-const sendMail = async ({ to, subject, text, html, attachments, replyTo }) => {
+const sendMail = async ({ to, subject, text, html, attachments, replyTo, icalEvent }) => {
   // Required here, not at the top: logger → AppLog model, loaded after mongoose is set up.
   const { logEvent } = require('./logger');
   const t = getTransporter();
@@ -28,7 +28,15 @@ const sendMail = async ({ to, subject, text, html, attachments, replyTo }) => {
   }
   try {
     const from = process.env.SMTP_FROM || `AiCardly <${process.env.SMTP_USER}>`;
-    const info = await t.sendMail({ from, to, subject, text, html, attachments, ...(replyTo ? { replyTo } : {}) });
+    // The logo goes inside the email (cid:), so it shows even where remote images are blocked.
+    const files = [...(attachments || [])];
+    if (html && html.includes(`cid:${LOGO_CID}`)) files.push({ filename: 'aicardly-logo.png', path: LOGO_FILE, cid: LOGO_CID, contentDisposition: 'inline' });
+    const info = await t.sendMail({
+      from, to, subject, text, html, attachments: files,
+      ...(icalEvent ? { icalEvent } : {}), // calendar invite (Gmail/Outlook show Add to calendar)
+      replyTo: replyTo || BRAND.contact,
+      headers: { 'X-Entity-Ref-ID': `${Date.now()}`, 'Auto-Submitted': 'auto-generated' },
+    });
     logEvent(null, 'mail.sent', `Email sent: "${subject}"`, { email: to, meta: { messageId: info.messageId } });
     return true;
   } catch (err) {
@@ -39,14 +47,15 @@ const sendMail = async ({ to, subject, text, html, attachments, replyTo }) => {
 
 // Simple branded HTML email: heading, paragraphs, optional button.
 // Brand details shown on every email. Social links can be changed with env vars
-// (SOCIAL_INSTAGRAM, SOCIAL_FACEBOOK, SOCIAL_LINKEDIN, SOCIAL_YOUTUBE); empty = not shown.
+// (SOCIAL_INSTAGRAM, SOCIAL_THREADS, SOCIAL_FACEBOOK, SOCIAL_LINKEDIN, SOCIAL_YOUTUBE); empty = not shown.
 const BRAND = {
   name: 'AiCardly',
   site: (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, ''),
   contact: process.env.CONTACT_EMAIL || 'hello@aicardly.com',
 };
 const SOCIALS = [
-  ['Instagram', process.env.SOCIAL_INSTAGRAM ?? 'https://www.instagram.com/webkik_services/'],
+  ['Instagram', process.env.SOCIAL_INSTAGRAM ?? 'https://www.instagram.com/aicardly/'],
+  ['Threads', process.env.SOCIAL_THREADS ?? 'https://www.threads.net/@aicardly'],
   ['YouTube', process.env.SOCIAL_YOUTUBE ?? ''],
   ['Facebook', process.env.SOCIAL_FACEBOOK ?? 'https://www.facebook.com/webkikservices/'],
   ['LinkedIn', process.env.SOCIAL_LINKEDIN ?? 'https://www.linkedin.com/company/webkik-services'],
@@ -54,7 +63,9 @@ const SOCIALS = [
 
 // The Aicardly logo (served by this backend at /brand/email-logo.png). Its cell is white with a
 // pink "A" as alt text, so it still reads as the logo where email images are blocked.
-const LOGO_URL = process.env.EMAIL_LOGO_URL || 'https://backend-nine-omega-26.vercel.app/brand/email-logo.png';
+const LOGO_CID = 'aicardly-logo';
+const LOGO_FILE = require('path').join(__dirname, '..', 'assets', 'brand', 'email-logo.png');
+const LOGO_URL = process.env.EMAIL_LOGO_URL || `cid:${LOGO_CID}`;
 const logoHtml = `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
 <td style="width:40px;height:40px;border-radius:11px;background:#ffffff;text-align:center;vertical-align:middle"><img src="${LOGO_URL}" width="40" height="40" alt="A" style="display:block;width:40px;height:40px;border:0;border-radius:11px;color:#E70C65;font-size:22px;font-weight:800;line-height:40px;text-align:center;font-family:Arial,Helvetica,sans-serif"></td>
 <td style="padding-left:10px;color:#ffffff;font-size:22px;font-weight:800;letter-spacing:.2px;font-family:Arial,Helvetica,sans-serif">Ai<span style="font-weight:700">Cardly</span></td>

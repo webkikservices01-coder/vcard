@@ -1291,6 +1291,37 @@
   to { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) rotate(var(--rot)); }
 }
 
+/* ------------------------------------------------------------
+   Occasion art (OccasionArt.tsx)
+   ------------------------------------------------------------ */
+.wt-occ { overflow: visible; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35)); }
+.wt-occ .oa-twinkle { animation: oa-twinkle 2.6s ease-in-out infinite; }
+.wt-occ .oa-flicker { animation: oa-flicker 0.9s ease-in-out infinite alternate; }
+.wt-occ .oa-glow { animation: oa-glow 2.2s ease-in-out infinite; }
+.wt-occ .oa-bob { animation: oa-bob 4s ease-in-out infinite; }
+.wt-occ .oa-heart-float { animation: oa-heart 5s ease-in-out infinite; }
+.wt-occ .oa-sway-slow { animation: oa-sway 5s ease-in-out infinite; }
+.wt-occ .oa-balloon { animation: oa-balloon 5.5s ease-in-out infinite; }
+.wt-occ .oa-confetti { animation: oa-confetti 4s linear infinite; }
+.wt-occ .oa-spin-slow { animation: wt-spin 60s linear infinite; }
+.wt-occ .oa-spin-rev { animation: wt-spin 40s linear infinite reverse; }
+.wt-occ .oa-burst { animation: oa-burst 3.4s ease-in-out infinite; }
+.wt-occ .oa-firework { animation: oa-firework 2.8s ease-out infinite; }
+.wt-occ .oa-rise { animation: oa-rise 1.6s ease-in infinite; }
+.wt-occ .oa-shine-stroke { animation: oa-shine 3.2s linear infinite; }
+@keyframes oa-twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.6) rotate(0); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
+@keyframes oa-flicker { 0% { transform: scale(1, 1) skewX(0); } 50% { transform: scale(0.92, 1.08) skewX(3deg); } 100% { transform: scale(1.04, 0.95) skewX(-3deg); } }
+@keyframes oa-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes oa-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes oa-heart { 0% { opacity: 0; transform: translateY(14px) scale(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-46px) scale(1.1); } }
+@keyframes oa-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes oa-balloon { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
+@keyframes oa-confetti { 0% { transform: translateY(0) rotate(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(330px) rotate(540deg); opacity: 0.2; } }
+@keyframes oa-burst { 0%, 100% { transform: scale(0.88); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes oa-firework { 0% { transform: scale(0.1); opacity: 0; } 15% { opacity: 1; } 70% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.12); opacity: 0; } }
+@keyframes oa-rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-26px); opacity: 0; } }
+@keyframes oa-shine { to { stroke-dashoffset: -330; } }
+
 @media (prefers-reduced-motion: reduce) {
   [data-vertical="wedding"] * {
     animation: none !important;

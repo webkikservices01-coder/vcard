@@ -5,7 +5,7 @@ import { Check, X as XIcon, ArrowRight } from 'lucide-react';
 import MeshBackground from '../components/ui/MeshBackground';
 import PublicNav from '../components/PublicNav';
 import PublicFooter from '../components/PublicFooter';
-import { plans, featureSections } from '../data/plans.jsx';
+import { plans, featureSections, withGst, inr } from '../data/plans.jsx';
 
 // Public /pricing page (the dashboard's Plans page is for signed-in owners). Prices come from
 // data/plans.jsx, the same list the dashboard and the server's catalog use.
@@ -61,19 +61,16 @@ export default function PricingPage() {
                 <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>{p.tagline}</p>
                 <p className="mt-5 text-4xl font-black" style={{ color: 'var(--surface-text)' }}>
                   ₹{price.toLocaleString('en-IN')}
-                  <span className="text-sm font-medium" style={{ color: 'var(--surface-text-2)' }}> / {billing === 'yearly' ? 'year' : 'month'}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--surface-text-2)' }}> / {billing === 'yearly' ? 'year' : 'month'} + GST</span>
                 </p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--surface-text-2)' }}>{inr(withGst(price))} incl. 18% GST</p>
                 <ul className="mt-6 space-y-2 text-sm flex-1" style={{ color: 'var(--surface-text)' }}>
-                  {featureSections
-                    .flatMap((s) => s.features)
-                    .filter((f) => p.features[f.key])
-                    .slice(0, 9)
-                    .map((f) => (
-                      <li key={f.key} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#E70C65]" aria-hidden="true" />
-                        {f.type === 'count' ? `${p.features[f.key]} ${f.label}` : f.type === 'text' ? `${f.label}: ${p.features[f.key]}` : f.label}
-                      </li>
-                    ))}
+                  {p.highlights.map((h) => (
+                    <li key={h} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#E70C65]" aria-hidden="true" />
+                      {h}
+                    </li>
+                  ))}
                 </ul>
                 <Link
                   to="/register"

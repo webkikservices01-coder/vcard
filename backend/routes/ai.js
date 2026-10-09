@@ -9,15 +9,26 @@ const Portfolio = require('../models/Portfolio');
 const Testimonial = require('../models/Testimonial');
 const Gallery = require('../models/Gallery');
 const CustomSection = require('../models/CustomSection');
-const { hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures, hasPaidAi, FREE_AI_CHATS } = require('../constants/plans');
+const { hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures, hasPaidAi, FREE_AI_CHATS, limitsFor, monthStartIST } = require('../constants/plans');
 
 // Free accounts: the card's chatbot answers FREE_AI_CHATS times as a trial, then pauses until the owner upgrades.
 const trialOver = (owner, card) => !hasPaidAi(owner) && (card.aiTrialUsed || 0) >= FREE_AI_CHATS;
+// AI chats this month across the owner's cards, against their plan's limit (null = free trial).
+async function monthlyChats(owner) {
+  const limits = limitsFor(owner);
+  if (!limits) return null;
+  if (!Number.isFinite(limits.chats)) return { limit: Infinity, used: 0, over: false };
+  const cardIds = await vCard.find({ userId: owner._id }).distinct('_id');
+  const used = await ChatSession.countDocuments({ vcardId: { $in: cardIds }, createdAt: { $gte: monthStartIST() } });
+  return { limit: limits.chats, used, over: used >= limits.chats };
+}
 const { logUsage } = require('../utils/usageLogger');
 const { buildCardySystemPrompt, COMPANY } = require('../constants/chatbotKnowledge');
 const { platformChatLimiter, platformLeadLimiter, themeLimiter, cardChatLimiter, feedbackLimiter } = require('../middleware/rateLimiter');
 const ChatSession = require('../models/ChatSession');
 const Enquiry = require('../models/Enquiry');
+const meetingsSvc = require('../services/meetings');
+const waInfo = require('../services/whatsappInfo');
 const { NICHES, nicheOf, cleanMessages, checkInput, checkOutput, safetyBlock } = require('../utils/aiGuard');
 const { DPA_VERSION, CHAT_CONSENT_VERSION } = require('../constants/legal');
 const { logEvent } = require('../utils/logger');
@@ -340,13 +351,17 @@ router.post('/persona', auth, async (req, res) => {
     const vcardId = await getCardId(req.user.userId);
     if (!vcardId) return res.status(404).json({ msg: 'Create a vCard profile first.' });
 
-    const { enabled, aiName, tone, greeting, aboutText, faqs, knowledge, niche, consultingMode, blockedTopics, offer, npsEnabled, acceptDpa, voiceCall, videoCall, voiceName } = req.body;
+    const { enabled, aiName, tone, greeting, aboutText, faqs, knowledge, niche, consultingMode, blockedTopics, offer, npsEnabled, acceptDpa, voiceCall, videoCall, voiceName, bookingUrl } = req.body;
     const existing = await AiPersona.findOne({ vcardId }).select('dpaAcceptedAt');
     const dpaOk = existing?.dpaAcceptedAt || acceptDpa === true;
     if (enabled !== false && !dpaOk) {
       return res.status(400).json({ msg: 'Please accept the Data Processing Addendum to turn on the AI assistant.' });
     }
     const clip = (v, n) => String(v || '').trim().slice(0, n);
+    const meetings = require('../services/meetings');
+    if (clip(bookingUrl, 500) && !meetings.cleanBookingUrl(bookingUrl)) {
+      return res.status(400).json({ msg: 'Booking link must be a Calendly or Google Calendar booking page (starting with https://).' });
+    }
     const set = {
       enabled, aiName, tone, greeting, aboutText, faqs,
       knowledge: (Array.isArray(knowledge) ? knowledge : [])
@@ -367,7 +382,9 @@ router.post('/persona', auth, async (req, res) => {
       npsEnabled: npsEnabled !== false,
       voiceCall: voiceCall !== false,
       videoCall: videoCall !== false,
-      voiceName: ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'].includes(voiceName) ? voiceName : 'marin',
+      bookingUrl: meetings.cleanBookingUrl(bookingUrl),
+      voiceName: ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'].includes(voiceName) ? voiceName : 'auto',
+      voicePicked: ['marin', 'cedar', 'alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'].includes(voiceName),
     };
     if (!existing?.dpaAcceptedAt && acceptDpa === true) {
       set.dpaAcceptedAt = new Date();
@@ -405,7 +422,18 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
     if (!persona.enabled) {
       return res.status(403).json({ msg: 'AI chat is disabled for this card.' });
     }
-    if (trialOver(owner, card)) {
+    // Paid plans: AI chats per month (Digital Card 10, Smart AI Card 25, AI Agent Pro unlimited).
+    // A conversation already going on this month can carry on; a new one waits for an upgrade.
+    const quota = await monthlyChats(owner);
+    if (quota?.over) {
+      const sid = String(req.body.sessionId || '').replace(/[^\w-]/g, '').slice(0, 64);
+      const ongoing = sid && (await ChatSession.exists({ vcardId: card._id, sessionId: sid, createdAt: { $gte: monthStartIST() } }));
+      if (!ongoing) {
+        const first = card.personalInfo?.name?.split(' ')[0] || 'the owner';
+        return res.status(402).json({ msg: `The AI assistant has answered all its chats for this month. You can reach ${first} directly with the Call or WhatsApp buttons on this card.`, trialOver: true, limitReached: true });
+      }
+    }
+    if (!quota && trialOver(owner, card)) {
       const first = card.personalInfo?.name?.split(' ')[0] || 'the owner';
       return res.status(402).json({ msg: `The AI assistant is resting right now. You can reach ${first} directly with the Call or WhatsApp buttons on this card.`, trialOver: true });
     }
@@ -456,24 +484,52 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
       CustomSection.find({ vcardId: card._id }).sort('order'),
     ]);
 
-    const systemPrompt = buildSystemPrompt(persona, card, products, portfolio, testimonials, gallery, customSections);
+    const ownerName = card.personalInfo?.name || card.title || 'the owner';
+    const booking = !!meetingsSvc.cleanBookingUrl(persona.bookingUrl);
+    const systemPrompt = `${buildSystemPrompt(persona, card, products, portfolio, testimonials, gallery, customSections)}
 
-    const completion = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 350,
-      system: systemPrompt,
-      messages,
-    });
+=== MEETINGS ===
+${meetingsSvc.meetingRules(ownerName, { booking, spoken: false })}
+${waInfo.whatsappRules(ownerName, { spoken: false })}`;
+    const tools = [meetingsSvc.MEETING_TOOL, waInfo.WHATSAPP_TOOL].map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
 
-    logUsage({ route: 'chat', vcardId: card._id, userId: owner._id, model: CLAUDE_MODEL, usage: completion.usage });
+    // The AI may call one tool (book a meeting / send on WhatsApp); we run it and let it answer.
+    let convo = messages;
+    let completion;
+    let meeting = null;
+    let whatsapp = null;
+    for (let round = 0; round < 2; round++) {
+      completion = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 350, system: systemPrompt, messages: convo, tools });
+      logUsage({ route: 'chat', vcardId: card._id, userId: owner._id, model: CLAUDE_MODEL, usage: completion.usage });
+      const use = completion.content.find(b => b.type === 'tool_use');
+      if (completion.stop_reason !== 'tool_use' || !use || round > 0) break;
+      let result;
+      const parsed = use.name === 'send_whatsapp_info' ? waInfo.parseRequest(use.input || {}) : meetingsSvc.parseMeeting(use.input || {});
+      if (parsed.error) result = { ok: false, error: parsed.error };
+      else if (use.name === 'send_whatsapp_info') {
+        whatsapp = await waInfo.sendInfo({ req, card, r: parsed.r, source: 'chat', cohort });
+        result = { ok: true, sent: whatsapp.sent, owner_told: true, open_whatsapp_button_added_below: !whatsapp.sent && !!whatsapp.tapLink };
+      } else {
+        meeting = await meetingsSvc.recordMeeting({ req, card, persona, m: parsed.m, source: 'chat', cohort });
+        result = meeting.scheduled
+          ? { ok: true, booked: true, when: meeting.when, link: meeting.meetingUrl, invite_emailed_to_visitor: meeting.invited }
+          : { ok: true, booked: false, link: meeting.meetingUrl, booking_page: meeting.booking };
+      }
+      convo = [...convo, { role: 'assistant', content: completion.content }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: use.id, content: JSON.stringify(result) }] }];
+    }
 
     let reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+    // The real one-tap link (the AI must not write it: it could cut it short).
+    if (whatsapp?.tapLink && !whatsapp.sent) reply = `${reply.replace(/\[([^\]]*)\]\(https:\/\/wa\.me\/[^)]*\)/g, '').replace(/https:\/\/wa\.me\/\S+/g, '').trim()}\n\n[Open WhatsApp](${whatsapp.tapLink})`.trim();
+    if (meeting && !reply.includes(meeting.meetingUrl)) reply = `${reply}
+
+[${meeting.scheduled ? 'Join the meeting' : meeting.booking ? 'Pick a time' : 'Meeting link'}](${meeting.meetingUrl})`.trim();
     const bad = checkOutput(reply, guard);
     if (bad) reply = bad.reply;
     const { text, cards } = bad ? { text: reply, cards: [] } : cardsFor(reply, { products, portfolio });
     await track({ messages: 1, blocked: bad ? 1 : 0 }, showOffer ? { offerShown: true } : {});
     if (!hasPaidAi(owner)) await vCard.updateOne({ _id: card._id }, { $inc: { aiTrialUsed: 1 } });
-    res.json({ reply: text, cards, showOffer, ...(bad ? { guarded: bad.reason } : {}) });
+    res.json({ reply: text, cards, showOffer, ...(meeting ? { meeting } : {}), ...(whatsapp ? { whatsapp } : {}), ...(bad ? { guarded: bad.reason } : {}) });
   } catch (err) {
     logEvent(req, 'ai.chat.error', err.message, { level: 'error' });
     res.status(500).json({ msg: 'AI response failed. Please try again.' });
@@ -826,7 +882,8 @@ router.get('/public/:username', async (req, res) => {
     const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
     if (!persona.enabled) return res.json({ enabled: false });
     // Free trial used up: the card hides its chatbot until the owner upgrades.
-    if (trialOver(owner, card)) return res.json({ enabled: false, trialOver: true });
+    const quota = await monthlyChats(owner);
+    if (quota ? quota.over : trialOver(owner, card)) return res.json({ enabled: false, trialOver: true, limitReached: !!quota });
 
     const niche = nicheOf(persona.niche);
     res.json({
@@ -1121,3 +1178,4 @@ module.exports = router;
 module.exports.cardsFor = cardsFor;
 module.exports.buildSystemPrompt = buildSystemPrompt;
 module.exports.DEFAULT_PERSONA = DEFAULT_PERSONA;
+module.exports.monthlyChats = monthlyChats;

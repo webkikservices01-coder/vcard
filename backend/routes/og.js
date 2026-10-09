@@ -102,11 +102,19 @@ router.get('/invite/:link', async (req, res) => {
     const { publicInvite } = require('./wedding');
     const inv = await publicInvite(req.params.link);
     if (!inv) return res.status(404).json({ msg: 'Invitation not found' });
-    const couple = oneLine(`${inv.coupleOne || ''} ${inv.amp || '&'} ${inv.coupleTwo || ''}`, 80);
+    const { OCCASIONS } = require('../constants/occasions');
+    const { occasionOf } = require('../constants/weddingTemplates');
+    const o = OCCASIONS[occasionOf(inv.template)] || OCCASIONS.wedding;
+    const couple = oneLine(
+      o.couple ? [inv.coupleOne, inv.coupleTwo].filter(Boolean).join(` ${inv.amp || '&'} `) : inv.coupleOne || '',
+      80
+    );
     const url = `${SITE}/invite/${inv.link}`;
-    const title = `${couple} – Wedding Invitation`;
+    const title = o.rsvp ? `${couple} – ${o.label} Invitation` : `${o.label} from ${couple}`;
     const description = oneLine(
-      [`You are invited to the wedding of ${couple}`, inv.date, inv.venueName && `at ${inv.venueName}`].filter(Boolean).join(' · ') + '. Tap to see the events, venue and RSVP.',
+      o.rsvp
+        ? [`You are invited to the ${o.event} of ${couple}`, inv.date, inv.venueName && `at ${inv.venueName}`].filter(Boolean).join(' · ') + '. Tap to see the details, venue and RSVP.'
+        : [inv.tagline || `Warm wishes from ${couple}`, 'Tap to open your greeting.'].join(' · '),
       200
     );
     // Cloudinary photos are cut to the 1200×630 preview size.

@@ -128,11 +128,11 @@ if ($isPrivate) {
   } elseif ($inv !== null) {
     $head = $inv;
   } else {
-    $head = tags('Wedding Invitation | Aicardly', 'You are invited! Tap to see the wedding events, venue and RSVP.', $site . '/invite/' . strtolower($m[1]), $site);
+    $head = tags('You are invited! | Aicardly', 'You are invited! Tap to see the details, venue and RSVP.', $site . '/invite/' . strtolower($m[1]), $site);
   }
-} elseif (preg_match('#^/wedding/([a-z0-9-]{3,60})$#', $path, $m)) {
-  // A wedding invitation design (template preview).
-  $head = tags('Wedding Invitation Design | Aicardly', 'Preview this wedding invitation design and make yours free on Aicardly: names, functions, venue map, photos, music and RSVP.', $site . $path, $site);
+} elseif (preg_match('#^/(?:wedding|invites)/([a-z0-9-]{3,60})$#', $path, $m)) {
+  // A Digital Invite design (template preview).
+  $head = tags('Digital Invitation Design | Aicardly', 'Preview this invitation design and make yours free on Aicardly: names, programme, venue map, photos, music, RSVP and an AI host.', $site . $path, $site);
 } elseif ($path === '/wedding-preview') {
   $head = noindex('Invitation preview | Aicardly');
 } elseif (preg_match('#^/(?:c/)?([A-Za-z0-9-]{3,30})$#', $path, $m)) {

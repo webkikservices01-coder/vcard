@@ -10,6 +10,13 @@ export const coverImageUrl = (imgPath) => {
   return url && CLOUDINARY_RE.test(imgPath) ? url.replace('/image/upload/f_auto,', '/image/upload/e_trim:10/f_auto,') : url;
 };
 
+// Round profile photos are shown at most ~170px wide: 480px is sharp on any phone and a fraction of
+// the 1200px file. Same rewrite in index.html (card prefetch), so the photo downloads once.
+export const avatarUrl = (imgPath) => {
+  const url = getImageUrl(imgPath);
+  return url ? url.replace('/image/upload/f_auto,q_auto,c_limit,w_1200/', '/image/upload/f_auto,q_auto,c_limit,w_480/') : url;
+};
+
 export const getImageUrl = (imgPath) => {
   if (!imgPath) return null;
   if (imgPath.startsWith('http')) return optimizeImage(imgPath);

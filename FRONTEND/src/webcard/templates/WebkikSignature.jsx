@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -95,7 +95,7 @@ class Logic extends DCLogic {
         { label: 'Location', icon: ic.pin },
       ]),
       socials: CARD.socialsFrom(),
-      nav: CARD.navFrom(['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Profile', 'Services', 'Products', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           bg: i === 0 ? '#ED2460' : 'rgba(237,36,96,.08)',
@@ -132,6 +132,9 @@ class Logic extends DCLogic {
     };
   }
 }
+
+// The big faded letter on the pink panels: the card owner's initial (was a fixed Webkik "W").
+const initialOf = () => (String(CARD.fullName || CARD.company || 'A').trim().match(/[\p{L}\d]/u)?.[0] || 'A').toUpperCase();
 
 export function WebkikSignature(props) {
   const V = useDC(Logic, props);
@@ -185,7 +188,7 @@ export function WebkikSignature(props) {
             pointerEvents: 'none',
           }}
         >
-          {'W'}
+          {initialOf()}
         </div>
         {CARD.company ? (
           <div
@@ -554,6 +557,7 @@ export function WebkikSignature(props) {
               <ServiceSlides items={CARD.services} pad={0} />
             </div>
           )}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 && (
             <div style={{ padding: '28px 0 0' }}>
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Poppins',sans-serif", fontSize: '19px', fontWeight: '700' }}>
@@ -824,7 +828,7 @@ export function WebkikSignature(props) {
                     lineHeight: '1',
                   }}
                 >
-                  {'W'}
+                  {initialOf()}
                 </div>
                 <div
                   style={{
@@ -1143,6 +1147,7 @@ export function WebkikSignature(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

@@ -10,7 +10,7 @@ import Button from '../components/ui/Button';
 import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
-import { plans, featureSections } from '../data/plans.jsx';
+import { plans, featureSections, withGst, inr } from '../data/plans.jsx';
 import axiosClient from 'axios';
 
 let cashfreePromise = null;
@@ -279,13 +279,21 @@ const Plans = () => {
                   </AnimatePresence>
                 </div>
                 <p className="text-xs mb-5" style={{ color: 'var(--surface-text-2)' }}>
-                  per {billing === 'yearly' ? 'year' : 'month'} · billed {billing}
+                  + 18% GST per {billing === 'yearly' ? 'year' : 'month'} ({inr(withGst(price))} total) · billed {billing}
                   {billing === 'yearly' && (
                     <span className="ml-1 text-green-600 font-semibold">
                       (₹{plan.price.monthly}/mo value)
                     </span>
                   )}
                 </p>
+
+                <ul className="mb-5 space-y-1.5 text-xs" style={{ color: 'var(--surface-text)' }}>
+                  {plan.highlights.map((h) => (
+                    <li key={h} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" aria-hidden="true" /> {h}
+                    </li>
+                  ))}
+                </ul>
 
                 {plan.popular ? (
                   <Button
@@ -401,8 +409,11 @@ const Plans = () => {
                   <p className="text-2xl font-black" style={{ color: 'var(--surface-text)' }}>
                     {selectedPlan.name}
                     <span className="text-sm font-normal ml-2" style={{ color: 'var(--surface-text-2)' }}>
-                      ₹{(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly).toLocaleString('en-IN')} / {billing === 'yearly' ? 'year' : 'month'}
+                      ₹{(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly).toLocaleString('en-IN')} + GST / {billing === 'yearly' ? 'year' : 'month'}
                     </span>
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
+                    You pay {inr(withGst(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly))} (incl. 18% GST)
                   </p>
                 </div>
                 <div className="w-full sm:w-56">

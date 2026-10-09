@@ -11,15 +11,23 @@ const CATALOG = {
   'digital-id':    { name: PLANS.DIGITAL,      monthly: 99,  yearly: 999 },
   'smart-ai-card': { name: PLANS.SMART_AI,     monthly: 199, yearly: 1999 },
   // ₹1 for now, to test live payments and invoices end to end (was ₹399 / ₹3,999).
-  'ai-agent-pro':  { name: PLANS.AI_AGENT_PRO, monthly: 1999, yearly: 19999 },
+  'ai-agent-pro':  { name: PLANS.AI_AGENT_PRO, monthly: 1999, yearly: 9999 },
+};
+
+// GST is added on top of every plan price (the prices above are before GST).
+const GST_RATE = 0.18;
+const withGst = (base) => {
+  const gst = Math.round(base * GST_RATE * 100) / 100;
+  return { base, gst, amount: Math.round((base + gst) * 100) / 100 };
 };
 
 // Price and duration for a plan + billing period, or null if the combination doesn't exist.
+// amount = what is charged (base + 18% GST).
 const priceFor = (planId, billing) => {
   const p = CATALOG[planId];
   if (!p) return null;
-  if (billing === 'monthly') return { name: p.name, amount: p.monthly, days: 30, billingType: 'Monthly' };
-  if (billing === 'yearly') return { name: p.name, amount: p.yearly, days: 365, billingType: 'Yearly' };
+  if (billing === 'monthly') return { name: p.name, ...withGst(p.monthly), days: 30, billingType: 'Monthly' };
+  if (billing === 'yearly') return { name: p.name, ...withGst(p.yearly), days: 365, billingType: 'Yearly' };
   return null;
 };
 
@@ -84,4 +92,47 @@ const PAID_PLANS = Object.values(PLANS);
 const isPaid = (u) => isLifetime(u) || PAID_PLANS.includes(planOf(u));
 const hasPaidAi = (u) => isLifetime(u) || CHAT_FILL_PLANS.includes(planOf(u));
 
-module.exports = { FREE_THEME, FREE_AI_CHATS, isPaid, hasPaidAi, PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, isLifetime, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures };
+// What each plan includes. chats = AI chatbot conversations per calendar month on the owner's
+// card(s) (Infinity = unlimited); cards = digital cards on the account; themes = how many card
+// templates (first N of THEME_ORDER); nfcCard = a premium metal NFC card comes with the plan.
+// Keep in sync with FRONTEND/src/data/plans.jsx.
+const PLAN_LIMITS = {
+  [PLANS.DIGITAL]: { cards: 1, chats: 10, themes: 1, nfcCard: false },
+  [PLANS.SMART_AI]: { cards: 3, chats: 25, themes: 3, nfcCard: false },
+  [PLANS.AI_AGENT_PRO]: { cards: 7, chats: Infinity, themes: 10, nfcCard: true },
+};
+
+// Card templates in unlock order: the free template first, then the ones the 3-theme plan adds.
+// Keep the ids in sync with FRONTEND/src/webcard/templates/TemplatePicker.jsx.
+const THEME_ORDER = [
+  FREE_THEME,
+  'aurora-ai',
+  'minimal-pro',
+  'luxe-noir',
+  'split-hero-corporate',
+  'neo-brutal',
+  'soft-bento-wellness',
+  'creator-reel',
+  'dev-terminal',
+  'editorial-architect',
+];
+// Templates this user may use right now (free trial: only the free one; lifetime: all).
+const allowedThemes = (u) => {
+  if (isLifetime(u)) return [...THEME_ORDER];
+  const n = PLAN_LIMITS[planOf(u)]?.themes || 1;
+  return THEME_ORDER.slice(0, n);
+};
+// Limits for this user's plan right now, or null on the free trial (FREE_AI_CHATS applies).
+const limitsFor = (u) => {
+  // Lifetime accounts get AI Agent Pro's limits.
+  if (isLifetime(u)) return { ...PLAN_LIMITS[PLANS.AI_AGENT_PRO], cards: Math.max(PLAN_LIMITS[PLANS.AI_AGENT_PRO].cards, u?.cardLimit || 0) };
+  const l = PLAN_LIMITS[planOf(u)];
+  return l ? { ...l, cards: Math.max(l.cards, u?.cardLimit || 0) } : null;
+};
+// Start of this month in India time (chat quotas reset on the 1st).
+const monthStartIST = () => {
+  const ist = new Date(Date.now() + 5.5 * 3600 * 1000);
+  return new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), 1) - 5.5 * 3600 * 1000);
+};
+
+module.exports = { PLAN_LIMITS, THEME_ORDER, allowedThemes, limitsFor, monthStartIST, GST_RATE, withGst, FREE_THEME, FREE_AI_CHATS, isPaid, hasPaidAi, PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, isLifetime, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures };

@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -211,7 +211,7 @@ class Logic extends DCLogic {
     }));
 
     const tab = CARD.services.length === 0 ? 'projects' : CARD.projects.length === 0 ? 'services' : this.state.tab;
-    const navLabels = ['Profile', 'Services', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
+    const navLabels = ['Profile', 'Services', 'Products', 'Projects', 'Videos', 'Portfolio', 'Contact', 'QR'];
     const on = (a, b) => (a ? b[0] : b[1]);
     const bar = CARD.barFrom([
       { label: 'Call', icon: ic.phone },
@@ -748,6 +748,7 @@ export function LuxeNoir(props) {
               <ServiceSlides items={CARD.services} pad={20} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '40px 20px 0' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '8px' }}>
@@ -1362,6 +1363,7 @@ export function LuxeNoir(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}
@@ -2122,6 +2124,7 @@ export function SplitHeroCorporate(props) {
               ) : null}
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '28px 0 0' }}>
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Manrope',sans-serif", fontSize: '19px', fontWeight: '800' }}>
@@ -2601,6 +2604,7 @@ export function SplitHeroCorporate(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}
@@ -3349,6 +3353,7 @@ export function SoftBentoWellness(props) {
               </div>
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '28px 16px 0' }}>
               <h3 style={{ margin: '0 0 12px', fontSize: '19px', fontWeight: '800' }}>{'Testimonials'}</h3>
@@ -3902,6 +3907,7 @@ export function SoftBentoWellness(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

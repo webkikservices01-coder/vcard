@@ -57,6 +57,7 @@ const AiInsights = lazy(() => import('./pages/vCard/AiInsights'));
 
 // Public
 const PublicVcard = lazy(() => import('./pages/PublicVcard'));
+const UpgradePage = lazy(() => import('./pages/UpgradePage'));
 
 // Legal / info pages
 const AboutUs = lazy(() => import('./pages/legal/AboutUs'));
@@ -179,11 +180,15 @@ export function AppRoutes() {
         <Route path="/reset-password" element={page(<ForgotPassword />)} />
         <Route path="/verify-email" element={page(<VerifyEmail />)} />
         <Route path="/impersonate" element={page(<Impersonate />)} />
-        {/* Wedding invitations */}
+        {/* Digital Invites (weddings, birthdays, Diwali, wishes …); /wedding kept for old links */}
+        <Route path="/invites" element={page(<WeddingShowcase />)} />
+        <Route path="/invites/:slug" element={page(<WeddingTemplatePage />)} />
         <Route path="/wedding" element={page(<WeddingShowcase />)} />
         <Route path="/wedding/:slug" element={page(<WeddingTemplatePage />)} />
         <Route path="/wedding-preview" element={page(<WeddingPreviewFrame />)} />
         <Route path="/invite/:link" element={page(<InvitePage />)} />
+        {/* No-login upgrade link sent when the 24-hour trial ends */}
+        <Route path="/upgrade/:token" element={page(<UpgradePage />)} />
 
         <Route path="/metal-nfc-card" element={page(<MetalNfcCard />)} />
         <Route path="/features" element={page(<FeaturesPage />)} />
@@ -232,6 +237,7 @@ export function AppRoutes() {
           <Route path="plans"            element={PRICING_ENABLED ? page(<Plans />) : <Navigate to="/dashboard" replace />} />
           <Route path="transactions"     element={PRICING_ENABLED ? page(<Transactions />) : <Navigate to="/dashboard" replace />} />
           <Route path="support"          element={page(<Support />)} />
+          <Route path="invites"          element={page(<WeddingDashboard />)} />
           <Route path="wedding"          element={page(<WeddingDashboard />)} />
           <Route path="get-card"         element={page(<GetCard />)} />
           <Route path="profile"          element={page(<UserProfile />)} />

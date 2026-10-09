@@ -1,5 +1,7 @@
-// /api/wedding — wedding invitations (dashboard "Wedding Invite" tab) and their public page
-// /invite/<link>: the couple's details, photos, RSVPs and the guest wishes wall.
+// /api/wedding — Digital Invites (dashboard "Digital Invite" tab: weddings, engagements, birthdays,
+// Diwali, housewarmings, baby showers, festival wishes …) and their public page /invite/<link>:
+// the hosts' details, photos, RSVPs and the guest wishes wall. The design decides the occasion
+// (constants/weddingTemplates.js → constants/occasions.js).
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { z } = require('zod');
@@ -7,7 +9,9 @@ const auth = require('../middleware/auth');
 const WeddingInvite = require('../models/WeddingInvite');
 const WeddingRsvp = require('../models/WeddingRsvp');
 const User = require('../models/User');
-const { WEDDING_TEMPLATES, WEDDING_OPENINGS, WEDDING_COUPLE_ART, MAX_INVITES_PER_USER } = require('../constants/weddingTemplates');
+const { WEDDING_TEMPLATES, WEDDING_OPENINGS, WEDDING_COUPLE_ART, MAX_INVITES_PER_USER, occasionOf } = require('../constants/weddingTemplates');
+const { OCCASIONS } = require('../constants/occasions');
+const occ = (inv) => OCCASIONS[occasionOf(inv?.template)] || OCCASIONS.wedding;
 const { upload, fileUrl } = require('../utils/upload');
 // Signature for direct uploads (cloudinary config is set up by utils/upload when keys exist).
 const { sendMail, emailHtml } = require('../utils/mailer');
@@ -31,7 +35,7 @@ const inviteBody = z.object({
   template: z.enum(WEDDING_TEMPLATES),
   link: z.string().trim().toLowerCase().max(50),
   coupleOne: text(40).min(1, 'enter the first name'),
-  coupleTwo: text(40).min(1, 'enter the second name'),
+  coupleTwo: text(40).optional().default(''),
   amp: text(10).optional().default('&'),
   script: text(60).optional().default(''),
   tagline: text(160).optional().default(''),
@@ -59,7 +63,11 @@ const inviteBody = z.object({
 
 const parse = (schema, body) => {
   const r = schema.safeParse(body || {});
-  if (r.success) return { data: r.data };
+  if (r.success) {
+    // Couples (wedding, engagement, anniversary, baby shower) need both names.
+    if (r.data.template && occ(r.data).couple && 'coupleTwo' in r.data && !r.data.coupleTwo && schema === inviteBody) return { error: 'coupleTwo: enter the second name' };
+    return { data: r.data };
+  }
   const i = r.error.issues[0];
   return { error: `${i.path.join('.') || 'input'}: ${i.message}` };
 };
@@ -95,11 +103,11 @@ router.post('/', auth, async (req, res) => {
     const problem = linkProblem(data.link);
     if (problem) return res.status(400).json({ msg: problem });
     if ((await WeddingInvite.countDocuments({ userId: req.user.userId })) >= MAX_INVITES_PER_USER) {
-      return res.status(400).json({ msg: `You can have up to ${MAX_INVITES_PER_USER} wedding invites.` });
+      return res.status(400).json({ msg: `You can have up to ${MAX_INVITES_PER_USER} invites.` });
     }
     if (await WeddingInvite.exists({ link: data.link })) return res.status(400).json({ msg: 'This link is already taken.' });
     const invite = await WeddingInvite.create({ ...data, userId: req.user.userId });
-    logEvent(req, 'wedding.create', `Wedding invite /invite/${invite.link} created`, { userId: req.user.userId });
+    logEvent(req, 'wedding.create', `${occ(invite).label} invite /invite/${invite.link} created`, { userId: req.user.userId });
     res.status(201).json(invite);
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ msg: 'This link is already taken.' });
@@ -224,13 +232,14 @@ router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
   try {
     const invite = await publicInvite(req.params.link);
     if (!invite) return res.status(404).json({ msg: 'Invitation not found' });
-    if (!invite.rsvpOpen) return res.status(400).json({ msg: 'RSVPs are closed for this invitation.' });
+    if (!invite.rsvpOpen || !occ(invite).rsvp) return res.status(400).json({ msg: 'RSVPs are closed for this invitation.' });
     const { data, error } = parse(rsvpBody, req.body);
     if (error) return res.status(400).json({ msg: error.replace(/^[^:]+: /, '') });
     await WeddingRsvp.create({ ...data, inviteId: invite._id });
-    res.json({ msg: 'Thank you! Your reply has reached the couple.' });
+    const o = occ(invite);
+    res.json({ msg: `Thank you! Your reply has reached ${o.hosts}.` });
 
-    // Let the couple know (their account email), after the reply.
+    // Let the hosts know (their account email), after the reply.
     background((async () => {
       const owner = await User.findById(invite.userId).select('email').lean();
       if (!owner?.email) return;
@@ -240,15 +249,15 @@ router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
         to: owner.email,
         replyTo: data.email || undefined,
         subject: `New RSVP from ${data.name}: ${label}`,
-        text: `${data.name} replied to your wedding invitation (${SITE}/invite/${invite.link}).\n\n${label} · Guests: ${data.guests}\nPhone: ${data.phone || '—'}\nEmail: ${data.email || '—'}\n${data.message ? `\nMessage: ${data.message}\n` : ''}\nAll replies: ${SITE}/dashboard/wedding`,
+        text: `${data.name} replied to your ${o.invite} (${SITE}/invite/${invite.link}).\n\n${label} · Guests: ${data.guests}\nPhone: ${data.phone || '—'}\nEmail: ${data.email || '—'}\n${data.message ? `\nMessage: ${data.message}\n` : ''}\nAll replies: ${SITE}/dashboard/invites`,
         html: emailHtml({
           heading: `${esc(data.name)}: ${label}`,
           paragraphs: [
-            `New reply on your wedding invitation <a href="${SITE}/invite/${esc(invite.link)}" style="color:#E70C65">aicardly.com/invite/${esc(invite.link)}</a>.`,
+            `New reply on your ${o.invite} <a href="${SITE}/invite/${esc(invite.link)}" style="color:#E70C65">aicardly.com/invite/${esc(invite.link)}</a>.`,
             `<b>Guests:</b> ${data.guests}<br><b>Phone:</b> ${esc(data.phone) || '—'}<br><b>Email:</b> ${esc(data.email) || '—'}`,
             data.message ? `<b>Message:</b><br>${esc(data.message).replace(/\n/g, '<br>')}` : '',
           ].filter(Boolean),
-          button: { label: 'See all replies', url: `${SITE}/dashboard/wedding` },
+          button: { label: 'See all replies', url: `${SITE}/dashboard/invites` },
         }),
       });
     })());
@@ -265,10 +274,10 @@ router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
 const chatLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 40, standardHeaders: true, legacyHeaders: false, message: { msg: 'Too many messages. Please wait a few minutes and try again.' } });
 const draftBody = inviteBody.partial().extend({ template: z.enum(WEDDING_TEMPLATES) });
 const CHAT_MODEL = process.env.WEDDING_CHAT_MODEL || 'claude-haiku-4-5-20251001';
-const GUARD_REPLIES = {
-  injection: 'I can only help with questions about this wedding. Would you like the dates, the venue or how to RSVP?',
-  abuse: "Sorry, I can't help with that. I'm here for questions about this wedding.",
-};
+const guardReplies = (o) => ({
+  injection: `I can only help with questions about this ${o.event}. Would you like the date, the venue or how to RSVP?`,
+  abuse: `Sorry, I can't help with that. I'm here for questions about this ${o.event}.`,
+});
 
 router.post('/chat', chatLimiter, async (req, res) => {
   try {
@@ -280,23 +289,24 @@ router.post('/chat', chatLimiter, async (req, res) => {
     if (req.body.link) {
       inv = await publicInvite(req.body.link);
       if (!inv) return res.status(404).json({ msg: 'Invitation not found' });
-      if (inv.aiChat === false) return res.status(403).json({ msg: 'The couple has switched the assistant off.' });
+      if (inv.aiChat === false) return res.status(403).json({ msg: 'The hosts have switched the assistant off.' });
     } else {
       const { data, error } = parse(draftBody, req.body.draft);
       if (error) return res.status(400).json({ msg: error });
       inv = data;
     }
     const stop = checkInput(messages[messages.length - 1].content, { niche: 'general' });
-    if (stop) return res.json({ reply: GUARD_REPLIES[stop.reason] || stop.reply, actions: [], guarded: stop.reason });
+    const G = guardReplies(occ(inv));
+    if (stop) return res.json({ reply: G[stop.reason] || stop.reply, actions: [], guarded: stop.reason });
     if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ msg: 'The assistant is not available right now.' });
     const Anthropic = require('@anthropic-ai/sdk');
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const completion = await anthropic.messages.create({ model: CHAT_MODEL, max_tokens: 400, system: weddingSystemPrompt(inv), messages });
     logUsage({ route: 'wedding-chat', userId: inv.userId || undefined, model: CHAT_MODEL, usage: completion.usage });
     let reply = completion.content.filter((b) => b.type === 'text').map((b) => b.text).join(' ').trim();
-    if (checkOutput(reply, {}) || /=== (WEDDING|HOW TO|SAFETY)/.test(reply)) reply = GUARD_REPLIES.injection;
+    if (checkOutput(reply, {}) || /=== (WEDDING|EVENT|HOW TO|SAFETY)/.test(reply)) reply = G.injection;
     const { text, actions } = splitActions(reply, inv);
-    res.json({ reply: text || 'Happy to help! What would you like to know about the wedding?', actions });
+    res.json({ reply: text || `Happy to help! What would you like to know about the ${occ(inv).event}?`, actions });
   } catch (err) {
     logEvent(req, 'wedding.chat.error', err.message, { level: 'error' });
     res.status(500).json({ msg: 'The assistant could not answer. Please try again.' });

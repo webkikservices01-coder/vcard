@@ -1,4 +1,5 @@
 import { getTemplate, type CoupleLook, type Opening, type Template } from "./data/templates";
+import { occasionOf } from "./data/occasions";
 
 const OPENINGS: Opening[] = ["classic", "shutter", "scratch"];
 const LOOKS: CoupleLook[] = ["hindu", "south", "nikkah", "modern"];
@@ -49,13 +50,17 @@ export function inviteToTemplate(doc: InviteDoc, preview = false): { template: T
   if (!base) return null;
   const when = doc.eventDate ? new Date(doc.eventDate) : null;
   const valid = when && !isNaN(when.getTime());
-  const one = (doc.coupleOne || "").trim() || base.couple.one;
-  const two = (doc.coupleTwo || "").trim() || base.couple.two;
+  const o = occasionOf(base);
+  const ownOne = (doc.coupleOne || "").trim();
+  const one = ownOne || base.couple.one;
+  // A birthday's milestone / a family's second line is optional: empty stays empty once names are typed.
+  const two = (doc.coupleTwo || "").trim() || (o.couple || !ownOne ? base.couple.two : "");
   const template: Template = {
     ...base,
-    couple: { one, two, amp: (doc.amp || "").trim() || "&" },
+    couple: { one, two, amp: (doc.amp || "").trim() || (o.couple ? "&" : "") },
     script: (doc.script || "").trim() || base.script,
-    tagline: (doc.tagline || "").trim() || "Together with our families, we invite you to celebrate with us",
+    // Wedding designs' own taglines describe the design, so they get a standard invite line.
+    tagline: (doc.tagline || "").trim() || (base.occasion ? base.tagline : "Together with our families, we invite you to celebrate with us"),
     date: (doc.date || "").trim() || (valid ? longDate(when!) : ""),
     eventDate: valid ? when!.toISOString() : "",
     venue: { name: (doc.venueName || "").trim(), address: (doc.venueAddress || "").trim() },

@@ -35,7 +35,19 @@ const UserSchema = new mongoose.Schema({
     freeCardCredits: { type: Number, default: 0, min: 0 },
     // Sign-in tokens issued before this time stop working (password changed / reset, or an
     // admin signed the user out everywhere).
-    tokensValidAfter: { type: Date, default: null }
+    tokensValidAfter: { type: Date, default: null },
+    // 24-hour trial: when the upgrade link went out (services/trial.js). tokenHash opens the
+    // no-login upgrade page /upgrade/<token>; cfLink* is the Cashfree link sent by SMS.
+    upgrade: {
+        tokenHash:  { type: String, default: '' },
+        trialEndsAt: { type: Date, default: null }, // admin "End trial now": ends the trial earlier
+        sentAt:     { type: Date, default: null },
+        email:      { type: String, default: '' }, // sent | failed | skipped
+        sms:        { type: String, default: '' }, // sent | failed | skipped (no Indian mobile)
+        cfLinkId:   { type: String, default: '' },
+        cfLinkUrl:  { type: String, default: '' },
+        error:      { type: String, default: '' },
+    },
 }, { timestamps: true });
 
 UserSchema.index({ createdAt: -1 });

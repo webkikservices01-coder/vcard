@@ -15,6 +15,9 @@ import sceneAyodhya from "../assets/scene-ayodhya.svg";
 import sceneMeenakshi from "../assets/scene-meenakshi.svg";
 import sceneNikkah from "../assets/scene-nikkah.svg";
 import scenePastel from "../assets/scene-pastel.svg";
+import { scene, type SceneKind } from "./scenes";
+import type { OccasionId } from "./occasions";
+import type { ArtKind } from "../components/wedding/reveal/OccasionArt";
 
 // How the invite opens on a shared link: the classic "Open Invitation" cover, a shutter the
 // guest pulls up, or a scratch card hiding the date.
@@ -60,6 +63,25 @@ export interface Template {
   opening?: Opening; // default "classic"
   coupleArt?: CoupleLook; // animated bride & groom illustration in the hero (none when unset)
   isNew?: boolean;
+  occasion?: OccasionId; // default "wedding"
+  art?: ArtKind; // animated occasion illustration in the hero (birthday cake, diyas …)
+}
+
+// Colours + fonts of the occasion designs; turned into their [data-palette] CSS below.
+interface Look {
+  bg: [string, string, string, string];
+  gold: string;
+  goldLite: string;
+  accent: string;
+  deep: string;
+  ink?: string;
+  inkSoft?: string;
+  heading?: string;
+  display?: string;
+  script?: string;
+  extra?: string[];
+  scene: SceneKind;
+  seed: number;
 }
 
 const commonSilverFeatures = [
@@ -882,6 +904,184 @@ export const TEMPLATES: Template[] = [
     isNew: true,
   },
 ];
+
+// ---- Digital Invites: engagements, birthdays, Diwali, festival wishes and more ----------------
+const LOOKS: Record<string, Look> = {
+  "engagement-rose-rings": { bg: ["#2b0f1f", "#4d1a36", "#5e2444", "#1a0812"], gold: "#f1c7a4", goldLite: "#ffe6d2", accent: "#ff6f9c", deep: "#c83f6e", heading: '"Playfair Display", serif', display: '"Cormorant Garamond", serif', script: '"Great Vibes", cursive', scene: "petals", seed: 11, extra: ["#ffb3c9"] },
+  "engagement-roka-marigold": { bg: ["#3a0a0a", "#6b1414", "#7a2410", "#250505"], gold: "#ffb627", goldLite: "#ffd97a", accent: "#ff7a1a", deep: "#d4430f", scene: "lights", seed: 12, extra: ["#ffcf33"] },
+  "anniversary-golden-jubilee": { bg: ["#0b1530", "#16244d", "#1f3266", "#070d1f"], gold: "#e8c068", goldLite: "#f8e2a8", accent: "#f08aa8", deep: "#c4587b", heading: '"Playfair Display", serif', display: '"Cinzel", serif', script: '"Great Vibes", cursive', scene: "stars", seed: 13 },
+  "birthday-balloon-bash": { bg: ["#2a1258", "#4b1f8f", "#6a2aa8", "#180a36"], gold: "#ffd34d", goldLite: "#fff0a8", accent: "#ff5fa2", deep: "#e0307c", ink: "#fff8ff", inkSoft: "#f0dcff", heading: '"Pacifico", cursive', display: '"Jost", sans-serif', script: '"Pacifico", cursive', scene: "confetti", seed: 14, extra: ["#5ec4ff", "#8cf0b0"] },
+  "birthday-gold-milestone": { bg: ["#0c0b09", "#1d1a14", "#2a241a", "#060504"], gold: "#d9b25f", goldLite: "#f5dd9c", accent: "#e6c27a", deep: "#a8822f", heading: '"Cinzel", serif', display: '"Cinzel", serif', script: '"Great Vibes", cursive', scene: "stars", seed: 15 },
+  "diwali-diya-night": { bg: ["#1a0b3b", "#2d1466", "#3e1c7a", "#0f0624"], gold: "#ffb627", goldLite: "#ffe08a", accent: "#ff4f9a", deep: "#d0267a", scene: "lights", seed: 16, extra: ["#ff7a1a"] },
+  "diwali-wishes-rangoli": { bg: ["#4a0730", "#7a0f4f", "#8f1a3a", "#2c031c"], gold: "#ffc23d", goldLite: "#ffe49a", accent: "#ff7a1a", deep: "#e0480f", scene: "mandala", seed: 17, extra: ["#5ec4ff"] },
+  "holi-wishes-colours": { bg: ["#2a0b44", "#41127a", "#5a1a8f", "#170628"], gold: "#ffd21f", goldLite: "#fff08a", accent: "#ff3d7f", deep: "#d4135d", heading: '"Yatra One", cursive', script: '"Yatra One", cursive', scene: "colours", seed: 18, extra: ["#18c37e", "#2f8cff", "#ff8a1f"] },
+  "eid-mubarak-crescent": { bg: ["#04261f", "#073d31", "#0b5142", "#021712"], gold: "#e6c66a", goldLite: "#f7e4a6", accent: "#38c39a", deep: "#1f8f6c", heading: '"Amiri", serif', display: '"Cinzel", serif', script: '"Amiri", serif', scene: "stars", seed: 19 },
+  "new-year-sparkle": { bg: ["#05070f", "#0d1430", "#151f4a", "#020308"], gold: "#e9c46a", goldLite: "#fbe7a8", accent: "#7aa8ff", deep: "#4c6fd1", heading: '"Cinzel", serif', display: '"Cinzel", serif', script: '"Great Vibes", cursive', scene: "stars", seed: 20, extra: ["#ff7aa2"] },
+  "griha-pravesh-toran": { bg: ["#06302a", "#0b4a3f", "#125a4a", "#031c18"], gold: "#ffb627", goldLite: "#ffe08a", accent: "#ff7a1a", deep: "#d4430f", scene: "mandala", seed: 21, extra: ["#ffcf33"] },
+  "babyshower-godh-bharai": { bg: ["#1a1840", "#2b2766", "#3a3480", "#0f0e28"], gold: "#f3d58a", goldLite: "#fff0c4", accent: "#ff9fc4", deep: "#e0709a", heading: '"Playfair Display", serif', display: '"Cormorant Garamond", serif', script: '"Great Vibes", cursive', scene: "stars", seed: 22, extra: ["#a8d8ff"] },
+};
+const heroOf = (slug: string) => {
+  const l = LOOKS[slug];
+  return scene(l.scene, { bg1: l.bg[0], bg2: l.bg[2], gold: l.gold, accent: l.accent, extra: l.extra }, l.seed);
+};
+const occasionFeatures = (...extra: string[]) => [...commonGoldFeatures, "Animated illustration", ...extra];
+
+const OCCASION_TEMPLATES: Template[] = [
+  {
+    slug: "engagement-rose-rings", occasion: "engagement", art: "rings", name: "Rose & Rings", tagline: "Two hearts, one ring — join us as we make it official",
+    country: "india", countryLabel: "Engagement", tier: "platinum", palette: "engagement-rose-rings", hero: heroOf("engagement-rose-rings"), monuments: [], monumentNames: [],
+    motif: "♡", script: "We're Engaged", scriptFont: "serif", couple: { one: "Kabir", two: "Naina", amp: "&" }, date: "14 February 2027", eventDate: "2027-02-14T19:00:00",
+    venue: { name: "The Rose Terrace", address: "Juhu, Mumbai" },
+    ceremonies: [
+      { icon: "💍", hi: "Ring Ceremony", name: "Ring Ceremony", date: "14 Feb", time: "7:00 PM", venue: "The Rose Terrace" },
+      { icon: "🥂", hi: "Dinner", name: "Dinner & Dance", date: "14 Feb", time: "8:30 PM", venue: "Sea Lounge" },
+    ],
+    story: "From a rainy-day coffee to a lifetime of yeses — we're getting engaged and we'd love you there.",
+    features: occasionFeatures("Scratch card opening", "Animated rings & roses"), hashtag: "#KabirNainaForever", opening: "scratch", isNew: true,
+  },
+  {
+    slug: "engagement-roka-marigold", occasion: "engagement", art: "roka", name: "Roka Marigold", tagline: "With the blessings of our elders, we invite you to our Roka & Sagai",
+    country: "india", countryLabel: "Engagement", tier: "platinum", palette: "engagement-roka-marigold", hero: heroOf("engagement-roka-marigold"), monuments: [], monumentNames: [],
+    motif: "🪔", script: "॥ शुभ सगाई ॥", scriptFont: "devanagari", couple: { one: "Yash", two: "Tanvi", amp: "&" }, date: "22 January 2027", eventDate: "2027-01-22T18:30:00",
+    venue: { name: "Marigold Banquets", address: "Rajouri Garden, New Delhi" },
+    ceremonies: [
+      { icon: "🙏", hi: "रोका", name: "Roka", date: "22 Jan", time: "11:00 AM", venue: "Family Residence" },
+      { icon: "💍", hi: "सगाई", name: "Ring Ceremony", date: "22 Jan", time: "6:30 PM", venue: "Marigold Banquets" },
+      { icon: "🍽️", hi: "भोज", name: "Dinner", date: "22 Jan", time: "8:30 PM", venue: "Marigold Banquets" },
+    ],
+    story: "Do parivaar, ek rishta — shagun ki thaali, genda phool aur dher saara pyaar.",
+    features: occasionFeatures("Shutter-up opening", "Marigold garlands & shagun thali"), hashtag: "#YashKiTanvi", opening: "shutter", isNew: true,
+  },
+  {
+    slug: "anniversary-golden-jubilee", occasion: "anniversary", art: "anniversary", name: "Golden Jubilee", tagline: "Celebrating fifty golden years of love, laughter and family",
+    country: "india", countryLabel: "Anniversary", tier: "platinum", palette: "anniversary-golden-jubilee", hero: heroOf("anniversary-golden-jubilee"), monuments: [], monumentNames: [],
+    motif: "✦", script: "50 Years of Togetherness", scriptFont: "serif", couple: { one: "Ramesh", two: "Sunita", amp: "&" }, date: "8 March 2027", eventDate: "2027-03-08T19:30:00",
+    venue: { name: "The Grand Ballroom", address: "ITC Maurya, New Delhi" },
+    ceremonies: [
+      { icon: "🙏", hi: "पूजा", name: "Thanksgiving Puja", date: "8 Mar", time: "11:00 AM", venue: "Family Home" },
+      { icon: "🥂", hi: "Dinner", name: "Anniversary Dinner", date: "8 Mar", time: "7:30 PM", venue: "The Grand Ballroom" },
+    ],
+    story: "Fifty years ago they said yes. Join their children and grandchildren to celebrate a love story that keeps getting better.",
+    features: occasionFeatures("Gold laurel & hearts animation"), hashtag: "#50GoldenYears", opening: "classic", isNew: true,
+  },
+  {
+    slug: "birthday-balloon-bash", occasion: "birthday", art: "cake", name: "Balloon Bash", tagline: "Balloons, cake and lots of fun — come celebrate with us!",
+    country: "india", countryLabel: "Birthday", tier: "platinum", palette: "birthday-balloon-bash", hero: heroOf("birthday-balloon-bash"), monuments: [], monumentNames: [],
+    motif: "🎈", script: "Let's Party!", scriptFont: "serif", couple: { one: "Myra", two: "turns 5", amp: "" }, date: "15 November 2026", eventDate: "2026-11-15T16:00:00",
+    venue: { name: "Funky Monkeys Play Café", address: "Sector 29, Gurugram" },
+    ceremonies: [
+      { icon: "🎩", hi: "", name: "Magic Show & Games", date: "15 Nov", time: "4:00 PM", venue: "Play Zone" },
+      { icon: "🎂", hi: "", name: "Cake Cutting", date: "15 Nov", time: "5:30 PM", venue: "Party Hall" },
+      { icon: "🍕", hi: "", name: "Snacks & Return Gifts", date: "15 Nov", time: "6:00 PM", venue: "Party Hall" },
+    ],
+    story: "Our little princess is turning five! Join us for magic, music and a mountain of cake.",
+    features: occasionFeatures("Scratch card opening", "Balloons, bunting & candle animation"), hashtag: "#MyraTurns5", opening: "scratch", isNew: true,
+  },
+  {
+    slug: "birthday-gold-milestone", occasion: "birthday", art: "milestone", name: "Gold Milestone", tagline: "Cheers to thirty years — an evening of good music, great food and better company",
+    country: "india", countryLabel: "Birthday", tier: "platinum", palette: "birthday-gold-milestone", hero: heroOf("birthday-gold-milestone"), monuments: [], monumentNames: [],
+    motif: "✦", script: "Cheers to 30 Years", scriptFont: "serif", couple: { one: "Rohan", two: "turns 30", amp: "" }, date: "5 December 2026", eventDate: "2026-12-05T20:00:00",
+    venue: { name: "Skyhigh Lounge", address: "Indiranagar, Bengaluru" },
+    ceremonies: [
+      { icon: "🥂", hi: "", name: "Cocktails", date: "5 Dec", time: "8:00 PM", venue: "Rooftop Bar" },
+      { icon: "🎂", hi: "", name: "Cake & Toast", date: "5 Dec", time: "9:30 PM", venue: "Main Lounge" },
+      { icon: "🎧", hi: "", name: "DJ Night", date: "5 Dec", time: "10:00 PM", venue: "Dance Floor" },
+    ],
+    story: "Thirty years, countless memories — let's make one more. Dress code: black & gold.",
+    features: occasionFeatures("Shutter-up opening", "Gold number balloons from your age"), hashtag: "#Rohan30", opening: "shutter", isNew: true,
+  },
+  {
+    slug: "diwali-diya-night", occasion: "diwali", art: "diya", name: "Diya Night", tagline: "Join us for an evening of diyas, sweets, taash and togetherness",
+    country: "india", countryLabel: "Diwali Party", tier: "platinum", palette: "diwali-diya-night", hero: heroOf("diwali-diya-night"), monuments: [], monumentNames: [],
+    motif: "🪔", script: "॥ शुभ दीपावली ॥", scriptFont: "devanagari", couple: { one: "The Malhotra Family", two: "", amp: "" }, date: "8 November 2026", eventDate: "2026-11-08T19:00:00",
+    venue: { name: "Malhotra House", address: "Greater Kailash II, New Delhi" },
+    ceremonies: [
+      { icon: "🙏", hi: "लक्ष्मी पूजा", name: "Lakshmi Puja", date: "8 Nov", time: "7:00 PM", venue: "Puja Room" },
+      { icon: "🪔", hi: "दीप", name: "Diya Lighting", date: "8 Nov", time: "7:45 PM", venue: "Garden" },
+      { icon: "🃏", hi: "", name: "Taash & Games", date: "8 Nov", time: "8:30 PM", venue: "Living Room" },
+      { icon: "🍽️", hi: "भोज", name: "Festive Dinner", date: "8 Nov", time: "9:30 PM", venue: "Terrace" },
+    ],
+    story: "Roshni, mithai aur apno ka saath — this Diwali, celebrate with us.",
+    features: occasionFeatures("Shutter-up opening", "Glowing diyas & sky lanterns"), hashtag: "#MalhotraDiwali", opening: "shutter", isNew: true,
+  },
+  {
+    slug: "diwali-wishes-rangoli", occasion: "wishes", art: "rangoli", name: "Rangoli Wishes", tagline: "May the festival of lights fill your home with joy, health and prosperity",
+    country: "india", countryLabel: "Diwali Wishes", tier: "platinum", palette: "diwali-wishes-rangoli", hero: heroOf("diwali-wishes-rangoli"), monuments: [], monumentNames: [],
+    motif: "🪔", script: "Happy Diwali", scriptFont: "serif", couple: { one: "The Sharma Family", two: "", amp: "" }, date: "", eventDate: "2026-11-08T18:00:00",
+    venue: { name: "", address: "" }, ceremonies: [],
+    story: "Is Deepavali, aapke ghar mein khushiyon ke deep jalein, Lakshmi ji ka vaas ho aur har din roshan ho. Shubh Deepavali!",
+    features: ["Spinning rangoli animation", "Scratch to reveal the wish", "Share on WhatsApp", "Your photo & music", "Countdown to the festival"], opening: "scratch", isNew: true,
+  },
+  {
+    slug: "holi-wishes-colours", occasion: "wishes", art: "holi", name: "Rang Barse", tagline: "Bura na mano, Holi hai! May your life be as colourful as the festival",
+    country: "india", countryLabel: "Holi Wishes", tier: "platinum", palette: "holi-wishes-colours", hero: heroOf("holi-wishes-colours"), monuments: [], monumentNames: [],
+    motif: "✿", script: "Happy Holi", scriptFont: "serif", couple: { one: "Neha & Family", two: "", amp: "" }, date: "", eventDate: "2027-03-22T09:00:00",
+    venue: { name: "", address: "" }, ceremonies: [],
+    story: "Gulal ki laali, pichkari ki dhaar, mithai ki mithaas aur apno ka pyaar — Holi ki dher saari shubhkamnayein!",
+    features: ["Bursting colour animation", "Share on WhatsApp", "Your photo & music", "Countdown to the festival"], opening: "classic", isNew: true,
+  },
+  {
+    slug: "eid-mubarak-crescent", occasion: "wishes", art: "crescent", name: "Eid Crescent", tagline: "May Allah bless you and your family with peace, happiness and prosperity",
+    country: "india", countryLabel: "Eid Wishes", tier: "platinum", palette: "eid-mubarak-crescent", hero: heroOf("eid-mubarak-crescent"), monuments: [], monumentNames: [],
+    motif: "☪", script: "Eid Mubarak", scriptFont: "serif", couple: { one: "The Khan Family", two: "", amp: "" }, date: "", eventDate: "2027-03-10T07:00:00",
+    venue: { name: "", address: "" }, ceremonies: [],
+    story: "Chaand raat ki roshni, sewaiyon ki mithaas aur dua mein aap — Eid ki dili mubarakbaad.",
+    features: ["Crescent moon & lantern animation", "Shutter-up opening", "Share on WhatsApp", "Your photo & music"], opening: "shutter", isNew: true,
+  },
+  {
+    slug: "new-year-sparkle", occasion: "wishes", art: "fireworks", name: "New Year Sparkle", tagline: "Wishing you a year full of new beginnings, big dreams and bright moments",
+    country: "india", countryLabel: "New Year Wishes", tier: "platinum", palette: "new-year-sparkle", hero: heroOf("new-year-sparkle"), monuments: [], monumentNames: [],
+    motif: "✦", script: "Happy New Year 2027", scriptFont: "serif", couple: { one: "Aditi & Karan", two: "", amp: "" }, date: "", eventDate: "2027-01-01T00:00:00",
+    venue: { name: "", address: "" }, ceremonies: [],
+    story: "Here's to 365 new chances — may 2027 bring you health, happiness and everything you've been wishing for.",
+    features: ["Fireworks & champagne animation", "Scratch to reveal the wish", "Countdown to midnight", "Share on WhatsApp"], opening: "scratch", isNew: true,
+  },
+  {
+    slug: "griha-pravesh-toran", occasion: "housewarming", art: "home", name: "Griha Pravesh Toran", tagline: "With the blessings of Lord Ganesha, we invite you to bless our new home",
+    country: "india", countryLabel: "Griha Pravesh", tier: "platinum", palette: "griha-pravesh-toran", hero: heroOf("griha-pravesh-toran"), monuments: [], monumentNames: [],
+    motif: "🪔", script: "॥ गृह प्रवेश ॥", scriptFont: "devanagari", couple: { one: "The Agarwal Family", two: "", amp: "" }, date: "20 December 2026", eventDate: "2026-12-20T09:00:00",
+    venue: { name: "Agarwal Niwas, Flat 1204", address: "Prestige Lakeside, Whitefield, Bengaluru" },
+    ceremonies: [
+      { icon: "🙏", hi: "गणेश पूजा", name: "Ganesh Puja", date: "20 Dec", time: "9:00 AM", venue: "New Home" },
+      { icon: "🔥", hi: "हवन", name: "Havan", date: "20 Dec", time: "10:30 AM", venue: "New Home" },
+      { icon: "🍽️", hi: "भोज", name: "Lunch", date: "20 Dec", time: "1:00 PM", venue: "Clubhouse" },
+    ],
+    story: "A new door, a new beginning — your blessings will make our house a home.",
+    features: occasionFeatures("Shutter-up opening", "Animated home with toran & diyas"), hashtag: "#AgarwalGrihaPravesh", opening: "shutter", isNew: true,
+  },
+  {
+    slug: "babyshower-godh-bharai", occasion: "babyshower", art: "cradle", name: "Little Moon", tagline: "Join us to shower love and blessings on the mom-to-be",
+    country: "india", countryLabel: "Baby Shower", tier: "platinum", palette: "babyshower-godh-bharai", hero: heroOf("babyshower-godh-bharai"), monuments: [], monumentNames: [],
+    motif: "☾", script: "॥ गोद भराई ॥", scriptFont: "devanagari", couple: { one: "Riya", two: "Arjun", amp: "&" }, date: "17 January 2027", eventDate: "2027-01-17T12:00:00",
+    venue: { name: "The Garden Courtyard", address: "Koregaon Park, Pune" },
+    ceremonies: [
+      { icon: "🙏", hi: "गोद भराई", name: "Godh Bharai", date: "17 Jan", time: "12:00 PM", venue: "Courtyard" },
+      { icon: "🎀", hi: "", name: "Fun Games", date: "17 Jan", time: "1:00 PM", venue: "Lawn" },
+      { icon: "🍽️", hi: "भोज", name: "Lunch", date: "17 Jan", time: "2:00 PM", venue: "Dining Hall" },
+    ],
+    story: "A little star is on the way! Come bless the mom-to-be and celebrate the newest member of our family.",
+    features: occasionFeatures("Scratch card opening", "Cradle on the moon animation"), hashtag: "#RiyaArjunBaby", opening: "scratch", isNew: true,
+  },
+];
+TEMPLATES.push(...OCCASION_TEMPLATES);
+
+// [data-palette] rules for the occasion designs (same variables as wedding-theme.css).
+if (typeof document !== "undefined" && !document.getElementById("occasion-palettes")) {
+  const css = Object.entries(LOOKS)
+    .map(([slug, l]) => {
+      const v: Record<string, string | undefined> = {
+        "bg-1": l.bg[0], "bg-2": l.bg[1], "bg-3": l.bg[2], "bg-4": l.bg[3], gold: l.gold, "gold-lite": l.goldLite, frame: l.goldLite,
+        accent: l.accent, "accent-deep": l.deep, ink: l.ink, "ink-soft": l.inkSoft, veil: `${l.bg[0]}b3`,
+        heading: l.heading, display: l.display, script: l.script,
+      };
+      return `[data-palette="${slug}"]{${Object.entries(v).filter(([, x]) => x).map(([k, x]) => `--wt-${k}:${x}`).join(";")}}`;
+    })
+    .join("\n");
+  const el = document.createElement("style");
+  el.id = "occasion-palettes";
+  el.textContent = css;
+  document.head.appendChild(el);
+}
 
 export interface InviteOverrides {
   coupleOne?: string;

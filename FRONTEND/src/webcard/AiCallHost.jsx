@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, X, MessageCircle } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, X, MessageCircle, CalendarCheck, ExternalLink } from 'lucide-react';
 
 /* =========================================================
    AiCallHost — live AI voice / video call from a public card.
@@ -9,7 +9,10 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, X, Message
    The browser talks to OpenAI Realtime directly over WebRTC with a short-lived secret from
    POST /api/ai-call/:slug/start (the plan, limits and the AI's instructions are decided there).
    Video calls also send a small camera still now and then, so the AI can see what the
-   visitor shows it.
+   visitor shows it, and show the AI as a big face (the owner's photo, or a drawn face whose
+   mouth moves with its voice). When the caller asks for a meeting, the AI calls the
+   save_meeting_request tool: we save it (POST /:slug/meeting, which emails the owner) and show
+   the meeting link with a one-tap "send on WhatsApp".
    ========================================================= */
 
 const API = import.meta.env.VITE_API_URL;
@@ -24,6 +27,49 @@ const avg = (d) => {
 };
 const MAX_STILLS = 24; // camera pictures sent per video call
 
+// WhatsApp link with the meeting written in: to the owner's WhatsApp when the card has one
+// (the message then sits in the caller's chat with the owner), otherwise to any chat they pick.
+const meetingWhatsApp = (whatsapp, ownerName, m) => {
+  const text = `Hi ${ownerName.split(' ')[0]}, I just spoke with your AI assistant and asked for a meeting${m.preferredTime ? ` (${m.preferredTime})` : ''}. Meeting link: ${m.meetingUrl}`;
+  if (whatsapp && /wa\.me\/\d|api\.whatsapp\.com/.test(whatsapp)) {
+    const base = whatsapp.split('?')[0];
+    return `${base}?text=${encodeURIComponent(text)}`;
+  }
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+};
+
+// The AI's face when the owner has no photo: a friendly drawn face; mouthRef opens with the voice.
+function DrawnFace({ mouthRef }) {
+  return (
+    <svg viewBox="0 0 300 400" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="aiface-bg" cx="50%" cy="35%" r="75%">
+          <stop offset="0" stopColor="#5b1a36" />
+          <stop offset="1" stopColor="#13060c" />
+        </radialGradient>
+        <linearGradient id="aiface-skin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f6d2b4" />
+          <stop offset="1" stopColor="#e7b48d" />
+        </linearGradient>
+      </defs>
+      <rect width="300" height="400" fill="url(#aiface-bg)" />
+      <path d="M40 400c8-70 52-108 110-108s102 38 110 108Z" fill="#A9123F" />
+      <path d="M128 262h44v40c0 12-44 12-44 0Z" fill="#e7b48d" />
+      <ellipse cx="150" cy="190" rx="78" ry="92" fill="url(#aiface-skin)" />
+      <path d="M70 182c-4-66 32-104 80-104s84 38 80 104c-6-22-16-38-30-46-14 8-34 10-50 4-22-8-44-4-60 10-8 8-14 20-20 32Z" fill="#2b1a12" />
+      <g className="aiface-eyes">
+        <ellipse cx="122" cy="196" rx="8" ry="9" fill="#2b1a12" />
+        <ellipse cx="178" cy="196" rx="8" ry="9" fill="#2b1a12" />
+      </g>
+      <path d="M108 176q14-8 28 0M164 176q14-8 28 0" stroke="#2b1a12" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M150 204q-6 18 4 22" stroke="#c98a63" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <ellipse ref={mouthRef} cx="150" cy="246" rx="18" ry="2.5" fill="#7a2034" />
+      <circle cx="104" cy="226" r="10" fill="#ff8fa9" opacity=".35" />
+      <circle cx="196" cy="226" r="10" fill="#ff8fa9" opacity=".35" />
+    </svg>
+  );
+}
+
 export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, calls, whatsapp }) {
   const [mode, setMode] = useState(null); // null = closed
   const [stage, setStage] = useState('ready'); // ready | connecting | live | ended | error
@@ -34,6 +80,8 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
   const [muted, setMuted] = useState(false);
   const [camOn, setCamOn] = useState(true);
   const [facing, setFacing] = useState('user');
+  const [meeting, setMeeting] = useState(null); // { name, preferredTime, meetingUrl }
+  const [waInfo, setWaInfo] = useState(null); // { sent, tapLink, topic } from send_whatsapp_info
 
   const pc = useRef(null);
   const dc = useRef(null);
@@ -45,12 +93,16 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
   const raf = useRef(0);
   const timer = useRef(0);
   const stillTimer = useRef(0);
+  const lastStill = useRef(0);
   const ctx = useRef(null);
   const callId = useRef('');
   const startedAt = useRef(0);
   const ending = useRef(false);
   const stills = useRef(0);
   const speakerRef = useRef('idle');
+  const faceImg = useRef(null);
+  const mouth = useRef(null);
+  const bars = useRef([]);
 
   // Open from anywhere on the card.
   useEffect(() => {
@@ -136,6 +188,7 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
     const url = c.toDataURL('image/jpeg', 0.6);
     stills.current++;
+    lastStill.current = Date.now();
     ch.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_image', image_url: url }] } }));
   }, []);
 
@@ -166,7 +219,14 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
           lastSwitch = now;
           setSpeaker(next);
         }
-        if (ring.current) ring.current.style.transform = `scale(${1 + Math.min(1, r * 2.2) * 0.22})`;
+        const level = Math.min(1, r * 2.2);
+        if (ring.current) ring.current.style.transform = `scale(${1 + level * 0.22})`;
+        // Video: the AI's face moves with its voice.
+        if (faceImg.current) faceImg.current.style.transform = `scale(${1.03 + level * 0.035})`;
+        if (mouth.current) mouth.current.setAttribute('ry', String(2.5 + level * 13));
+        bars.current.forEach((b, i) => {
+          if (b) b.style.height = `${6 + Math.min(1, r * (2.4 + i * 0.5)) * 22}px`;
+        });
         raf.current = requestAnimationFrame(tick);
       };
       tick();
@@ -180,12 +240,14 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
     setStage('connecting');
     ending.current = false;
     stills.current = 0;
+    setMeeting(null);
+    setWaInfo(null);
     try {
       // Ask for the mic (and camera) first: if the visitor says no, nothing is charged.
       let media;
       try {
         media = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
           video: mode === 'video' ? { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } } : false,
         });
       } catch {
@@ -217,17 +279,61 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
       ch.onopen = () => {
         // The AI opens the call with its hello.
         ch.send(JSON.stringify({ type: 'response.create' }));
-        if (mode === 'video') {
-          setTimeout(sendStill, 1500);
-          stillTimer.current = setInterval(sendStill, 9000);
-        }
+        // Video: one camera picture at the start, then one when the caller speaks (at most every
+        // 15 s). Fewer pictures keep the replies quick.
+        if (mode === 'video') setTimeout(sendStill, 1500);
       };
       ch.onmessage = (e) => {
+        let ev;
         try {
-          const ev = JSON.parse(e.data);
-          if (ev.type === 'input_audio_buffer.speech_started' && mode === 'video') sendStill();
+          ev = JSON.parse(e.data);
         } catch {
-          /* ignore */
+          return;
+        }
+        if (ev.type === 'input_audio_buffer.speech_started' && mode === 'video' && Date.now() - lastStill.current > 15000) sendStill();
+        // The AI wrote down a meeting: save it, show the link, tell the AI how it went.
+        if (ev.type === 'response.function_call_arguments.done' && ev.name === 'save_meeting_request') {
+          let args = {};
+          try {
+            args = JSON.parse(ev.arguments || '{}');
+          } catch {
+            /* empty */
+          }
+          axios
+            .post(`${API}/api/ai-call/${slug}/meeting`, { callId: callId.current, ...args })
+            .then(({ data: m }) => {
+              setMeeting(m);
+              return m.scheduled
+                ? { ok: true, booked: true, when: m.when, meeting_link_shown_on_screen: true, invite_emailed_to_caller: m.invited }
+                : { ok: true, booked: false, link_shown_on_screen: true, booking_page: m.booking };
+            })
+            .catch((err) => ({ ok: false, error: err.response?.data?.msg || 'Could not save the meeting' }))
+            .then((output) => {
+              if (dc.current?.readyState !== 'open') return;
+              dc.current.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: ev.call_id, output: JSON.stringify(output) } }));
+              dc.current.send(JSON.stringify({ type: 'response.create' }));
+            });
+        }
+        // "Send me your services on WhatsApp": sent automatically, or a one-tap button on screen.
+        if (ev.type === 'response.function_call_arguments.done' && ev.name === 'send_whatsapp_info') {
+          let args = {};
+          try {
+            args = JSON.parse(ev.arguments || '{}');
+          } catch {
+            /* empty */
+          }
+          axios
+            .post(`${API}/api/ai-call/${slug}/whatsapp`, { callId: callId.current, ...args })
+            .then(({ data: w }) => {
+              setWaInfo(w);
+              return { ok: true, sent: w.sent, owner_told: true, button_shown_on_screen: !w.sent && !!w.tapLink };
+            })
+            .catch((err) => ({ ok: false, error: err.response?.data?.msg || 'Could not send it on WhatsApp' }))
+            .then((output) => {
+              if (dc.current?.readyState !== 'open') return;
+              dc.current.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: ev.call_id, output: JSON.stringify(output) } }));
+              dc.current.send(JSON.stringify({ type: 'response.create' }));
+            });
         }
       };
       peer.onconnectionstatechange = () => {
@@ -326,10 +432,94 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
 
       {/* middle */}
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 text-center">
-        {face(video ? 210 : 190)}
-        <h2 className="mt-6 text-2xl font-bold">{who}</h2>
-        <p className="mt-1 text-sm opacity-70">AI assistant for {ownerName}</p>
+        {video ? (
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-black shadow-2xl" style={{ aspectRatio: '3 / 4', maxHeight: '66vh' }}>
+            {/* The other side's "camera": the face moves gently like a live feed and reacts to the voice. */}
+            <div className={`absolute inset-0 ${stage === 'live' ? 'aiface-live' : ''}`}>
+              {avatar ? (
+                <img ref={faceImg} src={avatar} alt={who} className="absolute inset-0 h-full w-full object-cover transition-transform duration-100 ease-out" style={{ transformOrigin: '50% 38%', transform: 'scale(1.03)' }} />
+              ) : (
+                <DrawnFace mouthRef={mouth} />
+              )}
+            </div>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 55%, rgba(0,0,0,.8) 100%)' }} />
+            <div className={`pointer-events-none absolute inset-0 rounded-[28px] transition-shadow duration-200 ${stage === 'live' && speaker === 'ai' ? 'shadow-[inset_0_0_0_3px_rgba(16,185,129,.95)]' : 'shadow-[inset_0_0_0_1px_rgba(255,255,255,.12)]'}`} />
+            <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold backdrop-blur">
+              <span className={`h-2 w-2 rounded-full ${stage === 'live' ? 'bg-red-500 animate-pulse' : 'bg-white/50'}`} /> AI
+            </span>
+            <div className="absolute inset-x-4 bottom-3 flex items-end justify-between gap-3 text-left">
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-bold">{who}</h2>
+                <p className="truncate text-xs opacity-75">AI assistant for {ownerName}</p>
+              </div>
+              <div className="flex h-7 items-end gap-[3px]" aria-hidden="true">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} ref={(el) => (bars.current[i] = el)} className="w-[4px] rounded-full bg-emerald-400" style={{ height: 6 }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {face(190)}
+            <h2 className="mt-6 text-2xl font-bold">{who}</h2>
+            <p className="mt-1 text-sm opacity-70">AI assistant for {ownerName}</p>
+          </>
+        )}
         {status && <p className="mt-3 text-sm font-medium text-pink-200">{status}</p>}
+
+        {waInfo && (
+          <div className="mt-4 w-full max-w-sm rounded-2xl bg-white/[.08] p-4 text-left ring-1 ring-[#25D366]/50">
+            <p className="flex items-center gap-2 text-sm font-bold text-[#5ee08f]">
+              <MessageCircle className="h-4 w-4" /> {waInfo.sent ? `Sent to your WhatsApp: ${waInfo.topic}` : `${waInfo.topic} on WhatsApp`}
+            </p>
+            {waInfo.sent ? (
+              <p className="mt-1 text-xs text-white/80">{ownerName.split(' ')[0]} has your number too and will get back to you.</p>
+            ) : (
+              waInfo.tapLink && (
+                <>
+                  <p className="mt-1 text-xs text-white/80">Tap and press send: you get all the details and {ownerName.split(' ')[0]} gets your message.</p>
+                  <a href={waInfo.tapLink} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white">
+                    <MessageCircle className="h-4 w-4" /> Open WhatsApp
+                  </a>
+                </>
+              )
+            )}
+          </div>
+        )}
+
+        {meeting && (
+          <div className="mt-4 w-full max-w-sm rounded-2xl bg-white/[.08] p-4 text-left ring-1 ring-emerald-400/40">
+            <p className="flex items-center gap-2 text-sm font-bold text-emerald-300">
+              <CalendarCheck className="h-4 w-4" /> {meeting.scheduled ? `Meeting booked with ${ownerName.split(' ')[0]}` : `Meeting noted for ${ownerName.split(' ')[0]}`}
+            </p>
+            {meeting.scheduled ? (
+              <p className="mt-1 text-xs text-white/85">{meeting.when}{meeting.invited ? ' · calendar invite sent to your email' : ''}</p>
+            ) : (
+              meeting.preferredTime && <p className="mt-1 text-xs text-white/75">Preferred time: {meeting.preferredTime} ({ownerName.split(' ')[0]} will confirm)</p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {meeting.booking && (
+                <a href={meeting.meetingUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white">
+                  <CalendarCheck className="h-4 w-4" /> Pick a time
+                </a>
+              )}
+              <a href={meetingWhatsApp(whatsapp, ownerName, meeting)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white">
+                <MessageCircle className="h-4 w-4" /> {meeting.booking || meeting.scheduled ? 'Message on WhatsApp' : 'Get link on WhatsApp'}
+              </a>
+              {meeting.scheduled && (
+                <a href={meeting.meetingUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white">
+                  <ExternalLink className="h-3.5 w-3.5" /> Join link
+                </a>
+              )}
+              {!meeting.booking && !meeting.scheduled && (
+                <a href={meeting.meetingUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold">
+                  <ExternalLink className="h-3.5 w-3.5" /> Meeting link
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {stage === 'ready' && (
           <div className="mt-6 max-w-sm rounded-2xl bg-white/[.06] p-4 text-left text-[13px] leading-relaxed text-white/80">
@@ -348,7 +538,7 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
             autoPlay
             playsInline
             muted
-            className={`absolute right-4 top-2 h-40 w-28 rounded-2xl bg-black object-cover shadow-2xl ring-2 ring-white/20 sm:h-48 sm:w-36 ${stage === 'live' || stage === 'connecting' ? '' : 'hidden'} ${camOn ? '' : 'opacity-30'}`}
+            className={`absolute right-4 top-2 z-10 h-44 w-32 rounded-2xl bg-black object-cover shadow-2xl ring-2 ring-white/30 sm:h-52 sm:w-40 ${stage === 'live' || stage === 'connecting' ? '' : 'hidden'} ${camOn ? '' : 'opacity-30'}`}
             style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }}
           />
         )}
@@ -411,6 +601,12 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
 // Small floating "AI call" button on phones (the chat chips offer the same on every screen).
 export function AiCallFab({ calls }) {
   const [hide, setHide] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  // Hidden while the chat is open: its header has the call buttons.
+  useEffect(() => {
+    const id = setInterval(() => setChatOpen(!!document.querySelector('input[aria-label="Message"], textarea[aria-label="Message"]')), 600);
+    return () => clearInterval(id);
+  }, []);
   useEffect(() => {
     // Out of the way while the visitor types (keyboard open).
     const vv = window.visualViewport;
@@ -419,7 +615,7 @@ export function AiCallFab({ calls }) {
     vv.addEventListener('resize', on);
     return () => vv.removeEventListener('resize', on);
   }, []);
-  if (!calls?.voice || hide) return null;
+  if (!calls?.voice || hide || chatOpen) return null;
   return (
     <button
       type="button"

@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -48,7 +48,7 @@ class Logic extends DCLogic {
         { key: 'Location', label: 'Studio', icon: ic.pin },
       ]),
       socials: CARD.socialsFrom(),
-      nav: CARD.navFrom(['Portfolio', 'Profile', 'Services', 'Projects', 'Videos', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Portfolio', 'Profile', 'Services', 'Products', 'Projects', 'Videos', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           fg: i === 0 ? '#A14A30' : '#5E5850',
@@ -535,6 +535,7 @@ export function EditorialArchitect(props) {
               <ServiceSlides items={CARD.services} />
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '36px 16px 0' }}>
               <h3 style={{ margin: '0 0 4px', fontFamily: "'DM Serif Display',serif", fontWeight: '400', fontSize: '28px' }}>
@@ -1046,6 +1047,7 @@ export function EditorialArchitect(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

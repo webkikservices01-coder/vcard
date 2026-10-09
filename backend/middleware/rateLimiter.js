@@ -91,4 +91,13 @@ const aiCallLimiter = rateLimit({
   message: { msg: 'Too many calls. Please wait a while and try again.' },
 });
 
-module.exports = { aiCallLimiter, authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter, cardOrderLimiter };
+// The no-login upgrade page (/upgrade/<token>): opening it and starting payments.
+const upgradeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many requests. Please wait a few minutes and try again.' },
+});
+
+module.exports = { upgradeLimiter, aiCallLimiter, authLimiter, forgotLimiter, platformChatLimiter, platformLeadLimiter, themeLimiter, enquiryLimiter, cardChatLimiter, feedbackLimiter, cardOrderLimiter };

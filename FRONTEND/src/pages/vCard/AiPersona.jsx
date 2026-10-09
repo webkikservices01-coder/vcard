@@ -18,7 +18,7 @@ import { plans as pricingPlans, featureSections } from '../../data/plans.jsx';
 
 // Plans that include live AI calls on the card (same as BACKEND constants/plans.js).
 const CALL_PLANS = { voice: ['SMART AI CARD', 'AI AGENT PRO'], video: ['AI AGENT PRO'] };
-const CALL_VOICES = [['marin', 'Marin (warm, female)'], ['cedar', 'Cedar (calm, male)'], ['coral', 'Coral (bright, female)'], ['ash', 'Ash (deep, male)'], ['sage', 'Sage (soft)'], ['verse', 'Verse (expressive)']];
+const CALL_VOICES = [['auto', 'Automatic (male or female voice to match your name)'], ['marin', 'Marin (warm, female)'], ['cedar', 'Cedar (calm, male)'], ['coral', 'Coral (bright, female)'], ['ash', 'Ash (deep, male)'], ['sage', 'Sage (soft)'], ['verse', 'Verse (expressive)']];
 
 // The two AI-capable plans' unique features, for the "what do I get" breakdown shown to locked-plan users.
 const aiPlans = pricingPlans.filter(p => p.id !== 'digital-id');
@@ -49,7 +49,8 @@ const AiPersona = () => {
     npsEnabled: true,
     voiceCall: true,
     videoCall: true,
-    voiceName: 'marin',
+    voiceName: 'auto',
+    bookingUrl: '',
   });
   const [niches, setNiches] = useState([]);
   const [dpaAcceptedAt, setDpaAcceptedAt] = useState(null);
@@ -101,7 +102,8 @@ const AiPersona = () => {
             npsEnabled: personaRes.data.npsEnabled !== false,
             voiceCall: personaRes.data.voiceCall !== false,
             videoCall: personaRes.data.videoCall !== false,
-            voiceName: personaRes.data.voiceName || 'marin',
+            voiceName: personaRes.data.voicePicked ? personaRes.data.voiceName : 'auto',
+            bookingUrl: personaRes.data.bookingUrl || '',
           });
           setDpaAcceptedAt(personaRes.data.dpaAcceptedAt || null);
         }
@@ -578,6 +580,26 @@ const AiPersona = () => {
           </div>
           <Toggle checked={form.npsEnabled} onChange={(val) => setForm(f => ({ ...f, npsEnabled: val }))} aria-label="Ask for NPS rating" />
         </div>
+      </GlassCard>
+
+      {/* Meetings: the AI gives visitors the owner's booking page */}
+      <GlassCard {...fadeUp(0.18)} className="p-5">
+        <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Target className="w-4 h-4 text-brand-600" />Meeting booking link</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>
+          When a visitor asks for a meeting in the chat or on an AI call, the AI takes their name, WhatsApp and email and sends them this link to pick a time. You get an email with their details, and they get the link by email too. Paste your Calendly or Google Calendar booking page.
+        </p>
+        <input
+          type="url"
+          value={form.bookingUrl}
+          onChange={e => setForm(f => ({ ...f, bookingUrl: e.target.value.trim() }))}
+          maxLength={500}
+          placeholder="https://calendly.com/your-name"
+          className="mt-3 w-full rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
+          style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
+        />
+        <p className="text-xs mt-1.5" style={{ color: 'var(--surface-text-2)' }}>
+          No link yet? Make a free one at <a href="https://calendly.com/signup" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-brand-600">calendly.com</a>. Without a link, the AI shares a free video-meeting room and you confirm the time on WhatsApp.
+        </p>
       </GlassCard>
 
       {/* Live AI calls on the card */}

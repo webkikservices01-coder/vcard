@@ -88,7 +88,7 @@ export const recommendFromAnswers = (answers) => {
 };
 
 const FEATURE_LABELS = {
-  vCards: 'Multiple vCards', themes: 'Card Themes', qrCode: 'QR Code', vcfDownload: 'Add to Phonebook',
+  vCards: 'Multiple vCards', themes: 'Card Themes', metalNfcCard: 'Premium Metal NFC Card', qrCode: 'QR Code', vcfDownload: 'Add to Phonebook',
   linkTapTracking: 'Link Tap Analytics', leadCaptureForm: 'Lead Capture Form', whatsappButton: 'WhatsApp Quick Connect',
   seoIndexing: 'SEO Indexing', darkLightMode: 'Dark / Light Mode', hideBranding: 'Hide Branding',
   aiChatWidget: 'AI Chat Widget', aiPersonaConfig: 'AI Persona Config', animatedAvatar: 'Animated AI Avatar',

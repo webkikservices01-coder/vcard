@@ -187,7 +187,7 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {PRICING_ENABLED && <FreePlanNotice show={['ai', 'theme']} />}
+      {PRICING_ENABLED && <FreePlanNotice show={['trial', 'ai', 'theme']} />}
 
       <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {[

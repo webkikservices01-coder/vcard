@@ -47,8 +47,25 @@ import HomeExplainer from "../components/HomeExplainer";
 import TryYourCard from "../components/TryYourCard";
 import { PRICING_ENABLED } from "../utils/plan";
 import { useTheme } from "../context/ThemeContext";
+import blobTopDark from "../assets/blobs/top-dark.webp";
+import blobTopLight from "../assets/blobs/top-light.webp";
+import blobMiddleDark from "../assets/blobs/middle-dark.webp";
+import blobMiddleLight from "../assets/blobs/middle-light.webp";
+import blobBottomDark from "../assets/blobs/bottom-dark.webp";
+import blobBottomLight from "../assets/blobs/bottom-light.webp";
 
 /* -------- Premium AI Cyber-Rose Mesh Background -------- */
+// The blobs were radial gradients under filter: blur(120px); moving a blurred layer made phones and
+// MacBooks redraw a huge blur every frame (the site hung). The same blobs are now images: Chrome
+// rendered each original blurred blob once (src/assets/blobs, 360px of glow around it), so they look
+// identical and drifting them costs the GPU almost nothing.
+const GLOW = 360; // glow baked around each blob (3 × the old blur)
+const BLOBS = {
+  dark: { top: blobTopDark, middle: blobMiddleDark, bottom: blobBottomDark },
+  light: { top: blobTopLight, middle: blobMiddleLight, bottom: blobBottomLight },
+};
+const blobImg = (src) => `url(${src}) center / 100% 100% no-repeat`;
+
 function MeshBackground() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -74,8 +91,6 @@ function MeshBackground() {
       <style>{`
         .mesh-blob {
           position: absolute;
-          border-radius: 9999px;
-          filter: blur(120px);
           pointer-events: none;
           will-change: transform;
         }
@@ -83,33 +98,27 @@ function MeshBackground() {
           .mesh-blob { animation: none !important; }
         }
         .mesh-top {
-          width: 600px;
-          height: 600px;
-          left: -100px;
-          top: -100px;
-          background: ${isDark 
-            ? 'radial-gradient(circle, rgba(231, 12, 101, 0.32) 0%, rgba(99, 102, 241, 0.2) 50%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255, 182, 204, 0.45) 0%, rgba(231, 12, 101, 0.15) 50%, transparent 70%)'};
+          width: ${600 + 2 * GLOW}px;
+          height: ${600 + 2 * GLOW}px;
+          left: ${-100 - GLOW}px;
+          top: ${-100 - GLOW}px;
+          background: ${blobImg(BLOBS[isDark ? 'dark' : 'light'].top)};
           animation: floatOrbA 16s ease-in-out infinite alternate;
         }
         .mesh-middle {
-          width: 700px;
-          height: 700px;
-          right: -150px;
-          top: 20%;
-          background: ${isDark
-            ? 'radial-gradient(circle, rgba(159, 28, 68, 0.35) 0%, rgba(231, 12, 101, 0.22) 50%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255, 204, 219, 0.45) 0%, rgba(231, 12, 101, 0.12) 50%, transparent 70%)'};
+          width: ${700 + 2 * GLOW}px;
+          height: ${700 + 2 * GLOW}px;
+          right: ${-150 - GLOW}px;
+          top: calc(20% - ${GLOW}px);
+          background: ${blobImg(BLOBS[isDark ? 'dark' : 'light'].middle)};
           animation: floatOrbB 20s ease-in-out infinite alternate;
         }
         .mesh-bottom {
-          width: 550px;
-          height: 550px;
-          left: 20%;
-          bottom: -100px;
-          background: ${isDark
-            ? 'radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, rgba(231, 12, 101, 0.2) 50%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255, 192, 203, 0.4) 0%, transparent 70%)'};
+          width: ${550 + 2 * GLOW}px;
+          height: ${550 + 2 * GLOW}px;
+          left: calc(20% - ${GLOW}px);
+          bottom: ${-100 - GLOW}px;
+          background: ${blobImg(BLOBS[isDark ? 'dark' : 'light'].bottom)};
           animation: floatOrbA 22s ease-in-out infinite alternate-reverse;
         }
         @keyframes floatOrbA {
@@ -686,6 +695,20 @@ export function LandingPage() {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Sections far from the screen pause their looping animations (3D card spin, scan laser,
+  // spinning borders) until the visitor scrolls near them, so phones don't animate what nobody
+  // sees. Nothing looks different: they start again before coming into view.
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.target.classList.toggle("anim-offscreen", !e.isIntersecting)),
+      { rootMargin: "300px 0px" }
+    );
+    const sections = document.querySelectorAll("main section, body > div section");
+    sections.forEach((s) => io.observe(s));
+    return () => io.disconnect();
   }, []);
 
   // The poster shows straight away; the video itself is fetched only after the page has loaded,
@@ -1406,13 +1429,7 @@ export function LandingPage() {
           {realPlans.map((p, idx) => {
             const Icon = PLAN_ICONS[p.id] || Zap;
             const highlight = p.popular;
-            const bullets = [
-              `${p.features.vCards} vCard${p.features.vCards > 1 ? "s" : ""}`,
-              `${p.features.themes}+ Premium Themes`,
-              p.features.aiChatWidget ? "AI Chat Widget" : "QR Code + Analytics",
-              p.features.aiVoiceAgent ? "AI Voice & WhatsApp Agent" : p.features.hideBranding ? "Hide Branding" : "Standard Branding",
-              `${p.features.support} Support`,
-            ];
+            const bullets = p.highlights;
 
             return (
               <div
@@ -1445,7 +1462,7 @@ export function LandingPage() {
 
                       <div className="mt-8 flex items-end gap-1.5">
                         <span className="text-5xl font-black tracking-tight text-white">₹{p.price.monthly}</span>
-                        <span className="pb-1.5 text-sm font-medium text-white/80">/ Month</span>
+                        <span className="pb-1.5 text-sm font-medium text-white/80">/ Month + GST</span>
                       </div>
                       <p className="mt-2 text-sm text-white/90">{p.tagline}</p>
 
@@ -1488,7 +1505,7 @@ export function LandingPage() {
 
                     <div className="mt-8 flex items-end gap-1.5">
                       <span className={`text-5xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>₹{p.price.monthly}</span>
-                      <span className={`pb-1.5 text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>/ Month</span>
+                      <span className={`pb-1.5 text-sm font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>/ Month + GST</span>
                     </div>
                     <p className={`mt-2 text-sm ${isDark ? "text-slate-300" : "text-slate-600"}`}>{p.tagline}</p>
 

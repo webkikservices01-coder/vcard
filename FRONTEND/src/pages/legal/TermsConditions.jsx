@@ -30,7 +30,8 @@ const TermsConditions = () => (
 
     <H2>3. Plans & Pricing</H2>
     <p>
-      All plan prices shown on the Plans page are final at the time of purchase. Upgrading unlocks the
+      Plan prices shown on the Plans page are before GST; 18% GST is added at checkout and shown
+      separately on your invoice. The total you pay is shown before payment. Upgrading unlocks the
       corresponding features immediately; downgrading takes effect from your next billing cycle.
       Payments are processed securely via Cashfree.
     </p>

@@ -1,0 +1,18 @@
+# AWS CodeBuild: builds the backend image from the source zip in S3 and pushes it to ECR.
+# App Runner (auto-deploy on) picks up the new :latest image. Variables come from the CodeBuild
+# project (deploy/aws/deploy.ps1 sets them): ECR_REPO_URI, AWS_DEFAULT_REGION.
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to ECR
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${ECR_REPO_URI%%/*}
+      - TAG=$(date +%Y%m%d-%H%M%S)
+  build:
+    commands:
+      - docker build -t $ECR_REPO_URI:latest -t $ECR_REPO_URI:$TAG .
+  post_build:
+    commands:
+      - docker push $ECR_REPO_URI:$TAG
+      - docker push $ECR_REPO_URI:latest
+      - echo Pushed $ECR_REPO_URI:$TAG

@@ -1,44 +1,68 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Music, MapPin, CalendarHeart, MessageCircleHeart, Share2, Check, ArrowRight } from 'lucide-react';
 import MeshBackground from '../../components/ui/MeshBackground';
 import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../../components/PublicFooter';
 import { TEMPLATES } from '../../wedding/data/templates';
+import { OCCASIONS, OCCASION_ORDER } from '../../wedding/data/occasions';
+import { DesignThumb } from '../../wedding/DesignThumb';
 
-// Public /wedding page: every wedding invitation design (newest first), free to use from the dashboard.
+// Public /invites page (also /wedding): every Digital Invite design — weddings, engagements,
+// birthdays, Diwali, festival wishes … — newest first, filtered by occasion, free to use.
 const DESIGNS = [...TEMPLATES].sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew));
+const occ = (t) => t.occasion || 'wedding';
+const COUNT = Object.fromEntries(OCCASION_ORDER.map((id) => [id, DESIGNS.filter((t) => occ(t) === id).length]));
 const PERKS = [
-  { icon: CalendarHeart, t: 'Live countdown & all your functions', d: 'Haldi, Mehndi, Sangeet, Phere, Reception — each with date, time and venue.' },
-  { icon: MessageCircleHeart, t: 'RSVP & guest wishes', d: 'Guests confirm in one tap; you see who is coming and how many in your dashboard.' },
-  { icon: MapPin, t: 'Venue on Google Maps', d: 'One tap opens directions, plus a "Call the family" button.' },
-  { icon: Music, t: 'Your photos, video & music', d: 'Your couple photo, a gallery of moments and your favourite song.' },
-  { icon: Share2, t: 'One link for WhatsApp', d: 'aicardly.com/invite/your-names with a beautiful preview when shared.' },
-  { icon: Heart, t: 'Free', d: 'Make and share your invitation at no cost.' },
+  { icon: CalendarHeart, t: 'Live countdown & your programme', d: 'Haldi to Reception, cake cutting, Lakshmi Puja — each with its date, time and place.' },
+  { icon: MessageCircleHeart, t: 'RSVP, wishes & an AI host', d: 'Guests confirm in one tap and ask the AI host anything; you see who is coming in your dashboard.' },
+  { icon: MapPin, t: 'Venue on Google Maps', d: 'One tap opens directions, plus a "Call the host" button.' },
+  { icon: Music, t: 'Your photos, video & music', d: 'Your photo, a gallery of moments and your favourite song.' },
+  { icon: Share2, t: 'One link for WhatsApp', d: 'aicardly.com/invite/your-link with a beautiful preview when shared.' },
+  { icon: Heart, t: 'Free', d: 'Make and share your invite or festival greeting at no cost.' },
 ];
 
-const startLink = () => {
+const signedIn = () => {
   try {
-    return localStorage.getItem('token') ? '/dashboard/wedding' : '/register';
+    return !!localStorage.getItem('token');
   } catch {
-    return '/register';
+    return false;
   }
 };
 
 export default function WeddingShowcase() {
-  const start = startLink();
+  const [params, setParams] = useSearchParams();
+  const filter = OCCASIONS[params.get('occasion')] ? params.get('occasion') : 'all';
+  const shown = filter === 'all' ? DESIGNS : DESIGNS.filter((t) => occ(t) === filter);
+  const start = signedIn() ? '/dashboard/invites' : '/register';
+  useEffect(() => {
+    document.title = 'Digital Invites – Wedding, Birthday, Engagement, Diwali & Festival Wishes | Aicardly';
+  }, []);
+  const chip = (id, label) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setParams(id === 'all' ? {} : { occasion: id }, { replace: true })}
+      aria-pressed={filter === id}
+      className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition ${filter === id ? 'border-transparent bg-gradient-to-r from-[#E70C65] to-[#9F1C44] text-white shadow' : ''}`}
+      style={filter === id ? undefined : { borderColor: 'var(--surface-border)', color: 'var(--surface-text)', background: 'var(--surface-1)' }}
+    >
+      {label}
+    </button>
+  );
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ background: 'var(--surface-bg)' }}>
       <MeshBackground fixed className="opacity-50" />
       <PublicNav />
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-6">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6b9d]">Wedding Invitations</p>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-bold tracking-tight" style={{ color: 'var(--surface-text)' }}>
-            A wedding invite your guests will remember
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#ff6b9d]">Digital Invites</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl" style={{ color: 'var(--surface-text)' }}>
+            An invite for every celebration
           </h1>
           <p className="mx-auto mt-3 max-w-2xl" style={{ color: 'var(--surface-text-2)' }}>
-            Pick a design, add your names, date, functions and photos, and share one link on WhatsApp. Guests RSVP and send blessings right on the invite. Free.
+            Weddings, engagements, birthdays, Diwali parties, Griha Pravesh, baby showers and festival wishes. Pick a design, add your details and share one link on WhatsApp — guests RSVP, send wishes and chat with your AI host. Free.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link to={start} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E70C65] to-[#9F1C44] px-6 py-3 text-sm font-semibold text-white shadow-lg hover:opacity-95">
@@ -50,8 +74,13 @@ export default function WeddingShowcase() {
           </div>
         </motion.div>
 
-        <section id="designs" className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {DESIGNS.map((t, i) => (
+        <div id="designs" className="mt-12 -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:justify-center sm:px-0" role="toolbar" aria-label="Filter by occasion">
+          {chip('all', `All · ${DESIGNS.length}`)}
+          {OCCASION_ORDER.filter((id) => COUNT[id]).map((id) => chip(id, `${OCCASIONS[id].emoji} ${OCCASIONS[id].label} · ${COUNT[id]}`))}
+        </div>
+
+        <section className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-5">
+          {shown.map((t, i) => (
             <motion.article
               key={t.slug}
               initial={{ opacity: 0, y: 18 }}
@@ -61,22 +90,26 @@ export default function WeddingShowcase() {
               className="group overflow-hidden rounded-3xl border transition hover:-translate-y-1"
               style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
             >
-              <Link to={`/wedding/${t.slug}`} className="block">
+              <Link to={`/invites/${t.slug}`} className="block">
                 <div className="relative aspect-[3/4] overflow-hidden">
-                  <img src={t.hero} alt={`${t.name} wedding invitation design`} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                  {t.isNew && <span className="absolute left-3 top-3 rounded-full bg-[#E70C65] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow">New · {t.opening === "shutter" ? "Shutter" : "Scratch"} reveal</span>}
-                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <p className="text-[10px] uppercase tracking-[0.25em] opacity-80">{t.countryLabel}</p>
-                    <h2 className="text-lg font-semibold leading-tight">{t.name}</h2>
+                  <DesignThumb template={t} animate={false} className="transition duration-700 group-hover:scale-105" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent" />
+                  {t.isNew && (
+                    <span className="absolute left-2 top-2 rounded-full bg-[#E70C65] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white shadow sm:left-3 sm:top-3 sm:text-[10px]">
+                      New{t.opening === 'shutter' ? ' · Shutter' : t.opening === 'scratch' ? ' · Scratch' : ''}
+                    </span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 p-3 text-white sm:p-4">
+                    <p className="text-[9px] uppercase tracking-[0.25em] opacity-80 sm:text-[10px]">{OCCASIONS[occ(t)].emoji} {t.occasion ? t.countryLabel : `Wedding · ${t.countryLabel}`}</p>
+                    <h2 className="text-base font-semibold leading-tight sm:text-lg">{t.name}</h2>
                   </div>
                 </div>
               </Link>
-              <div className="flex gap-2 p-3">
-                <Link to={`/wedding/${t.slug}`} className="flex-1 rounded-xl border py-2 text-center text-xs font-semibold" style={{ borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}>
+              <div className="flex gap-2 p-2 sm:p-3">
+                <Link to={`/invites/${t.slug}`} className="flex-1 rounded-xl border py-2 text-center text-xs font-semibold" style={{ borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}>
                   Preview
                 </Link>
-                <Link to={start === '/register' ? '/register' : `/dashboard/wedding?template=${t.slug}`} className="flex-1 rounded-xl bg-[#E70C65] py-2 text-center text-xs font-semibold text-white">
+                <Link to={start === '/register' ? '/register' : `/dashboard/invites?template=${t.slug}`} className="flex-1 rounded-xl bg-[#E70C65] py-2 text-center text-xs font-semibold text-white">
                   Use this
                 </Link>
               </div>
@@ -99,7 +132,7 @@ export default function WeddingShowcase() {
         <section className="mt-16 rounded-3xl border p-8 text-center" style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}>
           <h2 className="text-2xl font-bold" style={{ color: 'var(--surface-text)' }}>Ready in 5 minutes</h2>
           <ul className="mx-auto mt-4 grid max-w-3xl gap-2 text-left text-sm sm:grid-cols-3" style={{ color: 'var(--surface-text-2)' }}>
-            {[`1. Choose one of the ${DESIGNS.length} designs`, '2. Add names, date, functions & photos', '3. Share your link on WhatsApp'].map((s) => (
+            {[`1. Choose one of the ${DESIGNS.length} designs`, '2. Add names, date, programme & photos', '3. Share your link on WhatsApp'].map((s) => (
               <li key={s} className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#E70C65]" aria-hidden="true" /> {s}
               </li>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Infinity as InfinityIcon, ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, KeyRound, LogIn, LogOut, Mail, MailCheck, Eye, EyeOff, Wand2, Copy } from 'lucide-react';
+import { Infinity as InfinityIcon, ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, KeyRound, LogIn, LogOut, Mail, MailCheck, Eye, EyeOff, Wand2, Copy , Send } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
@@ -230,6 +230,24 @@ export default function UserDetail() {
         >
           <p className="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">{user.planActive ? (user.plan && user.plan !== 'Free Trial' ? user.plan : 'AI AGENT PRO') : 'Free Trial'}{user.lifetime && <Badge color="green">Lifetime</Badge>}</p>
           <p className="text-sm text-slate-500">{user.lifetime ? (user.lifetimeFixed ? 'Never expires (permanent account)' : 'Never expires') : user.planActive ? `until ${dateOnly(user.planExpiry)} (${timeLeft(user.planExpiry)})` : user.planExpiry ? `ended ${dateOnly(user.planExpiry)}` : 'No paid plan'}</p>
+          {!user.planActive && (
+            <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <b>Payment link:</b>{' '}
+              {user.upgrade?.sentAt
+                ? `sent ${dateOnly(user.upgrade.sentAt)} · email ${user.upgrade.email || '—'} · SMS ${user.upgrade.sms || '—'}${user.upgrade.error ? ` (${user.upgrade.error})` : ''}`
+                : 'not sent yet (goes out automatically 24 hours after the first card)'}
+              {can('users.plan') && !user.upgrade?.trialEndsAt && (
+                <Button size="sm" variant="secondary" className="mt-2 mr-2" onClick={() => open('endTrial')}>
+                  <XCircle className="h-3.5 w-3.5" /> End trial now
+                </Button>
+              )}
+              {can('users.plan') && (
+                <Button size="sm" variant="secondary" className="mt-2" onClick={() => open('upgradeLink')}>
+                  <Send className="h-3.5 w-3.5" /> {user.upgrade?.sentAt ? 'Send payment link again' : 'Send payment link now'}
+                </Button>
+              )}
+            </div>
+          )}
           {can('users.credits') && (
             <Button size="sm" variant="secondary" className="mt-4" onClick={() => open('credits', { credits: 1, cardLimit: user.cardLimit ?? 1 })}>
               <Layers className="h-3.5 w-3.5" /> Free cards / credits
@@ -408,6 +426,8 @@ export default function UserDetail() {
         {planPicker}
         {daysField('Days from today (optional)')}
       </ActionDialog>
+      <ActionDialog open={dialog === 'endTrial'} onClose={close} title="End the free trial now" description="The card pauses right away (visitors see that it's paused) and the payment link goes out by email and SMS, if it hasn't already. Paying switches the card back on." confirmLabel="End trial now" reasonRequired={false} onSubmit={run('/end-trial', {})} />
+      <ActionDialog open={dialog === 'upgradeLink'} onClose={close} title="Send payment link" description="Emails a link to choose any plan and pay (no login), and Cashfree texts a Smart AI Card monthly payment link to the user's Indian mobile number. Paying either one switches the card back on." confirmLabel="Send now" reasonRequired={false} onSubmit={run('/upgrade-link', {})} />
       <ActionDialog open={dialog === 'lifetime'} onClose={close} title={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} description={user.lifetime ? 'The plan follows its expiry date again.' : 'The plan never expires. With no paid plan the user gets AI Agent Pro.'} confirmLabel={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} onSubmit={run('/lifetime', { lifetime: !user.lifetime })} />
       <ActionDialog open={dialog === 'revoke'} onClose={close} title="Revoke plan" description="The user goes back to the free tier right away." confirmLabel="Revoke" danger onSubmit={run('/plan/revoke')} />
       <ActionDialog

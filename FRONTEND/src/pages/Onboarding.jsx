@@ -86,8 +86,9 @@ const Onboarding = () => {
   const [slugTouched, setSlugTouched] = useState(false);
   const slugCheck = useUsernameCheck(form.slug.replace(/-+$/, ''));
   const [themeId, setThemeId] = useState(DEFAULT_TEMPLATE_ID);
-  // Free plan: one template (the default); the rest show a lock and open with any paid plan.
-  const [paid, setPaid] = useState(!PRICING_ENABLED);
+  // Templates the plan unlocks (free trial & Digital Card 1, Smart AI Card 3, AI Agent Pro 10);
+  // the rest show a lock. null = everything (pricing switched off).
+  const [allowedThemes, setAllowedThemes] = useState(PRICING_ENABLED ? [DEFAULT_TEMPLATE_ID] : null);
   const selectedTemplate = templateMeta(themeId);
 
   useEffect(() => {
@@ -95,7 +96,7 @@ const Onboarding = () => {
       try {
         const res = await axios.get(`${API}/stats`, { headers: headers() });
         const { cardName, cardSlug, vcardCount, user } = res.data;
-        if (res.data.paid) setPaid(true);
+        if (PRICING_ENABLED && Array.isArray(res.data.allowedThemes)) setAllowedThemes(res.data.allowedThemes);
 
         if (vcardCount > 0 && cardName && cardSlug) {
           navigate('/dashboard', { replace: true });
@@ -344,10 +345,10 @@ const Onboarding = () => {
 
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                           {TEMPLATE_META.map((t, i) => {
-                            const locked = !paid && t.id !== DEFAULT_TEMPLATE_ID;
+                            const locked = !!allowedThemes && !allowedThemes.includes(t.id);
                             return (
                               <div key={t.id} className="relative">
-                                <TemplateSwatch template={t} name={form.name} index={i} selected={themeId === t.id} onClick={() => (locked ? toast('This template comes with any paid plan. The free plan includes Webkik Signature, you can upgrade any time.', { icon: '🔒' }) : setThemeId(t.id))} />
+                                <TemplateSwatch template={t} name={form.name} index={i} selected={themeId === t.id} onClick={() => (locked ? toast('This template is on a higher plan: Smart AI Card has 3 templates and AI Agent Pro all 10. You can upgrade any time.', { icon: '🔒' }) : setThemeId(t.id))} />
                                 {locked && <span className="pointer-events-none absolute right-1 top-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">🔒 PRO</span>}
                               </div>
                             );

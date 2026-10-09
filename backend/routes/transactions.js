@@ -5,64 +5,17 @@ const auth = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const { generateInvoice } = require('../utils/generateInvoice');
-const refrens = require('../utils/refrens');
 const { priceFor } = require('../constants/plans');
 const { logEvent } = require('../utils/logger');
-const { recordPlan } = require('../services/planHistory');
-
-const makeInvoiceNumber = (txn) => `INV-${new Date(txn.createdAt).getFullYear()}-${String(txn._id).slice(-6).toUpperCase()}`;
-
-// Marks a transaction paid, activates the plan, and (best-effort) creates a Refrens invoice.
-// Refrens failures never block payment confirmation — local PDF invoice remains the fallback.
-async function markCompleted(txn) {
-    txn.status = 'completed';
-    txn.invoiceNumber = makeInvoiceNumber(txn);
-    await txn.save();
-
-    // Renewing the same plan early adds to the time left instead of restarting it.
-    const user = await User.findById(txn.userId).select('plan planExpiry');
-    const renewing = user && user.plan === txn.plan && user.planExpiry && new Date(user.planExpiry) > new Date();
-    const expiry = renewing ? new Date(user.planExpiry) : new Date();
-    expiry.setDate(expiry.getDate() + (txn.expireDays || 365));
-    await User.findByIdAndUpdate(txn.userId, { $set: { plan: txn.plan, planExpiry: expiry } });
-    // Plan history for the admin panel; never blocks the payment confirmation.
-    recordPlan({
-        userId: txn.userId, planName: txn.plan, tier: txn.plan, source: 'purchase',
-        startAt: renewing ? new Date(user.planExpiry) : new Date(), endAt: expiry,
-        amount: txn.amount, transactionId: txn._id,
-    }).catch((err) => logEvent(null, 'plan.history.error', err.message, { level: 'error', userId: txn.userId }));
-    logEvent(null, 'payment.paid', `Paid ₹${txn.amount} for ${txn.plan} (${txn.billingType}); plan active until ${expiry.toDateString()}`, { userId: txn.userId, meta: { orderId: txn.cfOrderId, invoice: txn.invoiceNumber } });
-
-    if (refrens.isConfigured()) {
-        try {
-            const user = await User.findById(txn.userId);
-            const invoice = await refrens.createInvoice(txn, user);
-            txn.refrensInvoiceId = invoice.id;
-            txn.refrensPdfUrl = invoice.pdfUrl;
-            await txn.save();
-        } catch (err) {
-            logEvent(null, 'invoice.refrens.failed', err.message, { level: 'error', userId: txn.userId, meta: { orderId: txn.cfOrderId } });
-        }
-    }
-}
-
-const CF_ENV = process.env.CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
-const CF_BASE_URL = CF_ENV === 'production' ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
-const CF_API_VERSION = '2025-01-01';
-
-const cfHeaders = () => ({
-    'Content-Type': 'application/json',
-    'x-api-version': CF_API_VERSION,
-    'x-client-id': process.env.CASHFREE_CLIENT_ID,
-    'x-client-secret': process.env.CASHFREE_CLIENT_SECRET,
-});
+const { markCompleted } = require('../services/payments');
+const cashfree = require('../services/cashfree');
 
 // Where Cashfree sends the buyer back: the site they paid from, if it's one of ours.
 const RETURN_ORIGINS = /^https:\/\/(www\.)?aicardly\.com$|^http:\/\/localhost:\d+$/;
 const returnBase = (req) => {
     const origin = req.get('origin') || '';
     if (RETURN_ORIGINS.test(origin)) return origin;
-    return process.env.FRONTEND_URL || 'https://aicardly.com';
+    return (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
 };
 
 router.get('/', auth, async (req, res) => {
@@ -88,79 +41,79 @@ router.get('/:id/invoice', auth, async (req, res) => {
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
 
-// Cashfree: create order
-router.post('/create-order', auth, async (req, res) => {
+// A checkout order for a plan. Shared by the plans page and the no-login upgrade page.
+async function startOrder(req, user, { planId, billing, returnPath, source }) {
+    // The price comes from the server's catalog, never from the request.
+    const price = priceFor(planId, billing);
+    if (!price) return { status: 400, body: { msg: 'Please choose a valid plan.' } };
+    const { name: plan, amount, base, gst, days: expireDays, billingType } = price;
+
+    const txn = await Transaction.create({ userId: user._id, plan, amount, base, gst, billingType, expireDays, status: 'pending', source });
     try {
-        // The price comes from the server's catalog, never from the request.
-        const price = priceFor(req.body.planId, req.body.billing);
-        if (!price) return res.status(400).json({ msg: 'Please choose a valid plan.' });
-        const { name: plan, amount, days: expireDays, billingType } = price;
-        const user = await User.findById(req.user.userId);
-
-        const txn = new Transaction({ userId: req.user.userId, plan, amount, billingType, expireDays, status: 'pending' });
-        await txn.save();
-
-        const orderId = `order_${txn._id}`;
-        const cfRes = await fetch(`${CF_BASE_URL}/orders`, {
-            method: 'POST',
-            headers: cfHeaders(),
-            body: JSON.stringify({
-                order_id: orderId,
-                order_amount: amount,
-                order_currency: 'INR',
-                customer_details: {
-                    customer_id: String(user._id),
-                    customer_name: user.name || 'Customer',
-                    customer_email: user.email || 'customer@aicardly.com',
-                    customer_phone: user.phone || '9999999999',
-                },
-                order_meta: {
-                    return_url: `${returnBase(req)}/dashboard/plans?order_id={order_id}`,
-                },
-            }),
+        const data = await cashfree.createOrder({
+            orderId: `order_${txn._id}`,
+            amount,
+            user,
+            returnUrl: `${returnBase(req)}${returnPath}${returnPath.includes('?') ? '&' : '?'}order_id={order_id}`,
         });
-        const data = await cfRes.json();
-        if (!cfRes.ok) {
-            logEvent(req, 'payment.order.failed', data.message || 'Cashfree rejected the order', { level: 'error', meta: { plan, amount } });
-            await Transaction.findByIdAndUpdate(txn._id, { $set: { status: 'failed' } });
-            return res.status(400).json({ msg: data.message || 'Failed to create payment order' });
-        }
-
         txn.cfOrderId = data.order_id;
         txn.paymentSessionId = data.payment_session_id;
         await txn.save();
+        logEvent(req, 'payment.order', `Order for ${plan} (${billingType}) ₹${base} + GST ₹${gst} = ₹${amount}`, { email: user.email, meta: { orderId: data.order_id, source } });
+        return { status: 200, body: { orderId: data.order_id, paymentSessionId: data.payment_session_id, txnId: txn._id } };
+    } catch (err) {
+        logEvent(req, 'payment.order.failed', err.message, { level: 'error', meta: { plan, amount, source } });
+        await Transaction.findByIdAndUpdate(txn._id, { $set: { status: 'failed' } });
+        return { status: 400, body: { msg: err.message || 'Failed to create payment order' } };
+    }
+}
 
-        logEvent(req, 'payment.order', `Order for ${plan} (${billingType}) ₹${amount}`, { email: user.email, meta: { orderId: data.order_id } });
-        res.json({ orderId: data.order_id, paymentSessionId: data.payment_session_id, txnId: txn._id });
+// Server-to-server status check of an order that belongs to userId; activates the plan when paid.
+async function checkOrder(userId, orderId) {
+    const txn = await Transaction.findOne({ cfOrderId: orderId, userId });
+    if (!txn) return { status: 404, body: { msg: 'Transaction not found' } };
+    let data;
+    try {
+        data = await cashfree.getOrder(orderId);
+    } catch (err) {
+        return { status: 400, body: { msg: err.message || 'Could not verify payment' } };
+    }
+    if (data.order_status === 'PAID') {
+        await markCompleted(txn);
+        return { status: 200, body: { msg: 'Payment verified and plan activated!', status: 'PAID' } };
+    }
+    if (['EXPIRED', 'TERMINATED'].includes(data.order_status) && txn.status === 'pending') {
+        txn.status = 'failed';
+        await txn.save();
+    }
+    return { status: 200, body: { msg: 'Payment not completed yet', status: data.order_status } };
+}
+
+// Cashfree: create order
+router.post('/create-order', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        const out = await startOrder(req, user, { planId: req.body.planId, billing: req.body.billing, returnPath: '/dashboard/plans', source: 'plans' });
+        res.status(out.status).json(out.body);
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
 
 // Cashfree: verify payment (server-to-server order status check)
 router.post('/verify', auth, async (req, res) => {
     try {
-        const { orderId } = req.body;
-        const txn = await Transaction.findOne({ cfOrderId: orderId, userId: req.user.userId });
-        if (!txn) return res.status(404).json({ msg: 'Transaction not found' });
-
-        const cfRes = await fetch(`${CF_BASE_URL}/orders/${orderId}`, {
-            method: 'GET',
-            headers: cfHeaders(),
-        });
-        const data = await cfRes.json();
-        if (!cfRes.ok) return res.status(400).json({ msg: data.message || 'Could not verify payment' });
-
-        if (data.order_status === 'PAID') {
-            if (txn.status !== 'completed') await markCompleted(txn);
-            return res.json({ msg: 'Payment verified and plan activated!', status: 'PAID' });
-        }
-
-        if (['EXPIRED', 'TERMINATED'].includes(data.order_status)) {
-            txn.status = 'failed';
-            await txn.save();
-        }
-        res.json({ msg: 'Payment not completed yet', status: data.order_status });
+        const out = await checkOrder(req.user.userId, req.body.orderId);
+        res.status(out.status).json(out.body);
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
+
+// A paid payment link (the SMS one): confirmed with Cashfree before the plan is activated.
+async function settleLink(linkId) {
+    const txn = await Transaction.findOne({ cfLinkId: linkId });
+    if (!txn || txn.status === 'completed') return false;
+    const link = await cashfree.getLink(linkId);
+    if (link.link_status !== 'PAID') return false;
+    return markCompleted(txn);
+}
 
 // Cashfree: webhook (server-to-server, catches payments even if the user closes the tab)
 router.post('/webhook', async (req, res) => {
@@ -180,15 +133,26 @@ router.post('/webhook', async (req, res) => {
         }
 
         const event = req.body;
+        // Payment links report as PAYMENT_LINK_EVENT with data.link_id.
+        const linkId = event?.data?.link_id;
+        if (linkId) {
+            if (event?.data?.link_status === 'PAID') await settleLink(linkId);
+            return res.status(200).send('ok');
+        }
+
         const orderId = event?.data?.order?.order_id;
         const orderStatus = event?.data?.order?.order_status || event?.data?.payment?.payment_status;
-
         if (orderId && (orderStatus === 'PAID' || event?.data?.payment?.payment_status === 'SUCCESS')) {
             const txn = await Transaction.findOne({ cfOrderId: orderId });
-            if (txn && txn.status !== 'completed') await markCompleted(txn);
+            if (txn) await markCompleted(txn);
+            // An order made by a payment link carries the link's id in its tags.
+            else if (event?.data?.order?.order_tags?.link_id) await settleLink(event.data.order.order_tags.link_id);
         }
         res.status(200).send('ok');
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
 });
 
 module.exports = router;
+module.exports.startOrder = startOrder;
+module.exports.checkOrder = checkOrder;
+module.exports.settleLink = settleLink;

@@ -1,5 +1,5 @@
 import W from './webcard-shared.js';
-import { getImageUrl, coverImageUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
+import { getImageUrl, coverImageUrl, avatarUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
 
 // One live card model shared by every template. WebCard calls applyCard() before
 // rendering, and the templates read from CARD (they were designed with one card per page).
@@ -70,6 +70,8 @@ const EXTRA_PATHS = {
   phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
   whatsapp: '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
   telegram: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  // Google (reviews): a one-colour G drawn like the other line icons, not Google's coloured logo.
+  google: '<path d="M20.5 12H12"/><path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
 };
 const SOCIAL_ICON = { linkedin: 'linkedin', instagram: 'instagram', youtube: 'youtube', twitter: 'xsoc' };
@@ -110,7 +112,7 @@ const faviconIcon = (href) => {
 };
 
 export const socialIcon = (kind, href = '', fieldType = '') => {
-  if (kind === 'review') return faviconIcon(/g\.page|google\./i.test(href) || !/^https?:/i.test(href) ? 'https://www.google.com/' : href) || W.svg(EXTRA_PATHS.link);
+  if (kind === 'review') return /g\.page|google\.|goo\.gl/i.test(href) || !/^https?:/i.test(href) ? W.svg(EXTRA_PATHS.google) : faviconIcon(href) || W.svg(EXTRA_PATHS.link);
   if (SOCIAL_ICON[kind]) return W.svg(W.P[SOCIAL_ICON[kind]]);
   if (EXTRA_PATHS[kind]) return W.svg(EXTRA_PATHS[kind]);
   // A link saved as "Website" keeps the globe; any other link shows its site's icon.
@@ -234,10 +236,11 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     // Email and Google Review first among the small icons.
     .sort((a, b) => (SMALL_FIRST[a.kind] ?? 9) - (SMALL_FIRST[b.kind] ?? 9));
 
-  // Services (dashboard Services tab) first, then products. A service's link opens the owner's
-  // website when tapped; only http(s) links are used (older items were saved unchecked).
-  const services = [...(payload.products || [])]
-    .sort((a, b) => (a.kind === 'service' ? 0 : 1) - (b.kind === 'service' ? 0 : 1))
+  // Products and services are separate sections on the public card. A service's link opens the
+  // owner's website when tapped; only http(s) links are used (older items were saved unchecked).
+  const offerings = payload.products || [];
+  const services = offerings
+    .filter((p) => p.kind === 'service')
     .map((p) => ({
       title: p.title || '',
       desc: p.description || '',
@@ -245,7 +248,15 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
       // No picture? A screenshot of the service's page (as for projects).
       image: getImageUrl(p.coverImage) || siteShot(webLink(p.link)),
       link: webLink(p.link),
-      kind: p.kind === 'service' ? 'service' : 'product',
+    }));
+  const products = offerings
+    .filter((p) => p.kind !== 'service')
+    .map((p) => ({
+      title: p.title || '',
+      desc: p.description || '',
+      price: p.price || '',
+      image: getImageUrl(p.coverImage),
+      link: webLink(p.link),
     }));
   const projects = (payload.portfolio || []).map((p) => {
     const pdf = getImageUrl(p.file);
@@ -274,7 +285,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     n: t.name || '',
     c: '',
     i: initialsOf(t.name || ''),
-    photo: getImageUrl(t.photo),
+    photo: avatarUrl(t.photo),
     rating: t.rating || 5,
   }));
 
@@ -294,7 +305,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     phone,
     email,
     website,
-    avatar: getImageUrl(pi.profilePic),
+    avatar: avatarUrl(pi.profilePic),
     cover: coverImageUrl(pi.bannerImage),
     logo: null,
     href,
@@ -303,6 +314,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     socials,
     quickKeys,
     services,
+    products,
     projects,
     reels,
     photos,
@@ -358,6 +370,7 @@ const SECTION_HAS = {
   About: (c) => !!(c.bio || c.location || c.languages.length || c.skills.length || c.stats.length),
   Brands: (c) => c.brands.length > 0,
   Services: (c) => c.services.length > 0,
+  Products: (c) => c.products.length > 0,
   Projects: (c) => c.projects.length > 0,
   Work: (c) => c.projects.length > 0,
   Reels: (c) => c.reels.length > 0,
@@ -618,7 +631,7 @@ export async function shareCard(e) {
     // With the card image when the device can share files (WhatsApp, Instagram, etc.).
     if (shareFile && navigator.canShare?.({ files: [shareFile] })) {
       try {
-        await navigator.share({ title, text, url, files: [shareFile] });
+        await navigator.share({ title, text, files: [shareFile] });
         return;
       } catch (err) {
         if (cancelled(err)) return;
@@ -626,7 +639,8 @@ export async function shareCard(e) {
       }
     }
     try {
-      await navigator.share({ title, text, url });
+      // The link is only in the text: passing `url` too makes WhatsApp and others show it twice.
+      await navigator.share({ title, text });
       return;
     } catch (err) {
       if (cancelled(err)) return;

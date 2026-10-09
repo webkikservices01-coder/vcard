@@ -78,8 +78,9 @@ export const LiveThumb = memo(function LiveThumb({ template, palette, mode, heig
 /**
  * value: { template, palette, mode } where mode '' = the template's own mode.
  * onChange(next): called with the new { template, palette, mode } when a thumbnail or swatch is tapped.
+ * allowed: template ids the owner's plan unlocks (others still preview, with a 🔒 badge); null = all.
  */
-export default function LiveTemplatePicker({ value, onChange, dark = false }) {
+export default function LiveTemplatePicker({ value, onChange, dark = false, allowed = null }) {
   const [filter, setFilter] = useState('All');
   // Light/Dark for all thumbnails; starts on the chosen template's look.
   const [mode, setMode] = useState(() => value.mode || templateInfo(value.template)?.native || 'light');
@@ -164,10 +165,16 @@ export default function LiveTemplatePicker({ value, onChange, dark = false }) {
                 style={{ position: 'relative', padding: 3, border: `2px solid ${chosen ? '#ED2460' : 'transparent'}`, borderRadius: 18, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
               >
                 <LiveThumb template={t.id} palette={pal[i]} mode={mode} />
-                {meta.badge && (
-                  <span style={{ position: 'absolute', top: 10, right: 10, height: 20, padding: '0 7px', borderRadius: 999, background: '#14141A', color: '#FFFFFF', font: "700 10px/20px 'Inter'" }}>
-                    {meta.badge}
+                {allowed && !allowed.includes(t.id) ? (
+                  <span style={{ position: 'absolute', top: 10, right: 10, height: 20, padding: '0 7px', borderRadius: 999, background: 'rgba(0,0,0,.75)', color: '#FFFFFF', font: "700 10px/20px 'Inter'" }}>
+                    🔒 {allowed.length >= 3 ? 'AI AGENT PRO' : 'UPGRADE'}
                   </span>
+                ) : (
+                  meta.badge && (
+                    <span style={{ position: 'absolute', top: 10, right: 10, height: 20, padding: '0 7px', borderRadius: 999, background: '#14141A', color: '#FFFFFF', font: "700 10px/20px 'Inter'" }}>
+                      {meta.badge}
+                    </span>
+                  )
                 )}
               </button>
               <div style={{ font: "600 14px/1.2 'Poppins',sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>

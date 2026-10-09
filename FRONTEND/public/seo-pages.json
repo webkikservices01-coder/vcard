@@ -134,7 +134,7 @@
       "noindex": true
     },
     "/wedding": {
-      "title": "Free Digital Wedding Invitation – 10 Beautiful Designs with RSVP | Aicardly",
+      "title": "Free Digital Wedding Invitation – Beautiful Designs with RSVP | Aicardly",
       "description": "Create a free online wedding invitation: your names, functions, venue map, photos and music. Guests RSVP and send blessings. Share one link on WhatsApp.",
       "jsonld": [
         {
@@ -152,6 +152,30 @@
               "position": 2,
               "name": "Wedding Invitations",
               "item": "https://aicardly.com/wedding"
+            }
+          ]
+        }
+      ]
+    },
+    "/invites": {
+      "title": "Free Digital Invites – Wedding, Birthday, Engagement, Diwali & Festival Wishes | Aicardly",
+      "description": "Create free digital invitations and festival greetings: weddings, engagements, birthdays, Diwali parties, Griha Pravesh, baby showers, Holi, Eid and New Year wishes. RSVP, venue map, AI host. Share one link on WhatsApp.",
+      "jsonld": [
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://aicardly.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Digital Invites",
+              "item": "https://aicardly.com/invites"
             }
           ]
         }

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Template, Tier } from "../../data/templates";
+import { OccasionArt } from "./reveal/OccasionArt";
+import { occasionOf, namesLine } from "../../data/occasions";
 
 /* =========================================================
    Shared widgets used by all invite templates
@@ -154,7 +156,7 @@ export function EntryLoader({
       }}
     >
       <div className="relative z-10 px-6">
-        <Mandala size={220} />
+        {template.art ? <OccasionArt kind={template.art} label={template.couple.two} size={220} className="mx-auto" /> : <Mandala size={220} />}
         <p
           className="mt-4 text-lg tracking-[0.3em]"
           style={{
@@ -162,7 +164,7 @@ export function EntryLoader({
             color: "var(--wt-gold-lite)",
           }}
         >
-          {template.script}
+          {occasionOf(template).rsvp ? template.script : occasionOf(template).invited}
         </p>
         <h1
           className="mt-3 wt-text-gradient font-bold"
@@ -172,7 +174,7 @@ export function EntryLoader({
             lineHeight: 1.05,
           }}
         >
-          {template.couple.one} {template.couple.amp} {template.couple.two}
+          {occasionOf(template).rsvp ? namesLine(template) : template.script}
         </h1>
         <button
           onClick={onEnter}
@@ -185,7 +187,7 @@ export function EntryLoader({
             boxShadow: "0 14px 34px rgba(0,0,0,.45)",
           }}
         >
-          Open Invitation
+          {occasionOf(template).rsvp ? "Open Invitation" : "Open Your Wish"}
         </button>
       </div>
     </div>

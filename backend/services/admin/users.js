@@ -22,7 +22,7 @@ const { isLifetime } = require('../../constants/plans');
 const planActive = (u) => isLifetime(u) || !!(u.plan && u.plan !== FREE && u.planExpiry && new Date(u.planExpiry) > new Date());
 
 // Safe view of a user: never the password or reset/verification token hashes.
-const USER_FIELDS = 'name firstName lastName email phone plan planExpiry lifetime status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt';
+const USER_FIELDS = 'name firstName lastName email phone plan planExpiry lifetime status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt upgrade.sentAt upgrade.email upgrade.sms upgrade.error upgrade.trialEndsAt';
 
 function userFilter({ q, status, plan, from, to }) {
   const f = {};

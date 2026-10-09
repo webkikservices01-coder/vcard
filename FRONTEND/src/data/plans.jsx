@@ -2,20 +2,28 @@ import { Zap, Bot, Phone } from 'lucide-react';
 
 // Single source of truth for plan pricing/features — shared by Plans.jsx (pricing page)
 // and AiPersona.jsx (locked-state feature preview) so the two never drift apart.
+// Plan prices are before GST; 18% GST is added at checkout (same as BACKEND constants/plans.js).
+export const GST_RATE = 0.18;
+export const withGst = (n) => Math.round(n * (1 + GST_RATE) * 100) / 100;
+export const inr = (n) => `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
+
 export const plans = [
   {
     id: 'digital-id',
     name: 'DIGITAL CARD',
-    tagline: 'Perfect for professionals',
+    tagline: '1 card with a starter AI chatbot',
     price: { monthly: 99, yearly: 999 },
+    // What sets each plan apart, shown on every pricing card (keep in sync with PLAN_LIMITS in
+    // BACKEND/constants/plans.js, which enforces the card and chat limits).
+    highlights: ['1 digital card', '1 card theme', 'AI chatbot: 10 chats a month', 'QR code, lead form & analytics', 'WhatsApp & call buttons', 'Email support'],
     icon: <Zap className="w-5 h-5" />,
     popular: false,
     badge: null,
     accent: '#111827',
     features: {
-      vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
+      vCards: 1, aiChats: '10 / month', themes: 1, metalNfcCard: false, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: false,
-      aiChatWidget: false, aiVoiceCall: false, aiVideoCall: false, aiPersonaConfig: false, animatedAvatar: false, linkedinSync: false, aiLeadScoring: false,
+      aiChatWidget: true, aiVoiceCall: false, aiVideoCall: false, aiPersonaConfig: false, animatedAvatar: false, linkedinSync: false, aiLeadScoring: false,
       aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
       whatsappFlowBuilder: false, outboundCalling: false, whiteLabelOption: false,
       support: 'Email',
@@ -24,14 +32,15 @@ export const plans = [
   {
     id: 'smart-ai-card',
     name: 'SMART AI CARD',
-    tagline: 'AI-powered digital presence',
+    tagline: '3 cards, AI chatbot + AI voice call',
     price: { monthly: 199, yearly: 1999 },
+    highlights: ['3 digital cards', '3 card themes', 'AI chatbot: 25 chats a month', 'Live AI voice call on your card', 'AI books meetings & sends WhatsApp details', 'Hide Aicardly branding', 'Priority support'],
     icon: <Bot className="w-5 h-5" />,
     popular: true,
     badge: '★ Most Popular',
     accent: '#6366f1',
     features: {
-      vCards: 1, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
+      vCards: 3, aiChats: '25 / month', themes: 3, metalNfcCard: false, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
       aiChatWidget: true, aiVoiceCall: true, aiVideoCall: false, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
       aiVoiceAgent: false, whatsappBot: false, voiceNoteTranscription: false, imageRecognition: false,
@@ -42,15 +51,16 @@ export const plans = [
   {
     id: 'ai-agent-pro',
     name: 'AI AGENT PRO',
-    tagline: 'Full AI sales & support automation',
+    tagline: '7 cards + metal NFC card, unlimited AI, voice + video calls',
+    highlights: ['7 digital cards', 'Premium metal NFC card included', 'All 10 card themes', 'Unlimited AI chats (renews monthly)', 'Live AI voice + AI video calls', 'AI books meetings & sends WhatsApp details', 'WhatsApp Business bot & AI lead scoring', '24/7 dedicated support'],
     // Keep in sync with BACKEND/constants/plans.js (the server charges from there).
-    price: { monthly: 1999, yearly: 19999 },
+    price: { monthly: 1999, yearly: 9999 },
     icon: <Phone className="w-5 h-5" />,
     popular: false,
     badge: '🤖 AI Powered',
     accent: '#8b5cf6',
     features: {
-      vCards: 3, themes: 10, qrCode: true, vcfDownload: true, linkTapTracking: true,
+      vCards: 7, aiChats: 'Unlimited', themes: 10, metalNfcCard: true, qrCode: true, vcfDownload: true, linkTapTracking: true,
       leadCaptureForm: true, whatsappButton: true, seoIndexing: true, darkLightMode: true, hideBranding: true,
       aiChatWidget: true, aiVoiceCall: true, aiVideoCall: true, aiPersonaConfig: true, animatedAvatar: true, linkedinSync: true, aiLeadScoring: true,
       aiVoiceAgent: true, whatsappBot: true, voiceNoteTranscription: true, imageRecognition: true,
@@ -64,8 +74,9 @@ export const featureSections = [
   {
     label: 'Digital Card',
     features: [
-      { key: 'vCards', label: 'vCards', type: 'count' },
+      { key: 'vCards', label: 'Digital cards', type: 'count' },
       { key: 'themes', label: 'Card Themes', type: 'count' },
+      { key: 'metalNfcCard', label: 'Premium Metal NFC Card', type: 'bool' },
       { key: 'qrCode', label: 'QR Code', type: 'bool' },
       { key: 'vcfDownload', label: 'Add to Phonebook (.vcf)', type: 'bool' },
       { key: 'linkTapTracking', label: 'Link Tap Analytics', type: 'bool' },
@@ -80,7 +91,8 @@ export const featureSections = [
     label: 'AI Features',
     highlight: true,
     features: [
-      { key: 'aiChatWidget', label: 'AI Chat Widget', type: 'bool' },
+      { key: 'aiChatWidget', label: 'AI Chatbot on your card', type: 'bool' },
+      { key: 'aiChats', label: 'AI chats a month', type: 'text' },
       { key: 'aiVoiceCall', label: 'Live AI Voice Call on your card', type: 'bool' },
       { key: 'aiVideoCall', label: 'Live AI Video Call on your card', type: 'bool' },
       { key: 'aiPersonaConfig', label: 'AI Persona Config (tone, greeting, fallback)', type: 'bool' },

@@ -14,8 +14,8 @@ const webLink = (v) => {
     }
 };
 
-// The card's products and services (dashboard: Products tab / Services tab). Both show in the
-// card's "Services" section; a service opens the owner's website when tapped.
+// The card's products and services (dashboard: Products tab / Services tab) render in separate
+// sections on the public card; a service opens the owner's website when tapped.
 const productSchema = new mongoose.Schema({
     vcardId:     { type: mongoose.Schema.Types.ObjectId, ref: 'vCard', required: true },
     kind:        { type: String, enum: ['product', 'service'], default: 'product' },

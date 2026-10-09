@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD, socialIcon } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -52,7 +52,7 @@ class Logic extends DCLogic {
         { label: 'Email', icon: ic.mail, c: '#FFFFFF' },
         { label: 'Location', icon: ic.pin, c: '#FFFFFF' },
       ]),
-      nav: CARD.navFrom(['Videos', 'Profile', 'Services', 'Projects', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
+      nav: CARD.navFrom(['Videos', 'Profile', 'Services', 'Products', 'Projects', 'Portfolio', 'Contact', 'QR'].map((label) => ({ label }))).map(
         (n, i) => ({
           ...n,
           bg: i === 0 ? G : '#1A1A1A',
@@ -676,6 +676,7 @@ export function CreatorReel(props) {
               </div>
             </div>
           ) : null}
+          <ProductCatalog items={CARD.products} />
           {CARD.testimonials.length > 0 ? (
             <div style={{ padding: '28px 0 0' }}>
               <h3 style={{ margin: '0 16px 12px', fontFamily: "'Sora',sans-serif", fontSize: '20px', fontWeight: '700' }}>{'Testimonials'}</h3>
@@ -1076,9 +1077,13 @@ export function CreatorReel(props) {
                 fontSize: '13px',
                 fontWeight: '700',
                 boxShadow: '0 6px 18px rgba(0,0,0,.35)',
+                maxWidth: 'calc(var(--wc-vw, 100vw) - 112px)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
-              {'Chat with my AI'}
+              {`Chat with ${CARD.fullName || 'me'}`}
             </span>
             <div style={{ position: 'relative', width: '56px', height: '56px', flexShrink: '0' }}>
               <span
@@ -1217,6 +1222,7 @@ export function CreatorReel(props) {
                 </div>
               </div>
 
+              <ChatCallButtons />
               <span
                 dangerouslySetInnerHTML={V.ic?.x}
                 onClick={closeChat}

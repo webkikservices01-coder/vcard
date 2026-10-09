@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Template } from "../../../data/templates";
+import { occasionOf, namesLine, initialsOf } from "../../../data/occasions";
 
 /* =========================================================
    ShutterIntro — the invite opens behind a painted metal shutter. The guest pulls it up
@@ -55,7 +56,8 @@ export function ShutterIntro({ template, onEnter }: { template: Template; onEnte
     }
   };
 
-  const initials = `${template.couple.one[0] || ""}${template.couple.two[0] || ""}`;
+  const o = occasionOf(template);
+  const initials = initialsOf(template);
   return (
     <div
       className="fixed inset-0 z-[9999] touch-none select-none overflow-hidden"
@@ -98,15 +100,23 @@ export function ShutterIntro({ template, onEnter }: { template: Template; onEnte
               {initials}
             </div>
             <p className="mt-4 text-lg" style={{ fontFamily: "var(--wt-script)", color: "var(--wt-gold-lite)" }}>
-              {template.script}
+              {o.rsvp ? template.script : o.invited}
             </p>
             <h1 className="mt-2 wt-text-gradient font-bold" style={{ fontFamily: "var(--wt-heading)", fontSize: "clamp(30px, 8vw, 46px)", lineHeight: 1.1 }}>
-              {template.couple.one}
-              <span className="mx-2 text-[0.6em]" style={{ color: "var(--wt-accent)" }}>{template.couple.amp}</span>
-              {template.couple.two}
+              {o.couple ? (
+                <>
+                  {template.couple.one}
+                  <span className="mx-2 text-[0.6em]" style={{ color: "var(--wt-accent)" }}>{template.couple.amp}</span>
+                  {template.couple.two}
+                </>
+              ) : o.rsvp ? (
+                namesLine(template)
+              ) : (
+                template.script
+              )}
             </h1>
             <p className="mt-3 text-[11px] uppercase tracking-[0.35em]" style={{ fontFamily: "var(--wt-label)", color: "var(--wt-ink-soft)" }}>
-              You are invited
+              {o.rsvp ? o.invited : `from ${template.couple.one}`}
             </p>
           </div>
         </div>

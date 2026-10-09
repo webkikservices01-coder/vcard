@@ -11,7 +11,7 @@ const Transaction = require('../../models/Transaction');
 const { CATALOG } = require('../../constants/plans');
 
 // Card limits the old admin panel used per plan.
-const CARD_LIMITS = { 'DIGITAL CARD': 3, 'SMART AI CARD': 7, 'AI AGENT PRO': 7 };
+const CARD_LIMITS = { 'DIGITAL CARD': 1, 'SMART AI CARD': 3, 'AI AGENT PRO': 7 }; // = PLAN_LIMITS in constants/plans.js
 const DAY = 24 * 60 * 60 * 1000;
 
 async function runAdminSetup() {

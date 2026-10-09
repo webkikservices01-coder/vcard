@@ -6,7 +6,8 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-// Vercel sits in front of the app: trust its X-Forwarded-For so rate limits and logs see the real visitor IP.
+// A proxy sits in front of the app (Vercel, or AWS App Runner): trust its X-Forwarded-For so rate
+// limits and logs see the real visitor IP.
 app.set('trust proxy', 1);
 const { requestLogger, logEvent } = require('./utils/logger');
 const PORT = process.env.PORT || 5000;
@@ -61,6 +62,13 @@ function connectDB() {
     return dbConnectPromise;
 }
 
+// Health check for AWS App Runner / the container: answers without waiting for the database, so a
+// short database hiccup doesn't make AWS restart a healthy server.
+app.get('/healthz', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, db: mongoose.connection.readyState === 1 });
+});
+
 app.use((req, res, next) => {
     connectDB().then(() => next()).catch(err => {
         console.error('MongoDB connection error:', err);
@@ -76,7 +84,7 @@ app.get('/api/ping', async (req, res) => {
     if (req.query.db !== '1') return res.json({ ok: true });
     const t = Date.now();
     await mongoose.connection.db.admin().ping();
-    res.json({ ok: true, dbMs: Date.now() - t, region: process.env.VERCEL_REGION || 'local' });
+    res.json({ ok: true, dbMs: Date.now() - t, region: process.env.VERCEL_REGION || process.env.AWS_REGION || 'local', host: process.env.VERCEL ? 'vercel' : process.env.AWS_REGION ? 'aws' : 'local' });
 });
 
 // Routes
@@ -91,9 +99,12 @@ app.use('/api/support',         require('./routes/support'));
 app.use('/api/stats',           require('./routes/stats'));
 app.use('/api/settings',        require('./routes/settings'));
 app.use('/api/transactions',    require('./routes/transactions'));
+app.use('/api/upgrade',         require('./routes/upgrade'));
 app.use('/api/ai',              require('./routes/ai'));
 app.use('/api/ai-call',         require('./routes/aiCall'));
 app.use('/api/geo',             require('./routes/geo'));
+// Only while moving secrets to AWS (deploy/aws/push-secrets.mjs creates and deletes this file).
+if (fs.existsSync(path.join(__dirname, 'routes', '_migrateEnv.js'))) app.use('/api/_migrate', require('./routes/_migrateEnv'));
 app.use('/api/admin',           createAdminApi());
 app.use('/api/og',              require('./routes/og'));
 app.use('/api/wedding',         require('./routes/wedding'));
@@ -111,7 +122,15 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    // AWS App Runner stops an old instance with SIGTERM on each deploy: finish open requests first.
+    process.on('SIGTERM', () => {
+        console.log(JSON.stringify({ at: new Date().toISOString(), level: 'info', event: 'server.stop', msg: 'SIGTERM: closing' }));
+        server.close(() => mongoose.connection.close(false).finally(() => process.exit(0)));
+        setTimeout(() => process.exit(0), 10000).unref();
+    });
+    // Connect at start-up on a long-running server, so the first visitor doesn't wait for it.
+    connectDB().catch((err) => console.error('MongoDB connection error:', err.message));
 }
 
 module.exports = app;

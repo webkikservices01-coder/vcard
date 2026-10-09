@@ -35,7 +35,9 @@ function requestLogger(req, res, next) {
   res.on('finish', () => {
     const ms = Date.now() - start;
     const path = req.originalUrl.split('?')[0];
-    const line = { at: new Date().toISOString(), req: `${req.method} ${path}`, status: res.statusCode, ms, ip: clientIp(req) };
+    // level lets CloudWatch (AWS) count errors/warnings and alarm on them (deploy/aws).
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    const line = { at: new Date().toISOString(), level, req: `${req.method} ${path}`, status: res.statusCode, ms, ip: clientIp(req) };
     if (req.user?.userId) line.userId = req.user.userId;
     console.log(JSON.stringify(line));
     if (res.statusCode >= 500) logEvent(req, 'http.error', `${req.method} ${path} returned ${res.statusCode}`, { level: 'error', meta: { ms } });

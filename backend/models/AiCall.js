@@ -11,6 +11,12 @@ const AiCallSchema = new mongoose.Schema({
   seconds:    { type: Number, default: null }, // set when the call ends
   endedAt:    { type: Date, default: null },
   cohort:     { type: String, default: 'live' },
+  // Meetings the AI noted on the call (save_meeting_request): the caller's details and the link.
+  whatsappSends: { type: Number, default: 0 }, // send_whatsapp_info calls on this call
+  meetings: [{
+    name: String, whatsapp: String, email: String, purpose: String, preferredTime: String, notes: String,
+    meetingUrl: String, bookingUrl: String, at: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 AiCallSchema.index({ vcardId: 1, createdAt: -1 });

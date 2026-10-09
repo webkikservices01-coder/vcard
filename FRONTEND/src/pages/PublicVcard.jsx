@@ -6,7 +6,7 @@ import { getVideoRoomUrl } from '../utils/videoRoom';
 import { markNotFound, setCardIndexing } from '../components/Seo';
 import { faviconHref, setPageFavicon } from '../utils/favicon';
 import { getImageUrl } from '../utils/media';
-import AiCallHost, { AiCallFab } from '../webcard/AiCallHost';
+import AiCallHost from '../webcard/AiCallHost';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -39,6 +39,8 @@ const PublicVcard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // The owner's free trial is over and not paid: the card is paused (402 from the API).
+  const [paused, setPaused] = useState(null);
   const [aiPersona, setAiPersona] = useState(null);
   // Owner viewing their own card: it refreshes so dashboard edits show up here.
   const [isOwner, setIsOwner] = useState(false);
@@ -67,6 +69,9 @@ const PublicVcard = () => {
       if (err.response?.status === 404) {
         setNotFound(true);
         markNotFound();
+      } else if (err.response?.status === 402) {
+        setPaused(err.response.data || {});
+        setCardIndexing(false);
       }
     } finally {
       setLoading(false);
@@ -124,6 +129,28 @@ const PublicVcard = () => {
       </div>
     );
 
+  if (paused)
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-[#faf8f9] font-['Inter'] p-6">
+        <div className="max-w-sm text-center text-slate-900">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[#E70C65]/10 text-2xl">⏸</div>
+          <h1 className="text-xl font-black">Please upgrade your card</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            {isOwner
+              ? 'Your free trial is over, so your card is paused. Choose a plan and it is live again instantly.'
+              : `${paused.name ? `${paused.name}'s` : 'This'} card is paused until it is upgraded. Please check back soon.`}
+          </p>
+          <a
+            href={isOwner ? '/dashboard/plans' : '/'}
+            className="mt-5 inline-block rounded-full bg-[#E70C65] px-5 py-2.5 text-sm font-bold text-white shadow-sm"
+          >
+            {isOwner ? 'Upgrade & reactivate' : 'Make your own AI card'}
+          </a>
+          <p className="mt-6 text-[11px] text-slate-400">Powered by Aicardly</p>
+        </div>
+      </div>
+    );
+
   if (notFound || !data)
     return (
       <div className="min-h-dvh flex items-center justify-center bg-[#faf8f9] font-['Inter'] p-4">
@@ -172,7 +199,6 @@ const PublicVcard = () => {
             calls={aiPersona.calls}
             whatsapp={whatsappOf(data.card)}
           />
-          <AiCallFab calls={aiPersona.calls} />
         </>
       )}
     </div>

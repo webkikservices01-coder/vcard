@@ -442,3 +442,13 @@
 @keyframes mesh-b { 0%, 100% { opacity: .3; transform: translate(33%, 33%) scale(1); } 50% { opacity: .5; transform: translate(33%, 33%) scale(1.15); } }
 @keyframes mesh-c { 0%, 100% { opacity: .2; transform: translateY(-4rem) scale(1); } 50% { opacity: .4; transform: translateY(-4rem) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .mesh-wash, .mesh-blob { animation: none; } }
+
+/* Sections well off screen pause their looping animations (LandingPage sets the class). */
+.anim-offscreen, .anim-offscreen * { animation-play-state: paused !important; }
+
+/* AI video call: the drawn face blinks (AiCallHost DrawnFace). */
+.aiface-eyes { transform-origin: 150px 196px; animation: aiface-blink 4.5s infinite; }
+@keyframes aiface-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.aiface-live { animation: aiface-live 7s ease-in-out infinite; }
+@keyframes aiface-live { 0%, 100% { transform: translate(0, 0) scale(1.02) rotate(0deg); } 30% { transform: translate(-0.6%, 0.4%) scale(1.035) rotate(-0.4deg); } 65% { transform: translate(0.5%, -0.3%) scale(1.025) rotate(0.35deg); } }
+@media (prefers-reduced-motion: reduce) { .aiface-eyes, .aiface-live { animation: none; } }

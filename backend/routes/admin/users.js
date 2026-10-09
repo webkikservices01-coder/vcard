@@ -216,6 +216,31 @@ router.post('/:id/credits', ...act('users.credits', z.object({ credits: z.coerce
   res.json({ msg: 'Saved.', freeCardCredits: user.freeCardCredits, cardLimit: user.cardLimit });
 }));
 
+// Upgrade link (24-hour trial): email with the choose-a-plan page + Cashfree SMS link, sent now.
+router.post('/:id/upgrade-link', ...act('users.plan', z.object({}).passthrough(), async (req, res) => {
+  const User = require('../../models/User');
+  const { sendUpgradeLink } = require('../../services/trial');
+  const user = await User.findById(req.v.params.id);
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  const out = await sendUpgradeLink(user, { force: true, reason: 'admin' });
+  await audit(req, 'user.upgrade_link', { targetType: 'user', targetId: user._id, summary: `Sent upgrade link to ${user.email}: email ${out.email}, SMS ${out.sms}`, meta: out });
+  const smsNote = out.sms === 'sent' ? 'SMS sent' : out.sms === 'skipped' ? `no SMS (${out.error})` : `SMS failed (${out.error})`;
+  res.json({ msg: `Upgrade link: email ${out.email}, ${smsNote}.`, ...out });
+}));
+
+// End the 24-hour trial now: the card pauses and the upgrade link goes out (unless already sent).
+router.post('/:id/end-trial', ...act('users.plan', z.object({}).passthrough(), async (req, res) => {
+  const User = require('../../models/User');
+  const { endTrialNow } = require('../../services/trial');
+  const user = await User.findById(req.v.params.id);
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  const out = await endTrialNow(user);
+  await audit(req, 'user.end_trial', { targetType: 'user', targetId: user._id, summary: `Ended the trial of ${user.email}`, meta: out });
+  const s = out.sent || {};
+  const linkNote = s.skipped ? `link not sent (${s.skipped})` : `link: email ${s.email}, SMS ${s.sms}${s.error ? ` (${s.error})` : ''}`;
+  res.json({ msg: out.state.paused ? `Trial ended: the card is paused; ${linkNote}.` : `Nothing to end: ${s.skipped || 'this account has no trial'}.`, ...out });
+}));
+
 const why = z.string().trim().min(3, 'please give a reason').max(500);
 
 router.post('/:id/profile', ...act('users.edit', z.object({
