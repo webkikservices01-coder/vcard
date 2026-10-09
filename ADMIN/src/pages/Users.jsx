@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Search, UserPlus, Wand2, Ban, CheckCircle2, UserX, RotateCcw, Trash2, X } from 'lucide-react';
+import { Search, UserPlus, Ban, CheckCircle2, UserX, RotateCcw, Trash2, X } from 'lucide-react';
 import { useApi, useDebounced, useFilters } from '../lib/hooks';
-import { qs, downloadUrl } from '../lib/api';
+import { qs } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { dateOnly, money } from '../lib/format';
-import { Button, Card, ErrorBox, Field, Input, PageHeader, Pagination, Select, StatusBadge, Table, Badge, useToast } from '../components/ui';
+import { dateOnly, money, planLabel } from '../lib/format';
+import { Button, Card, ErrorBox, Field, FilterBar, Input, PageHeader, Pagination, Select, StatusBadge, Table, Badge, useToast } from '../components/ui';
+import ExportButton from '../components/ExportButton';
 import ActionDialog from '../components/ActionDialog';
 import { api } from '../lib/api';
 
@@ -33,16 +34,13 @@ export default function UsersPage() {
   const plans = useApi('/plans');
   const toast = useToast();
   const [creating, setCreating] = useState(false);
-  const [nu, setNu] = useState({ name: '', email: '', phone: '', password: '', emailVerified: true });
+  // Admins never set passwords: the new user gets an email to choose their own.
+  const [nu, setNu] = useState({ name: '', email: '', phone: '', emailVerified: true });
   const setNuField = (k) => (e) => setNu((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
-  const genPassword = () => {
-    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#%';
-    setNu((x) => ({ ...x, password: Array.from(crypto.getRandomValues(new Uint8Array(14)), (b) => abc[b % abc.length]).join('') }));
-  };
   const createUser = async ({ reason }) => {
     const res = await api('/users', { method: 'POST', body: { ...nu, reason } });
     toast(res.msg);
-    setNu({ name: '', email: '', phone: '', password: '', emailVerified: true });
+    setNu({ name: '', email: '', phone: '', emailVerified: true });
     navigate(`/users/${res.id}`);
   };
 
@@ -103,7 +101,7 @@ export default function UsersPage() {
           className: 'w-12',
           // The whole cell toggles the tick (a near miss must not open the user's page).
           render: (u) => (
-            <label onClick={(e) => e.stopPropagation()} className="-mx-4 -my-3 flex min-h-[60px] cursor-pointer items-start px-4 py-3">
+            <label onClick={(e) => e.stopPropagation()} className="flex cursor-pointer items-start md:-mx-4 md:-my-3 md:min-h-[60px] md:px-4 md:py-3">
               <input type="checkbox" aria-label={`Select ${u.email}`} checked={sel.has(u.id)} onChange={() => toggle(u)} className="h-4 w-4 cursor-pointer accent-pink-600" />
             </label>
           ),
@@ -126,8 +124,8 @@ export default function UsersPage() {
       label: 'Plan',
       render: (u) => (
         <div>
-          <p className="text-slate-900">{u.planName}</p>
-          {u.planActive && <p className="text-xs text-slate-500">{u.planStart ? `${dateOnly(u.planStart)} → ` : 'until '}{dateOnly(u.planExpiry)}</p>}
+          <p className="text-slate-900">{planLabel(u.planName)}{u.lifetime ? ' · lifetime' : ''}</p>
+          {u.planActive && !u.lifetime && <p className="text-xs text-slate-500">{u.planStart ? `${dateOnly(u.planStart)} → ` : 'until '}{dateOnly(u.planExpiry)}</p>}
         </div>
       ),
     },
@@ -139,7 +137,8 @@ export default function UsersPage() {
       render: (u) => (
         <div className="flex flex-wrap gap-1">
           <StatusBadge value={u.status} />
-          {u.emailVerified === false && <Badge color="amber">unverified</Badge>}
+          {u.emailVerified === false && <Badge color="amber">Unverified</Badge>}
+          {u.isTest && <Badge color="blue">Test</Badge>}
           {u.freeCardCredits > 0 && <Badge color="pink">{u.freeCardCredits} credit{u.freeCardCredits > 1 ? 's' : ''}</Badge>}
         </div>
       ),
@@ -158,16 +157,12 @@ export default function UsersPage() {
               <UserPlus className="h-4 w-4" aria-hidden="true" /> New user
             </Button>
           )}
-          {can('export.csv') && (
-            <a href={downloadUrl('/users/export', { ...f, page: undefined })} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-surface px-4 text-sm font-medium text-slate-800 hover:bg-slate-50">
-              <Download className="h-4 w-4" aria-hidden="true" /> Export CSV
-            </a>
-          )}
+          {can('export.csv') && <ExportButton path="/users/export" params={f} what="the users list" />}
           </>
         }
       />
       <Card padded={false}>
-        <div className="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-2 lg:grid-cols-6">
+        <FilterBar active={[f.status, f.plan, f.from, f.to].filter(Boolean).length}>
           <div className="relative sm:col-span-2">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, email or phone" className="pl-9" aria-label="Search users" />
@@ -178,13 +173,14 @@ export default function UsersPage() {
             <option value="blocked">Blocked</option>
             <option value="removed">Removed</option>
             <option value="all">All (incl. removed)</option>
+            <option value="test">Test accounts</option>
           </Select>
           <Select value={f.plan} onChange={(e) => set({ plan: e.target.value })} aria-label="Plan">
             <option value="">Any plan</option>
             <option value="paid">Any running plan</option>
             <option value="free">Free / expired</option>
             {(plans.data?.tiers || []).map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>{planLabel(t)}</option>
             ))}
           </Select>
           <Input type="date" value={f.from ? f.from.slice(0, 10) : ''} onChange={(e) => set({ from: e.target.value })} aria-label="Signed up from" title="Signed up from" />
@@ -197,7 +193,7 @@ export default function UsersPage() {
             <option value="planExpiry:desc">Plan ends last</option>
             <option value="planExpiry:asc">Plan ends first</option>
           </Select>
-        </div>
+        </FilterBar>
         {error ? (
           <div className="p-4">
             <ErrorBox error={error} onRetry={reload} />
@@ -246,11 +242,11 @@ export default function UsersPage() {
         open={creating}
         onClose={() => setCreating(false)}
         title="New user"
-        description="Creates an Aicardly account for a customer. Leave the password empty to email them a link to choose their own (valid 1 hour); they then build their card, or you do it for them with “Sign in as user”."
+        description="Creates an Aicardly account for a customer. They get an email with a link to choose their own password (valid 1 hour); then they build their card, or you do it for them with “Sign in as user”."
         confirmLabel="Create account"
         reasonRequired={false}
         reasonLabel="Note (saved in the audit log, optional)"
-        canSubmit={nu.name.trim().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(nu.email.trim()) && (!nu.password || nu.password.length >= 8)}
+        canSubmit={nu.name.trim().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(nu.email.trim())}
         onSubmit={createUser}
       >
         <Field label="Full name">
@@ -261,12 +257,6 @@ export default function UsersPage() {
         </Field>
         <Field label="Mobile / WhatsApp (optional)" hint="With country code, e.g. +91 98123 45678.">
           <Input type="tel" value={nu.phone} onChange={setNuField('phone')} maxLength={30} autoComplete="off" />
-        </Field>
-        <Field label="Password (optional)" hint="Empty = they get an email to set it. At least 8 characters.">
-          <div className="flex gap-2">
-            <Input value={nu.password} onChange={setNuField('password')} maxLength={128} autoComplete="new-password" className="font-mono" />
-            <Button type="button" variant="secondary" onClick={genPassword} aria-label="Generate a strong password"><Wand2 className="h-4 w-4" /></Button>
-          </div>
         </Field>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={nu.emailVerified} onChange={setNuField('emailVerified')} /> Email already verified (they can sign in straight away)

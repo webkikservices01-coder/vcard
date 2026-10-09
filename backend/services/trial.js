@@ -15,6 +15,7 @@ const { logEvent } = require('../utils/logger');
 const cashfree = require('./cashfree');
 
 const HOUR = 3600 * 1000;
+let linksBlockedUntil = 0;
 const TRIAL_HOURS = Math.max(0.001, Number(process.env.TRIAL_HOURS) || 24); // fractions only in tests
 const TRIAL_FLOOR = new Date(process.env.TRIAL_FLOOR || '2026-10-07T10:00:00Z') // 7 Oct 2026, 3:30 pm IST;
 const SMS_PLAN = { planId: 'smart-ai-card', billing: 'monthly' };
@@ -92,6 +93,8 @@ async function smsLink(user, upgradeUrl) {
   const phone = cashfree.indianMobile(user.phone);
   if (!phone || !cashfree.isCashfreeConfigured()) return { skipped: !phone ? 'No Indian mobile number' : 'Cashfree not configured' };
   const price = priceFor(SMS_PLAN.planId, SMS_PLAN.billing);
+  // Cashfree refused payment links recently (product not enabled): don't try again for a while.
+  if (Date.now() < linksBlockedUntil) return { skipped: 'Cashfree payment links are not enabled on the account' };
   const txn = await Transaction.create({
     userId: user._id, plan: price.name, amount: price.amount, base: price.base, gst: price.gst,
     billingType: price.billingType, expireDays: price.days, status: 'pending', source: 'sms-link',
@@ -114,7 +117,12 @@ async function smsLink(user, upgradeUrl) {
     await txn.save();
     return { link };
   } catch (err) {
-    await Transaction.updateOne({ _id: txn._id }, { $set: { status: 'failed' } });
+    // No link was made, so it was never a purchase: don't leave a "failed payment" behind.
+    await Transaction.deleteOne({ _id: txn._id });
+    if (/not enabled|not approved|not activated/i.test(err.message)) {
+      linksBlockedUntil = Date.now() + 6 * HOUR;
+      logEvent(null, 'cashfree.links.disabled', `Cashfree payment links are off for this account: ${err.message}. Ask Cashfree support to enable "Payment Links".`, { level: 'error', userId: user._id });
+    }
     return { error: err.message };
   }
 }

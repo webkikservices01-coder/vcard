@@ -7,25 +7,64 @@ import Button from '../../components/ui/Button';
 import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../../components/PublicFooter';
 import { COMPANY } from '../../components/PublicFooter';
+import axios from 'axios';
+import { toE164 } from '../../utils/phone';
 
 const EMPTY = { name: '', email: '', phone: '', subject: '', message: '' };
+
+const API = import.meta.env.VITE_API_URL;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const ContactUs = () => {
   const [form, setForm] = useState(EMPTY);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // No dedicated public "contact us" backend endpoint exists yet — send via the
-    // visitor's own email client, pre-filled, so the message reaches us reliably.
-    const body = `Name: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\n\n${form.message}`;
-    const mailto = `mailto:${COMPANY.email}?subject=${encodeURIComponent(form.subject || 'Contact from Aicardly')}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
+  const validate = () => {
+    const next = {};
+    if (!form.name.trim()) next.name = 'Please enter your name.';
+    if (!EMAIL_RE.test(form.email.trim())) next.email = 'Please enter a valid email address.';
+    if (form.phone.trim() && !toE164(form.phone)) next.phone = 'Please enter a valid phone number, e.g. 98123 45678.';
+    if (form.message.trim().length < 5) next.message = 'Please write a short message.';
+    return next;
   };
+
+  // Saved as a lead (admin panel → Leads, source "contact") and emailed to the team. If that
+  // fails, the visitor's own email app opens with the message filled in.
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const next = validate();
+    setErrors(next);
+    if (Object.keys(next).length) return;
+    setSending(true);
+    try {
+      await axios.post(`${API}/api/ai/platform-lead`, {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: toE164(form.phone) || '',
+        need: form.subject.trim() || 'Contact form',
+        message: form.message.trim(),
+        source: 'contact',
+      });
+    } catch {
+      const body = `Name: ${form.name}
+Email: ${form.email}
+Phone: ${form.phone}
+
+${form.message}`;
+      window.location.href = `mailto:${COMPANY.email}?subject=${encodeURIComponent(form.subject || 'Contact from Aicardly')}&body=${encodeURIComponent(body)}`;
+    } finally {
+      setSending(false);
+    }
+    setSent(true);
+    setForm(EMPTY);
+  };
+
+  const err = (k) => errors[k] && <p id={`contact-${k}-error`} className="mt-1 text-xs text-red-500">{errors[k]}</p>;
+  const aria = (k) => ({ 'aria-invalid': !!errors[k], 'aria-describedby': errors[k] ? `contact-${k}-error` : undefined });
 
   const waLink = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent('Hi! I have a question about Aicardly.')}`;
   const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(COMPANY.addressLines.join(' '))}&output=embed`;
@@ -56,38 +95,42 @@ const ContactUs = () => {
               {sent ? (
                 <div className="py-12 text-center">
                   <CheckCircle2 className="h-10 w-10 mx-auto text-emerald-500" />
-                  <p className="mt-3 font-semibold" style={{ color: 'var(--surface-text)' }}>Opening your email app…</p>
+                  <p role="status" className="mt-3 font-semibold" style={{ color: 'var(--surface-text)' }}>Thanks! Your message has been sent.</p>
                   <p className="text-sm mt-1" style={{ color: 'var(--surface-text-2)' }}>
-                    If nothing opened, email us directly at <a href={`mailto:${COMPANY.email}`} className="text-crimson-700 hover:underline">{COMPANY.email}</a>.
+                    We usually reply within a business day. For anything urgent, call or WhatsApp {COMPANY.phone}.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Full Name</label>
-                      <input required value={form.name} onChange={set('name')} placeholder="Your name" className="input-premium" />
+                      <label htmlFor="contact-name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Full name *</label>
+                      <input id="contact-name" required maxLength={100} autoComplete="name" value={form.name} onChange={set('name')} placeholder="Your name" className="input-premium" {...aria('name')} />
+                      {err('name')}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Email Address</label>
-                      <input required type="email" value={form.email} onChange={set('email')} placeholder="you@company.com" className="input-premium" />
+                      <label htmlFor="contact-email" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Email address *</label>
+                      <input id="contact-email" required type="email" maxLength={120} autoComplete="email" value={form.email} onChange={set('email')} placeholder="you@company.com" className="input-premium" {...aria('email')} />
+                      {err('email')}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Phone Number</label>
-                      <input type="tel" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" className="input-premium" />
+                      <label htmlFor="contact-phone" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Phone number</label>
+                      <input id="contact-phone" type="tel" inputMode="tel" maxLength={16} autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" className="input-premium" {...aria('phone')} />
+                      {err('phone')}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Subject</label>
-                      <input value={form.subject} onChange={set('subject')} placeholder="What's this about?" className="input-premium" />
+                      <label htmlFor="contact-subject" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Subject</label>
+                      <input id="contact-subject" maxLength={150} value={form.subject} onChange={set('subject')} placeholder="What's this about?" className="input-premium" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Message</label>
-                    <textarea required rows={5} value={form.message} onChange={set('message')} placeholder="Tell us how we can help..." className="input-premium resize-none" />
+                    <label htmlFor="contact-message" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--surface-text)' }}>Message *</label>
+                    <textarea id="contact-message" required rows={5} maxLength={1000} value={form.message} onChange={set('message')} placeholder="Tell us how we can help..." className="input-premium resize-none" {...aria('message')} />
+                    {err('message')}
                   </div>
-                  <Button type="submit" variant="primary" rightIcon={<Send className="h-4 w-4" />}>
+                  <Button type="submit" variant="primary" loading={sending} rightIcon={<Send className="h-4 w-4" />}>
                     Send Message
                   </Button>
                 </form>

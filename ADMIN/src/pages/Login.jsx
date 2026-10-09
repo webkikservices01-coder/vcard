@@ -76,7 +76,11 @@ export default function Login() {
             </button>
           )}
         </form>
-        <p className="mt-4 text-center text-xs text-slate-400">Admin access only. Every action is logged.</p>
+        <p className="mt-4 text-center text-xs text-slate-400">
+          Admin access only. Every action is logged. After 5 wrong tries the account locks for 15 minutes.
+          <br />
+          Forgot your password? Ask a super admin to reset it from Admins.
+        </p>
       </div>
     </div>
   );

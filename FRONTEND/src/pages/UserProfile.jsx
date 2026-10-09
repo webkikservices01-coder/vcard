@@ -52,7 +52,7 @@ const UserProfile = () => {
   const handleChangePassword = async () => {
     if (!passwords.password) { toast.error('Enter a new password'); return; }
     if (passwords.password !== passwords.confirm) { toast.error('Passwords do not match'); return; }
-    if (passwords.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (passwords.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
     setSavingPwd(true);
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/settings/change-password`, { password: passwords.password }, { headers: headers() });
@@ -168,7 +168,7 @@ const UserProfile = () => {
               onChange={e => setPasswords({...passwords, password: e.target.value})}
               className="w-full pl-4 pr-11 py-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-400 fast-transition"
               style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters"
             />
               <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} className="text-[color:var(--surface-text)]" />
             </div>

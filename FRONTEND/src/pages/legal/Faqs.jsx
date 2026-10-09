@@ -22,17 +22,22 @@ const faqs = [
   {
     pricingOnly: true,
     q: 'What plans are available?',
-    a: 'Three plans: Digital Card (the essentials — QR code, themes, analytics), Smart AI Card (adds the AI chat widget and AI persona), and AI Agent Pro (adds the voice assistant and multi-card support). See the Plans page for full pricing and feature comparison.',
+    a: 'Three plans, all + 18% GST: Digital Card (₹99/month: 1 card, 1 theme, AI chatbot 10 chats a month), Smart AI Card (₹199/month: 3 cards, 3 themes, 25 AI chats a month and live AI voice calls) and AI Agent Pro (₹1,999/month: 7 cards, all 10 themes, unlimited AI chats, AI voice and video calls and a metal NFC card). Yearly billing costs less. See the Pricing page for the full comparison.',
+  },
+  {
+    pricingOnly: true,
+    q: 'Is there a free plan or free trial?',
+    a: 'There is no free plan. Every new account gets a 24-hour free trial with no credit card: 1 card, 1 theme and 4 AI chatbot answers. After 24 hours your card pauses until you choose a plan, and we email you a link to pick one.',
   },
   {
     q: 'How does the AI chat widget work?',
     aFree: "You can enable an AI assistant on your public card. It's trained on your profile, products, portfolio, and FAQs, and answers visitor questions automatically, 24/7.",
-    a: "On Smart AI Card and AI Agent Pro, you can enable an AI assistant on your public card. It's trained on your profile, products, portfolio, and FAQs, and answers visitor questions automatically, 24/7.",
+    a: "On every plan you can enable an AI assistant on your public card (10 chats a month on Digital Card, 25 on Smart AI Card, unlimited on AI Agent Pro). It's trained on your profile, products, portfolio, and FAQs, and answers visitor questions automatically, 24/7.",
   },
   {
     q: 'Can visitors talk to my AI assistant by voice?',
     aFree: 'Yes, the assistant supports voice input in the chat widget in addition to typed messages.',
-    a: 'Yes, on the AI Agent Pro plan the assistant supports voice input in the chat widget in addition to typed messages.',
+    a: 'Yes. On Smart AI Card visitors can tap "AI call" on your card and talk to your AI assistant live (English or Hindi). AI Agent Pro adds live AI video calls.',
   },
   {
     pricingOnly: true,
@@ -48,6 +53,10 @@ const faqs = [
     pricingOnly: true,
     q: 'Can I get a refund?',
     a: 'Refunds are available in specific cases (duplicate charges, failed activation, or unused plans within 24 hours). Full details are in our Refund Policy.',
+  },
+  {
+    q: 'How much does the metal NFC card cost, and how long does delivery take?',
+    a: "The price depends on finish, quantity and engraving, so we send you a quote first; request one on the Metal NFC Card page. It's included with the AI Agent Pro plan. Delivery is anywhere in India in 5–7 working days. Cards damaged in transit or with a faulty chip are replaced free; see the Shipping Policy.",
   },
   {
     q: 'Can I use my own custom domain?',

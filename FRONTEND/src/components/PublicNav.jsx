@@ -20,7 +20,7 @@ const iconBtn = {
   background: 'color-mix(in srgb, var(--surface-1, #fff) 70%, transparent)',
 };
 
-// Header of the public pages. Desktop: back button, main links, phone and Contact Us.
+// Header of the public pages. Desktop: back button, main links, phone, Contact Us and Sign in.
 // Phones: back arrow, logo, Get started and a menu with every link.
 const PublicNav = () => {
   const { pathname } = useLocation();
@@ -67,14 +67,21 @@ const PublicNav = () => {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <a
             href={COMPANY.phoneHref}
-            className="hidden md:inline-flex items-center gap-1.5 text-sm font-semibold transition hover:text-crimson-700"
+            className="hidden xl:inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold transition hover:text-crimson-700"
             style={{ color: 'var(--surface-text)' }}
             aria-label={`Call ${COMPANY.phone}`}
           >
             <Phone className="h-4 w-4 text-[#E70C65]" /> {COMPANY.phone}
           </a>
-          <Link to="/contact-us" className="btn-ghost hidden text-sm px-4 sm:inline-flex">
+          <Link to="/contact-us" className="btn-ghost hidden whitespace-nowrap text-sm px-4 lg:inline-flex">
             Contact Us
+          </Link>
+          <Link
+            to="/login"
+            className="hidden whitespace-nowrap text-sm font-semibold transition hover:text-crimson-700 sm:inline"
+            style={{ color: 'var(--surface-text)' }}
+          >
+            Sign in
           </Link>
           <Link to="/register" className="btn-primary whitespace-nowrap px-3.5 py-2.5 text-sm sm:px-6 sm:py-3.5">
             Get started <ArrowRight className="hidden h-4 w-4 sm:block" />
@@ -100,6 +107,7 @@ const PublicNav = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
+            data-site-menu
             className="absolute inset-x-3 top-full z-30 rounded-2xl border p-2 shadow-2xl lg:hidden"
             style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-bg, #fff)' }}
           >

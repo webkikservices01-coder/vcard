@@ -18,7 +18,7 @@ const CardPreviewPanel = lazy(() => import('./CardPreviewPanel'));
 
 const breadcrumbMap = {
   '/dashboard': 'Dashboard',
-  '/dashboard/vcard/all': 'All vCards',
+  '/dashboard/vcard/all': 'All Cards',
   '/dashboard/vcard/theme': 'Theme',
   '/dashboard/vcard/profile': 'Profile',
   '/dashboard/vcard/contact': 'Contact Details',
@@ -45,7 +45,7 @@ const breadcrumbMap = {
 };
 
 const primaryVcardTabs = [
-  { name: 'All vCards',      icon: FolderOpen,  path: '/dashboard/vcard/all' },
+  { name: 'All Cards',      icon: FolderOpen,  path: '/dashboard/vcard/all' },
   { name: 'Profile',         icon: User,        path: '/dashboard/vcard/profile' },
   { name: 'Theme',           icon: Palette,     path: '/dashboard/vcard/theme' },
   { name: 'Contact Details', icon: Phone,       path: '/dashboard/vcard/contact' },
@@ -71,7 +71,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [user, setUser] = useState({ name: 'User', plan: 'Free Trial' });
+  const [user, setUser] = useState({ name: '', plan: 'Free Trial' });
   const [cardSlug, setCardSlug] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLook, setPreviewLook] = useState(null);
@@ -178,7 +178,7 @@ const DashboardLayout = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} userPlan={user.plan} />
 
       {/* Right side container strictly scrollable */}
-      <div className="flex-1 flex flex-col h-screen min-w-0 relative overflow-y-auto">
+      <div className="flex-1 flex flex-col h-screen min-w-0 relative overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <header className="sticky top-0 h-16 flex items-center justify-between px-4 md:px-6 shrink-0 z-40 border-b shadow-sm backdrop-blur-xl" style={{ background: 'color-mix(in srgb, var(--surface-bg) 94%, transparent)', borderColor: 'var(--surface-border)' }}>
           <div className="flex min-w-0 items-center space-x-3">
@@ -273,6 +273,8 @@ const DashboardLayout = () => {
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
                     transition={{ duration: 0.16 }}
                     className="glass absolute right-0 top-full mt-1 w-48 rounded-xl py-1 z-50 shadow-xl"
+                    // Solid, so the page behind doesn't show through the menu (light mode).
+                    style={{ background: 'var(--surface-1)' }}
                   >
                     <Link
                       to="/dashboard/profile"
@@ -358,7 +360,7 @@ const DashboardLayout = () => {
                     >
                       <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
                         <span className="text-xs font-bold uppercase tracking-wider text-pink-300 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Select vCard Section
+                          <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Select Card Section
                         </span>
                         <button 
                           onClick={() => setMobileTabMenuOpen(false)} 

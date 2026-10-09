@@ -251,13 +251,13 @@ const AiPersona = () => {
       {/* Enable toggle */}
       <GlassCard {...fadeUp(0.05)} className="p-5 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Enable AI Chat on vCard</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--surface-text)' }}>Enable AI Chat on card</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>Show chat bubble to visitors on your public card. Save changes to apply.</p>
         </div>
         <Toggle
           checked={form.enabled}
           onChange={(val) => setForm(f => ({ ...f, enabled: val }))}
-          aria-label="Enable AI Agent on vCard"
+          aria-label="Enable AI Agent on card"
         />
       </GlassCard>
 
@@ -292,7 +292,7 @@ const AiPersona = () => {
                 </Button>
               </div>
             ) : (
-              <p className="text-xs mt-2 italic" style={{ color: 'var(--surface-text-2)' }}>Create your vCard profile first to get a room link.</p>
+              <p className="text-xs mt-2 italic" style={{ color: 'var(--surface-text-2)' }}>Create your card profile first to get a room link.</p>
             )}
           </div>
         </div>
@@ -302,7 +302,7 @@ const AiPersona = () => {
         <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Sparkles className="w-4 h-4 text-brand-600" />AI can answer</p>
         <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>It uses your published card information and the knowledge you provide below.</p>
         <div className="mt-3 grid sm:grid-cols-2 gap-2 text-xs" style={{ color: 'var(--surface-text-2)' }}>
-          {['Your profile, bio, and contact links', 'Products, services, and portfolio', 'Your configured FAQs and about text', 'Questions supported by your public vCard'].map(item => <div key={item} className="flex gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--surface-2)' }}><Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />{item}</div>)}
+          {['Your profile, bio, and contact links', 'Products, services, and portfolio', 'Your configured FAQs and about text', 'Questions supported by your public card'].map(item => <div key={item} className="flex gap-2 rounded-lg px-3 py-2" style={{ background: 'var(--surface-2)' }}><Check className="w-3.5 h-3.5 shrink-0 text-emerald-500" />{item}</div>)}
         </div>
       </GlassCard>
 
@@ -666,7 +666,7 @@ const AiPersona = () => {
         <p className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: 'var(--surface-text)' }}>How It Works</p>
         <div className="space-y-2">
           {[
-            ['1', 'Visitor opens your public vCard and clicks the chat bubble'],
+            ['1', 'Visitor opens your public card and clicks the chat bubble'],
             ['2', 'They type a question — it goes to our AI'],
             ['3', 'AI reads your persona, about text & FAQs to craft an accurate reply'],
             ['4', 'Visitor gets an instant answer as if they\'re talking to your assistant'],

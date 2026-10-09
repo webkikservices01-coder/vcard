@@ -1,19 +1,22 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MessageCircle, Phone, ArrowRight, Check } from 'lucide-react';
+import { MessageCircle, ArrowRight, Check } from 'lucide-react';
 import MeshBackground from '../components/ui/MeshBackground';
 import PublicNav from '../components/PublicNav';
 import PublicFooter, { COMPANY } from '../components/PublicFooter';
 import { MetalCardVisual, METAL_COPY, METAL_POINTS } from '../components/MetalCardSection';
 import HOME_SCHEMA from '../data/homeSchema.json';
+import MetalOrderForm from '../components/MetalOrderForm';
 
-// /metal-nfc-card: product page for the premium metal NFC card. No price is shown until it is
-// decided; orders go to WhatsApp (pre-filled message) or the contact page.
+// /metal-nfc-card: product page for the premium metal NFC card. Price is by quote (finish,
+// quantity, engraving); orders come in through the form below, WhatsApp or a call.
+// When a fixed starting price is decided, set METAL_FROM_PRICE (e.g. 1499) to show it.
+const METAL_FROM_PRICE = Number(import.meta.env.VITE_METAL_FROM_PRICE) || 0;
 const ORDER_TEXT = encodeURIComponent("Hi Aicardly, I'd like to order a premium metal NFC business card.");
 const WHATSAPP_URL = `https://wa.me/${COMPANY.whatsapp}?text=${ORDER_TEXT}`;
 
 const STEPS = [
-  ['Tell us what you want', 'Share your name, logo and finish on WhatsApp or call.'],
+  ['Tell us what you want', 'Send the form below, WhatsApp or call with your name, logo and finish.'],
   ['We engrave your card', 'Your logo and name are engraved on durable stainless steel.'],
   ['We link it to your Aicardly card', 'The NFC chip opens your digital business card on any phone.'],
   ['Delivered in 5–7 working days', 'Shipped anywhere in India.'],
@@ -47,16 +50,21 @@ export default function MetalNfcCard() {
             <p className="mt-5 text-base leading-relaxed" style={{ color: 'var(--surface-text-2)' }}>
               {METAL_COPY[0]}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className={btnPrimary}>
-                <MessageCircle className="h-4 w-4" aria-hidden="true" /> Order on WhatsApp
+            <p className="mt-6 text-lg font-bold" style={{ color: 'var(--surface-text)' }}>
+              {METAL_FROM_PRICE ? <>From ₹{METAL_FROM_PRICE.toLocaleString('en-IN')} + GST</> : 'Price on quote'}
+              <span className="ml-2 text-sm font-medium" style={{ color: 'var(--surface-text-2)' }}>· Included free with AI Agent Pro</span>
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a href="#order" className={btnPrimary}>
+                Request a quote <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </a>
-              <a href={COMPANY.phoneHref} className={btnSecondary} style={{ borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}>
-                <Phone className="h-4 w-4" aria-hidden="true" /> {COMPANY.phone}
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className={btnSecondary} style={{ borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}>
+                <MessageCircle className="h-4 w-4" aria-hidden="true" /> Order on WhatsApp
               </a>
             </div>
             <p className="mt-3 text-xs" style={{ color: 'var(--surface-text-2)' }}>
-              Pricing depends on finish, quantity and engraving. Ask us for a quote, including bulk and team orders.
+              Pricing depends on finish, quantity and engraving. Delivered across India in 5–7 working days. Or call{' '}
+              <a href={COMPANY.phoneHref} className="font-semibold underline">{COMPANY.phone}</a>.
             </p>
           </motion.div>
           <div className="flex justify-center">
@@ -101,6 +109,16 @@ export default function MetalNfcCard() {
           </ol>
         </section>
 
+        <section id="order" className="mx-auto max-w-3xl scroll-mt-24 px-6 pb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2" style={{ color: 'var(--surface-text)' }}>
+            Request your metal card
+          </h2>
+          <p className="mb-6 text-sm" style={{ color: 'var(--surface-text-2)' }}>
+            Tell us what you need and we'll send a quote. See our <Link to="/shipping-policy" className="font-semibold text-[#E70C65] hover:underline">Shipping Policy</Link> for delivery, damage and replacement terms.
+          </p>
+          <MetalOrderForm />
+        </section>
+
         <section className="mx-auto max-w-3xl px-6 pb-16">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6" style={{ color: 'var(--surface-text)' }}>
             Questions about NFC cards
@@ -121,7 +139,7 @@ export default function MetalNfcCard() {
         <section className="mx-auto max-w-4xl px-6 pb-24">
           <div className="rounded-3xl p-8 sm:p-10 text-center text-white bg-gradient-to-br from-[#E70C65] to-[#9F1C44] shadow-2xl">
             <h2 className="text-2xl sm:text-3xl font-bold">Ready for a card people remember?</h2>
-            <p className="mt-2 text-white/85">Order your metal NFC card, or start free with your AI digital business card today.</p>
+            <p className="mt-2 text-white/85">Order your metal NFC card, or create your free AI digital business card today.</p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#9F1C44]">
                 <Check className="h-4 w-4" aria-hidden="true" /> Order Metal Card

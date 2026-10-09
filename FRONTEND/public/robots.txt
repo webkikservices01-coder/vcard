@@ -5,7 +5,6 @@ User-agent: *
 Allow: /
 # Private / non-SEO areas
 Disallow: /dashboard
-Disallow: /admin
 Disallow: /onboarding
 Disallow: /login
 Disallow: /forgot-password
@@ -30,7 +29,6 @@ User-agent: Google-Extended
 User-agent: Applebot-Extended
 Allow: /
 Disallow: /dashboard
-Disallow: /admin
 Disallow: /onboarding
 Disallow: /login
 Disallow: /forgot-password

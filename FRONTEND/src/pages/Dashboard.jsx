@@ -95,15 +95,15 @@ const Dashboard = () => {
   
   const cardSlug   = cardData?.username || stats?.cardSlug || '';
 
-  const firstName  = stats?.user?.name?.split(' ')[0] || 'Executive';
+  const firstName  = stats?.user?.name?.split(' ')[0] || '';
   const daysBar    = daysLeft != null ? Math.min(100, Math.round((daysLeft / 365) * 100)) : 0;
 
   const quickActions = [
     { label: 'Edit Profile', desc: 'Identity, visuals & bio', path: '/dashboard/vcard/profile', icon: Pencil },
-    { label: 'Add Offerings', desc: 'Services with your website link', path: '/dashboard/vcard/services', icon: Package },
-    { label: 'Branded QR', desc: 'Download smart matrix', path: '/dashboard/vcard/qr', icon: QrCode },
+    { label: 'Add Services', desc: 'Services with your website link', path: '/dashboard/vcard/services', icon: Package },
+    { label: 'QR Code', desc: 'Download QR', path: '/dashboard/vcard/qr', icon: QrCode },
     PRICING_ENABLED
-      ? { label: 'Upgrade Tier', desc: 'Unlock voice & AI agents', path: '/dashboard/plans', icon: Zap }
+      ? { label: 'Upgrade Plan', desc: 'More cards, AI chats & AI calls', path: '/dashboard/plans', icon: Zap }
       : { label: 'Reels & Highlights', desc: 'Reels, followers & stats', path: '/dashboard/vcard/highlights', icon: Zap },
   ];
 
@@ -161,13 +161,13 @@ const Dashboard = () => {
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest backdrop-blur-md shadow-sm">
-                <Sparkles className="h-3 w-3 text-yellow-300 animate-pulse" /> Workspace Active
+                <Sparkles className="h-3 w-3 text-yellow-300 animate-pulse" /> Dashboard
               </div>
               <h1 className="mt-1.5 text-xl sm:text-2xl font-black tracking-tight text-white">
-                Welcome, {firstName}
+                {firstName ? `Welcome, ${firstName}` : 'Welcome'}
               </h1>
               <p className="mt-0.5 text-xs text-pink-100 max-w-xl font-medium">
-                Your AI card and interactive persona are live. Track views, manage offerings, and deploy leads seamlessly.
+                Your card is live. See who viewed it, update your details and reply to enquiries.
               </p>
             </div>
 
@@ -191,10 +191,10 @@ const Dashboard = () => {
 
       <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {[
-          { icon: Eye, label: 'Live Impressions', value: stats?.viewCount ?? 68, tag: 'Realtime' },
+          { icon: Eye, label: 'Card Views', value: stats?.viewCount ?? 0, tag: 'Realtime' },
           { icon: Package, label: 'Products & Services', value: stats?.productCount ?? 0, tag: 'Showcase', link: '/dashboard/vcard/products' },
           { icon: Star, label: 'Testimonials', value: stats?.testimonialCount ?? 0, tag: 'Verified', link: '/dashboard/vcard/testimonials' },
-          { icon: CreditCard, label: 'Active Cards', value: `${cardCount || 1} / ${cardLimit}`, tag: 'Capacity', link: '/dashboard/vcard/all' },
+          { icon: CreditCard, label: 'Active Cards', value: `${cardCount} / ${cardLimit}`, tag: 'Capacity', link: '/dashboard/vcard/all' },
         ].map(({ icon: Icon, label, value, tag, link }) => {
           const content = (
             <div className="clean-glass rounded-xl p-3.5 group transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full flex flex-col justify-between">
@@ -223,19 +223,19 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>AI Persona & Assistant Engine</h2>
+                  <h2 className={`text-sm sm:text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Your AI assistant</h2>
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${isDark ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
                     <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-500" /> Active 24/7
                   </span>
                 </div>
                 <p className={`text-xs mt-1 max-w-2xl leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>
-                  Train your customized intelligent persona to greet visitors, answer portfolio inquiries, and automatically schedule consultation calls while you are away.
+                  Set how your card's AI assistant greets visitors, answers their questions and books meetings while you are away.
                 </p>
               </div>
             </div>
 
             <Link to="/dashboard/vcard/ai-persona" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#E70C65] via-[#ff6b9d] to-[#9F1C44] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#E70C65]/25 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 cursor-pointer">
-              <span>Configure AI Engine</span>
+              <span>Set up AI assistant</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -245,7 +245,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         <div className="lg:col-span-7 flex flex-col justify-between space-y-3.5">
           <motion.div variants={sectionEntrance} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex-1 flex flex-col">
-            <h3 className={`text-[11px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Quick Operations</h3>
+            <h3 className={`text-[11px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Quick actions</h3>
             <div className="grid gap-3 sm:grid-cols-2 flex-1">
               {quickActions.map((a) => (
                 <Link key={a.path} to={a.path} className="clean-glass group flex items-center gap-3 rounded-xl p-3.5 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
@@ -269,8 +269,8 @@ const Dashboard = () => {
                   <Share2 className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Contactless NFC Beam</h4>
-                  <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500 font-medium'}`}>Apple Wallet & Smart Matrix Ready</p>
+                  <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Share by NFC tap</h4>
+                  <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500 font-medium'}`}>Works with a metal NFC card and your QR code</p>
                 </div>
               </div>
             </div>

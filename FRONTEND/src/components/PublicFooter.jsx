@@ -23,7 +23,7 @@ export const COMPANY = {
   phone: "+91-9868698698",
   phoneHref: "tel:+919868698698",
   whatsapp: "919868698698",
-  email: "webkikservices01@gmail.com",
+  email: "supportaicardly@gmail.com",
   // Privacy requests and grievances (the address on webkik.co.in's own policy).
   privacyEmail: "hello@webkik.co.in",
   gstin: "07CXYPK0037Q2ZN",
@@ -58,6 +58,7 @@ const linkGroups = [
       { label: "Privacy Policy", to: "/privacy-policy" },
       { label: "Terms & Conditions", to: "/terms-conditions" },
       { label: "Refund Policy", to: "/refund-policy" },
+      { label: "Shipping Policy", to: "/shipping-policy" },
       { label: "Cancellation Policy", to: "/cancellation-policy" },
       { label: "Data Processing Addendum", to: "/data-processing-addendum" },
       { label: "How our AI uses data", to: "/ai-data-privacy" },
@@ -68,9 +69,10 @@ const linkGroups = [
 const socials = [
   { icon: FaInstagram, href: "https://www.instagram.com/aicardly/", label: "Instagram" },
   { icon: FaThreads, href: "https://www.threads.net/@aicardly", label: "Threads" },
-  { icon: FaLinkedinIn, href: "https://www.linkedin.com/company/webkik-services", label: "LinkedIn" },
-  { icon: FaFacebookF, href: "https://www.facebook.com/webkikservices/", label: "Facebook" },
-];
+  // Aicardly's own LinkedIn / Facebook (not Webkik's). VITE_SOCIAL_LINKEDIN / VITE_SOCIAL_FACEBOOK override.
+  { icon: FaLinkedinIn, href: import.meta.env.VITE_SOCIAL_LINKEDIN || "https://www.linkedin.com/in/ai-cardly-360718442/", label: "LinkedIn" },
+  { icon: FaFacebookF, href: import.meta.env.VITE_SOCIAL_FACEBOOK || "https://www.facebook.com/share/19ZQsqTj1Z/", label: "Facebook" },
+].filter((s) => s.href);
 
 function FooterLogo() {
   const { theme } = useTheme();
@@ -184,12 +186,12 @@ export function PublicFooter() {
               {linkGroups.map((g) => (
                 <nav key={g.title} aria-label={g.title} className={g.title === "Legal" ? "col-span-2 sm:col-span-1" : ""}>
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b9d]">{g.title}</p>
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-0.5 sm:space-y-2.5">
                     {g.links.map((l) => (
                       <li key={l.label}>
                         <Link
                           to={l.to}
-                          className={`group inline-flex items-center text-xs sm:text-sm transition-all duration-300 hover:translate-x-1 ${
+                          className={`group inline-flex min-h-[44px] items-center text-xs sm:min-h-0 sm:text-sm transition-all duration-300 hover:translate-x-1 ${
                             isDark ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-[#9F1C44] font-medium"
                           }`}
                         >

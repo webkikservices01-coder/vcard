@@ -36,7 +36,7 @@ const ForgotPassword = () => {
     setError('');
     setDone('');
     if (resetMode) {
-      if (password.length < 6) return setError('Password must be at least 6 characters.');
+      if (password.length < 8) return setError('Password must be at least 8 characters.');
       if (password !== confirm) return setError('Passwords do not match.');
     }
     setLoading(true);
@@ -114,7 +114,7 @@ const ForgotPassword = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-premium pl-11 pr-11"
-                      placeholder="Min. 6 characters"
+                      placeholder="Min. 8 characters"
                       autoComplete="new-password"
                     />
                     <PasswordEye shown={showPwd} onToggle={() => setShowPwd((v) => !v)} />

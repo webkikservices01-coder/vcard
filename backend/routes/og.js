@@ -6,7 +6,9 @@ const router = express.Router();
 const vCard = require('../models/vCard');
 const VcardSettings = require('../models/VcardSettings');
 const { cardImage } = require('../utils/cardImage');
-const { accountStatus } = require('../utils/accountStatus');
+const { isPublicCard } = require('../utils/cardVisibility');
+const User = require('../models/User');
+const { isPaid, PRICING_ENABLED } = require('../constants/plans');
 
 const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
 const DEFAULT_IMAGE = `${SITE}/og-image.jpg`;
@@ -23,18 +25,33 @@ const oneLine = (s, n) => {
 };
 
 // ─── GET /api/og/_sitemap → [{ u, t }] public cards for sitemap.xml ─────────
-// Cards with a username and a name, minus those whose owner switched off "Search Engine Indexing".
+// Real, live cards only: a username and a name, owner not blocked/removed/admin, on a paid or
+// lifetime plan (a trial card pauses after 24 hours), "Search Engine Indexing" on, and not a
+// test-looking username (only digits, or test/demo/admin/qa/hlo).
+const TEST_USERNAME = /^\d+$|(^|-)(test|testing|demo|admin|qa|hlo|dummy|sample)\d*(-|$)/i;
 router.get('/_sitemap', async (req, res) => {
   try {
     const hidden = await VcardSettings.find({ seoIndexing: false }).distinct('vcardId');
     const cards = await vCard
-      .find({ username: { $nin: [null, ''] }, 'personalInfo.name': { $nin: [null, ''] }, _id: { $nin: hidden } })
-      .select('username updatedAt')
+      .find({ username: { $nin: [null, ''] }, 'personalInfo.name': { $nin: [null, ''] }, _id: { $nin: hidden }, adminHidden: { $ne: true } })
+      .select('username updatedAt userId')
       .sort({ updatedAt: -1 })
       .limit(45000)
       .lean();
+    const owners = new Map(
+      (await User.find({ _id: { $in: cards.map((c) => c.userId) } })
+        .select('plan planExpiry lifetime email isAdmin isBlocked deletedAt status')
+        .lean()).map((u) => [String(u._id), u]),
+    );
+    const live = cards.filter((c) => {
+      const u = owners.get(String(c.userId));
+      if (!u || u.deletedAt || u.isBlocked || u.status === 'inactive' || u.isAdmin) return false;
+      if (TEST_USERNAME.test(c.username)) return false;
+      // A free-trial card pauses after 24 hours, so only paid / lifetime cards are listed.
+      return !PRICING_ENABLED || isPaid(u);
+    });
     res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
-    res.json(cards.map((c) => ({ u: c.username, t: (c.updatedAt || new Date()).toISOString().slice(0, 10) })));
+    res.json(live.map((c) => ({ u: c.username, t: (c.updatedAt || new Date()).toISOString().slice(0, 10) })));
   } catch (err) {
     console.error('Sitemap error:', err.message);
     res.status(500).json({ msg: 'Could not build sitemap' });
@@ -45,8 +62,8 @@ router.get('/_sitemap', async (req, res) => {
 router.get('/:username', async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
-    const card = await vCard.findOne({ username }).select('username personalInfo userId').lean();
-    if (!card || (await accountStatus(card.userId)) === 'removed') return res.status(404).json({ msg: 'Card not found' });
+    const card = await vCard.findOne({ username }).select('username personalInfo userId adminHidden').lean();
+    if (!(await isPublicCard(card))) return res.status(404).json({ msg: 'Card not found' });
     // Owner's "Search Engine Indexing" switch (Advanced Settings).
     const settings = await VcardSettings.findOne({ vcardId: card._id }).select('seoIndexing').lean();
     const indexable = settings?.seoIndexing !== false;

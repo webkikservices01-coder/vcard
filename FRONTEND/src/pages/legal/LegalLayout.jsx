@@ -10,7 +10,7 @@ const LegalLayout = ({ title, updated, children }) => (
     <MeshBackground fixed className="opacity-50" />
     <PublicNav />
 
-    <section className="relative z-10 mx-auto max-w-3xl px-6 pt-8 pb-24">
+    <main className="relative z-10 mx-auto max-w-3xl px-6 pt-8 pb-24">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight" style={{ color: 'var(--surface-text)' }}>{title}</h1>
         {updated && (
@@ -26,7 +26,7 @@ const LegalLayout = ({ title, updated, children }) => (
           {children}
         </div>
       </motion.div>
-    </section>
+    </main>
 
     <PublicFooter />
   </div>

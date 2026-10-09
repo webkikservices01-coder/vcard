@@ -202,7 +202,7 @@ const ReorderSections = () => {
                 <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Flow Matrix
               </div>
               <h2 className="text-2xl font-black tracking-tight text-white">Reorder Sections</h2>
-              <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Drag or use arrow buttons to arrange sections on your digital vCard</p>
+              <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Drag or use arrow buttons to arrange sections on your digital card</p>
             </div>
           </motion.div>
 

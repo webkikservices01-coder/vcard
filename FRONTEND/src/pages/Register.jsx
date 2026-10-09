@@ -90,8 +90,8 @@ export const Register = () => {
       setError('Passwords do not match.'); 
       return; 
     }
-    if (form.password.length < 6) { 
-      setError('Password must be at least 6 characters.'); 
+    if (form.password.length < 8) { 
+      setError('Password must be at least 8 characters.'); 
       return; 
     }
     if (!form.accept) {
@@ -237,13 +237,16 @@ export const Register = () => {
                 <motion.div variants={slideFromLeft}>
                   <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>Full name</label>
+                  }`} htmlFor="reg-name">Full name</label>
                   <div className="relative group">
                     <User className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                       isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                     }`} />
                     <input
+                      id="reg-name"
                       required
+                      autoComplete="name"
+                      maxLength={80}
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="Ava Lindgren"
@@ -260,13 +263,17 @@ export const Register = () => {
                 <motion.div variants={slideFromRight}>
                   <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>WhatsApp number</label>
+                  }`} htmlFor="reg-phone">WhatsApp number</label>
                   <div className="relative group">
                     <Phone className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                       isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                     }`} />
                     <input
+                      id="reg-phone"
                       required
+                      maxLength={16}
+                      pattern="\+?[0-9 ]{10,15}"
+                      title="10-digit mobile number, or with country code, e.g. +91 98123 45678"
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
@@ -287,14 +294,18 @@ export const Register = () => {
               <motion.div variants={slideFromLeft}>
                 <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                   isDark ? 'text-slate-300' : 'text-slate-700'
-                }`}>Email address</label>
+                }`} htmlFor="reg-email">Email address</label>
                 <div className="relative group">
                   <Mail className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                     isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                   }`} />
                   <input
+                    id="reg-email"
                     required
                     type="email"
+                    autoComplete="email"
+                    maxLength={120}
+                    inputMode="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="ava@company.com"
@@ -312,17 +323,21 @@ export const Register = () => {
                 <motion.div variants={slideFromLeft}>
                   <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>Password</label>
+                  }`} htmlFor="reg-password">Password</label>
                   <div className="relative group">
                     <Lock className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                       isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                     }`} />
                     <input
+                      id="reg-password"
                       required
                       type={showPwd ? 'text' : 'password'}
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      placeholder="Min. 6 chars"
+                      placeholder="Min. 8 chars"
+                      autoComplete="new-password"
+                      minLength={8}
+                      maxLength={128}
                       className={`w-full rounded-xl border py-2.5 pl-10 pr-10 text-xs sm:text-sm shadow-inner outline-none transition-all duration-300 ${
                         isDark 
                           ? 'border-white/10 bg-white/[0.04] text-white placeholder-slate-500 focus:border-[#E70C65] focus:bg-white/[0.07] focus:shadow-[0_0_15px_rgba(231,12,101,0.3)]' 
@@ -337,13 +352,16 @@ export const Register = () => {
                 <motion.div variants={slideFromRight}>
                   <label className={`block text-[11px] font-semibold mb-1 transition-colors ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
-                  }`}>Confirm password</label>
+                  }`} htmlFor="reg-confirm">Confirm password</label>
                   <div className="relative group">
                     <Lock className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                       isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                     }`} />
                     <input
+                      id="reg-confirm"
                       required
+                      autoComplete="new-password"
+                      maxLength={128}
                       type={showPwd ? 'text' : 'password'}
                       value={form.confirm}
                       onChange={(e) => setForm({ ...form, confirm: e.target.value })}

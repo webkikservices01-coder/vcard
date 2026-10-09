@@ -138,18 +138,18 @@ export default function DynamicCyberCard3D({
               WEBKIK SERVICES
             </h2>
             <p className="text-[9px] font-bold tracking-[0.25em] uppercase" style={{ color: themeColor }}>
-              Next-Gen Digital Matrix
+              NFC Business Card
             </p>
           </div>
 
           {/* Bottom Bar */}
           <div className="flex items-end justify-between relative z-10">
             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400">
-              SECURE CONTACTLESS MATRIX
+              TAP · SCAN · SHARE
             </div>
 
             <span className="text-[8px] font-mono text-slate-400 uppercase tracking-widest">
-              AI SECURE 256-BIT
+              AICARDLY.COM
             </span>
           </div>
 

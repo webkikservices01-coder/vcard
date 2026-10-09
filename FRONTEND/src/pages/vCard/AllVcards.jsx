@@ -147,7 +147,7 @@ const OrbitingTechAnimation = ({ matrixText }) => {
 const LiveCardTile2D = ({ card, onDelete }) => {
   const personalInfo = card.personalInfo || {};
   const name = personalInfo.name || "Your Name";
-  const designation = personalInfo.designation || "Executive / Member";
+  const designation = personalInfo.designation || "";
   const slug = card.username || "user";
   const viewCount = card.viewCount || 0;
 
@@ -305,7 +305,7 @@ const AllVcards = () => {
       });
       setCards(res.data);
     } catch {
-      toast.error('Failed to load vCards');
+      toast.error('Failed to load your cards');
     } finally {
       setLoading(false);
     }
@@ -319,13 +319,13 @@ const AllVcards = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this vCard? This cannot be undone.')) return;
+    if (!window.confirm('Delete this card? This cannot be undone.')) return;
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${import.meta.env.VITE_API_URL}/api/vcard/${id}`, {
         headers: { 'x-auth-token': token }
       });
-      toast.success('vCard deleted');
+      toast.success('Card deleted');
       fetchCards();
     } catch {
       toast.error('Failed to delete');
@@ -364,7 +364,7 @@ const AllVcards = () => {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-2 backdrop-blur-md">
               <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Digital Portfolio
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-white">All vCards</h2>
+            <h2 className="text-2xl font-black tracking-tight text-white">All Cards</h2>
             <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Manage and preview your live digital business cards</p>
           </div>
           <div className="flex items-center space-x-3 w-full sm:w-auto flex-wrap gap-y-2">
@@ -411,10 +411,10 @@ const AllVcards = () => {
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 bg-slate-200 dark:bg-white/10 text-[#E70C65] dark:text-[#ff80ab]">
             <Plus className="w-7 h-7" />
           </div>
-          <p className="text-sm font-bold text-slate-800 dark:text-white">No vCards found</p>
-          <p className="text-xs sm:text-sm mt-1 text-slate-500 dark:text-slate-400">Create your first cyber-holographic digital card</p>
+          <p className="text-sm font-bold text-slate-800 dark:text-white">No cards found</p>
+          <p className="text-xs sm:text-sm mt-1 text-slate-500 dark:text-slate-400">Create your first digital card</p>
           <Link to="/dashboard/vcard/profile" className="inline-block mt-4 bg-gradient-to-r from-[#E70C65] to-[#9F1C44] text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg shadow-[#E70C65]/30">
-            Create vCard
+            Create Card
           </Link>
         </motion.div>
       ) : (

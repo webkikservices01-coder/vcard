@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Infinity as InfinityIcon, ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, KeyRound, LogIn, LogOut, Mail, MailCheck, Eye, EyeOff, Wand2, Copy , Send } from 'lucide-react';
+import { Infinity as InfinityIcon, ArrowLeft, Ban, CheckCircle2, ExternalLink, Gift, Layers, RotateCcw, Trash2, UserX, CalendarPlus, Repeat, XCircle, Pencil, LogIn, LogOut, Mail, MailCheck, Send, FlaskConical } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
-import { dateOnly, dateTime, money, timeLeft } from '../lib/format';
+import { dateOnly, dateTime, money, timeLeft, planLabel, words } from '../lib/format';
 import { Badge, Button, Card, DefList, ErrorBox, Field, Input, PageHeader, Select, Spinner, StatusBadge, Table } from '../components/ui';
 import { useToast } from '../components/ui';
 import ActionDialog from '../components/ActionDialog';
@@ -50,20 +50,6 @@ export default function UserDetail() {
     if (form.emailVerified !== (user.emailVerified !== false)) out.emailVerified = form.emailVerified;
     return out;
   };
-  const newPassword = () => {
-    // 14 characters from an alphabet without look-alikes (0/O, 1/l/I).
-    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#%';
-    const bytes = crypto.getRandomValues(new Uint8Array(14));
-    setForm((f) => ({ ...f, password: Array.from(bytes, (b) => abc[b % abc.length]).join(''), show: true }));
-  };
-  const copy = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast('Copied.');
-    } catch {
-      toast('Could not copy. Select and copy it by hand.');
-    }
-  };
   const impersonate = async ({ reason }) => {
     // Opened before the request, while the click still counts as a user action (no popup block).
     const win = window.open('about:blank', '_blank');
@@ -85,7 +71,7 @@ export default function UserDetail() {
         <option value="">Choose a plan…</option>
         {activePlans.map((p) => (
           <option key={p._id} value={p._id}>
-            {p.name} — {money(p.price)} · {p.durationDays} days · unlocks {p.tier}
+            {p.name} — {money(p.price)} + GST · {p.durationDays} days · unlocks {planLabel(p.tier)}
           </option>
         ))}
       </Select>
@@ -134,7 +120,8 @@ export default function UserDetail() {
         title={
           <span className="flex flex-wrap items-center gap-2">
             {user.name} <StatusBadge value={user.status} />
-            {user.emailVerified === false && <Badge color="amber">email not verified</Badge>}
+            {user.emailVerified === false && <Badge color="amber">Email not verified</Badge>}
+            {user.isTest && <Badge color="blue">Test account</Badge>}
           </span>
         }
         subtitle={`${user.email}${user.phone ? ` · ${user.phone}` : ''}`}
@@ -178,11 +165,6 @@ export default function UserDetail() {
                   <Pencil className="h-3.5 w-3.5" /> Edit
                 </Button>
               )}
-              {can('users.password') && (
-                <Button size="sm" variant="secondary" onClick={() => open('password', { password: '', signOut: true, show: false })}>
-                  <KeyRound className="h-3.5 w-3.5" /> Set password
-                </Button>
-              )}
               {can('users.reset_link') && (
                 <Button size="sm" variant="secondary" onClick={() => open('resetLink')}>
                   <Mail className="h-3.5 w-3.5" /> Email reset link
@@ -196,6 +178,11 @@ export default function UserDetail() {
               {can('users.password') && (
                 <Button size="sm" variant="secondary" onClick={() => open('signout')}>
                   <LogOut className="h-3.5 w-3.5" /> Sign out everywhere
+                </Button>
+              )}
+              {can('users.edit') && (
+                <Button size="sm" variant="secondary" onClick={() => open('test')}>
+                  <FlaskConical className="h-3.5 w-3.5" /> {user.isTest ? 'Not a test account' : 'Mark as test'}
                 </Button>
               )}
             </div>
@@ -300,7 +287,7 @@ export default function UserDetail() {
             rowKey={(p) => p._id}
             empty="No plan history."
             columns={[
-              { key: 'planName', label: 'Plan', render: (p) => <div><p className="text-slate-900">{p.planName}</p><p className="text-xs text-slate-500">{p.source.replace('_', ' ')}{p.grantedBy ? ` by ${p.grantedBy.email}` : ''}</p></div> },
+              { key: 'planName', label: 'Plan', render: (p) => <div><p className="text-slate-900">{planLabel(p.planName)}</p><p className="text-xs text-slate-500">{words(p.source)}{p.grantedBy ? ` by ${p.grantedBy.email}` : ''}</p></div> },
               { key: 'period', label: 'Period', render: (p) => `${dateOnly(p.startAt)} → ${dateOnly(p.endAt)}` },
               { key: 'status', label: 'State', render: (p) => <StatusBadge value={p.status === 'active' && new Date(p.endAt) <= new Date() ? 'expired' : p.status} /> },
               { key: 'reason', label: 'Reason', render: (p) => <span className="text-xs">{p.reason || '—'}</span> },
@@ -314,7 +301,7 @@ export default function UserDetail() {
             empty="No plan purchases."
             columns={[
               { key: 'createdAt', label: 'Date', render: (t) => dateTime(t.createdAt) },
-              { key: 'plan', label: 'Plan', render: (t) => `${t.plan} (${t.billingType})` },
+              { key: 'plan', label: 'Plan', render: (t) => `${planLabel(t.plan)} (${t.billingType})` },
               { key: 'amount', label: 'Amount', render: (t) => money(t.amount) },
               { key: 'status', label: 'Status', render: (t) => <StatusBadge value={t.status} /> },
             ]}
@@ -328,7 +315,7 @@ export default function UserDetail() {
           empty="No messages sent yet."
           columns={[
             { key: 'createdAt', label: 'When', render: (n) => dateTime(n.createdAt) },
-            { key: 'type', label: 'Message', render: (n) => n.type.replace(/_/g, ' ') },
+            { key: 'type', label: 'Message', render: (n) => words(n.type) },
             { key: 'channel', label: 'Channel', render: (n) => <Badge color={n.channel === 'whatsapp' ? 'green' : 'blue'}>{n.channel}</Badge> },
             { key: 'to', label: 'To', render: (n) => <span className="text-xs">{n.to || '—'}</span> },
             { key: 'status', label: 'Status', render: (n) => <div><StatusBadge value={n.status} />{n.error && <p className="mt-1 max-w-[260px] text-xs text-red-600">{n.error}</p>}</div> },
@@ -367,31 +354,6 @@ export default function UserDetail() {
           <input type="checkbox" checked={!!form.emailVerified} onChange={setField('emailVerified')} /> Email verified (they can sign in)
         </label>
       </ActionDialog>
-      <ActionDialog
-        open={dialog === 'password'}
-        onClose={close}
-        title="Set a new password"
-        description="The user signs in with this password from now on. Share it with them privately (WhatsApp / call), and ask them to change it."
-        confirmLabel="Set password"
-        canSubmit={(form.password || '').length >= 8}
-        onSubmit={({ reason }) => run('/password', { password: form.password, signOut: !!form.signOut })({ reason })}
-      >
-        <Field label="New password" hint="At least 8 characters.">
-          <div className="flex gap-2">
-            <Input type={form.show ? 'text' : 'password'} value={form.password || ''} onChange={setField('password')} maxLength={128} autoComplete="new-password" className="font-mono" />
-            <Button type="button" variant="secondary" aria-label={form.show ? 'Hide password' : 'Show password'} onClick={() => setForm((f) => ({ ...f, show: !f.show }))}>
-              {form.show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
-        </Field>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="secondary" onClick={newPassword}><Wand2 className="h-3.5 w-3.5" /> Generate strong password</Button>
-          {form.password && <Button type="button" size="sm" variant="secondary" onClick={() => copy(form.password)}><Copy className="h-3.5 w-3.5" /> Copy</Button>}
-        </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" checked={!!form.signOut} onChange={setField('signOut')} /> Sign them out on all other devices
-        </label>
-      </ActionDialog>
       <ActionDialog open={dialog === 'resetLink'} onClose={close} title="Email a password reset link" description={`Sends ${user.email} a link (valid 1 hour) to choose a new password themselves.`} confirmLabel="Send link" reasonRequired={false} onSubmit={run('/email-link', { kind: 'reset' })} />
       <ActionDialog open={dialog === 'verifyLink'} onClose={close} title="Resend verification email" description={`Sends ${user.email} a new link (valid 24 hours) to verify their email. To let them in without it, use Edit → Email verified.`} confirmLabel="Send link" reasonRequired={false} onSubmit={run('/email-link', { kind: 'verify' })} />
       <ActionDialog open={dialog === 'signout'} onClose={close} title="Sign out everywhere" description="Every device where this user is signed in is signed out. Their password stays the same." confirmLabel="Sign out" reasonRequired={false} onSubmit={run('/signout')} />
@@ -426,10 +388,11 @@ export default function UserDetail() {
         {planPicker}
         {daysField('Days from today (optional)')}
       </ActionDialog>
-      <ActionDialog open={dialog === 'endTrial'} onClose={close} title="End the free trial now" description="The card pauses right away (visitors see that it's paused) and the payment link goes out by email and SMS, if it hasn't already. Paying switches the card back on." confirmLabel="End trial now" reasonRequired={false} onSubmit={run('/end-trial', {})} />
       <ActionDialog open={dialog === 'upgradeLink'} onClose={close} title="Send payment link" description="Emails a link to choose any plan and pay (no login), and Cashfree texts a Smart AI Card monthly payment link to the user's Indian mobile number. Paying either one switches the card back on." confirmLabel="Send now" reasonRequired={false} onSubmit={run('/upgrade-link', {})} />
       <ActionDialog open={dialog === 'lifetime'} onClose={close} title={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} description={user.lifetime ? 'The plan follows its expiry date again.' : 'The plan never expires. With no paid plan the user gets AI Agent Pro.'} confirmLabel={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} onSubmit={run('/lifetime', { lifetime: !user.lifetime })} />
+      <ActionDialog open={dialog === 'endTrial'} onClose={close} title="End the free trial now" description="The card pauses right away (visitors see that it's paused) and the payment link goes out by email and SMS, if it hasn't already. Paying switches the card back on." confirmLabel="End trial now" reasonRequired={false} onSubmit={run('/end-trial', {})} />
       <ActionDialog open={dialog === 'revoke'} onClose={close} title="Revoke plan" description="The user goes back to the free tier right away." confirmLabel="Revoke" danger onSubmit={run('/plan/revoke')} />
+      <ActionDialog open={dialog === 'test'} onClose={close} title={user.isTest ? 'Not a test account' : 'Mark as test account'} description={user.isTest ? 'This account counts in the dashboard numbers again.' : 'For team and test accounts: it stays as it is, but its signups, cards and payments are left out of the dashboard numbers.'} confirmLabel={user.isTest ? 'Count it again' : 'Mark as test'} onSubmit={run('/test', { isTest: !user.isTest })} />
       <ActionDialog
         open={dialog === 'credits'}
         onClose={close}

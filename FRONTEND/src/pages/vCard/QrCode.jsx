@@ -87,10 +87,10 @@ const QrCode = () => {
         <MeshBackground className="opacity-30" />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-2 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Smart Matrix
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> QR Code
           </div>
           <h2 className="text-2xl font-black tracking-tight text-white">QR Code Studio</h2>
-          <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Share your executive vCard with a high-end scannable matrix code.</p>
+          <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Download your QR code. Anyone who scans it opens your card.</p>
         </div>
       </motion.div>
 
@@ -106,7 +106,7 @@ const QrCode = () => {
           <div className={`flex items-center justify-center h-64 text-sm font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Loading Matrix...</div>
         ) : !slug ? (
           <div className="text-center py-8">
-            <p className={`text-sm mb-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>No vCard found.</p>
+            <p className={`text-sm mb-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>No Card found.</p>
             <a href="/dashboard/vcard/profile" className="text-sm font-semibold text-[#E70C65] hover:underline">
               Create your profile first →
             </a>

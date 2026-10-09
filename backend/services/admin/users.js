@@ -16,27 +16,36 @@ const { escapeRegex } = require('../../middleware/admin/validate');
 
 const DAY = 24 * 60 * 60 * 1000;
 const FREE = 'Free Trial';
-
 const statusOf = (u) => (u.deletedAt ? 'removed' : u.isBlocked ? 'blocked' : 'active');
 const { isLifetime } = require('../../constants/plans');
+const { lifetimeFilter } = require('./planSync');
 const planActive = (u) => isLifetime(u) || !!(u.plan && u.plan !== FREE && u.planExpiry && new Date(u.planExpiry) > new Date());
 
 // Safe view of a user: never the password or reset/verification token hashes.
-const USER_FIELDS = 'name firstName lastName email phone plan planExpiry lifetime status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt upgrade.sentAt upgrade.email upgrade.sms upgrade.error upgrade.trialEndsAt';
+const USER_FIELDS = 'name firstName lastName email phone plan planExpiry lifetime isTest status cardLimit emailVerified isBlocked blockedAt blockedReason deletedAt freeCardCredits consentAt createdAt updatedAt upgrade.sentAt upgrade.email upgrade.sms upgrade.error upgrade.trialEndsAt';
 
 function userFilter({ q, status, plan, from, to }) {
   const f = {};
   if (status === 'removed') f.deletedAt = { $ne: null };
   else if (status !== 'all') f.deletedAt = null;
   if (status === 'blocked') f.isBlocked = true;
+  if (status === 'test') f.isTest = true;
   if (status === 'active') f.isBlocked = { $ne: true };
   if (q) {
     const re = new RegExp(escapeRegex(q), 'i');
     f.$or = [{ name: re }, { email: re }, { phone: re }];
   }
-  if (plan === 'paid') Object.assign(f, { plan: { $ne: FREE }, planExpiry: { $gt: new Date() } });
-  else if (plan === 'free') f.$and = [{ $or: [{ plan: FREE }, { planExpiry: { $lte: new Date() } }, { planExpiry: null }] }];
-  else if (plan) f.plan = plan;
+  // Lifetime accounts count as paid (AI Agent Pro when they have no paid plan of their own).
+  const now = new Date();
+  const lifetime = lifetimeFilter().$or;
+  const and = [];
+  if (plan === 'paid') and.push({ $or: [{ plan: { $ne: FREE }, planExpiry: { $gt: now } }, ...lifetime] });
+  else if (plan === 'free') and.push({ $or: [{ plan: FREE }, { plan: { $exists: false } }, { $and: [{ plan: { $ne: FREE } }, { planExpiry: { $ne: null, $lte: now } }] }] }, { lifetime: { $ne: true } }, { email: { $nin: lifetime[1].email.$in } });
+  else if (plan) {
+    const lifeTier = plan === 'AI AGENT PRO' ? { $or: [{ plan }, { plan: FREE }, { plan: null }] } : { plan };
+    and.push({ $or: [{ plan, planExpiry: { $gt: now } }, { $and: [{ $or: lifetime }, lifeTier] }] });
+  }
+  if (and.length) f.$and = and;
   if (from || to) f.createdAt = { ...(from && { $gte: from }), ...(to && { $lte: to }) };
   return f;
 }
@@ -159,12 +168,8 @@ async function setRemoved(id, removed) {
   return user;
 }
 
-// Permanent delete: the user and everything they made. Payment records (card orders,
-// transactions) are kept for accounting, with the user reference left dangling.
-async function purgeUser(id) {
-  const user = await mustFind(id);
-  const cards = await vCard.find({ userId: id }).select('_id').lean();
-  const cardIds = cards.map((c) => c._id);
+// Cards and everything on them (products, gallery, enquiries, chats, visits ...).
+async function deleteCardsCascade(cardIds) {
   const byCard = ['Product', 'Portfolio', 'Testimonial', 'Gallery', 'CustomSection', 'VcardSettings', 'AiPersona', 'Enquiry', 'CardVisit', 'ChatSession'];
   const removed = {};
   for (const name of byCard) {
@@ -182,8 +187,19 @@ async function purgeUser(id) {
       removed[Model.modelName] = r.deletedCount;
     }
   }
+  if (cardIds.length) removed.vCard = (await vCard.deleteMany({ _id: { $in: cardIds } })).deletedCount;
+  return removed;
+}
+
+// Permanent delete: the user and everything they made. Payment records (card orders,
+// transactions) are kept for accounting, with the user reference left dangling.
+async function purgeUser(id) {
+  const user = await mustFind(id);
+  const cards = await vCard.find({ userId: id }).select('_id').lean();
+  const removed = await deleteCardsCascade(cards.map((c) => c._id));
   removed.SupportTicket = (await require('../../models/SupportTicket').deleteMany({ userId: id })).deletedCount;
-  removed.vCard = (await vCard.deleteMany({ userId: id })).deletedCount;
+  // Any card still pointing at this account (e.g. created in between) goes too.
+  removed.vCard = (removed.vCard || 0) + (await vCard.deleteMany({ userId: id })).deletedCount;
   removed.UserPlan = (await UserPlan.deleteMany({ user: id })).deletedCount;
   await User.deleteOne({ _id: id });
   forgetAccountStatus(id);
@@ -349,4 +365,4 @@ async function createHandoff(id, adminId) {
   return { user, code };
 }
 
-module.exports = { listUsers, userDetail, orderView, statusOf, setBlocked, setRemoved, purgeUser, grantPlan, extendPlan, changePlan, revokePlan, addCredits, updateProfile, setPassword, signOutEverywhere, createHandoff, createUser, USER_FIELDS };
+module.exports = { listUsers, userDetail, orderView, statusOf, setBlocked, setRemoved, purgeUser, deleteCardsCascade, grantPlan, extendPlan, changePlan, revokePlan, addCredits, updateProfile, setPassword, signOutEverywhere, createHandoff, createUser, USER_FIELDS };

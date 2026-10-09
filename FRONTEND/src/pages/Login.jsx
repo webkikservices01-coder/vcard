@@ -65,7 +65,12 @@ export const Login = () => {
   const isDark = theme === 'dark';
 
   const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  // Sent here by the session guard (utils/session.js) when the 7-day sign-in ran out.
+  const [error, setError] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('expired')
+      ? 'Your session has expired. Please sign in again.'
+      : '',
+  );
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   // Set when the account exists but the email isn't verified yet: shows the "check your inbox" step.
@@ -212,14 +217,16 @@ export const Login = () => {
               <motion.div variants={slideFromLeft}>
                 <label className={`block text-xs font-semibold mb-1.5 transition-colors ${
                   isDark ? 'text-slate-300' : 'text-slate-700'
-                }`}>Email address</label>
+                }`} htmlFor="login-email">Email address</label>
                 <div className="relative group">
                   <Mail className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                     isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                   }`} />
                   <input
+                    id="login-email"
                     required
                     type="email"
+                    autoComplete="username"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="you@company.com"
@@ -236,13 +243,15 @@ export const Login = () => {
               <motion.div variants={slideFromRight}>
                 <label className={`block text-xs font-semibold mb-1.5 transition-colors ${
                   isDark ? 'text-slate-300' : 'text-slate-700'
-                }`}>Password</label>
+                }`} htmlFor="login-password">Password</label>
                 <div className="relative group">
                   <Lock className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
                     isDark ? 'text-slate-400 group-focus-within:text-[#ff6b9d]' : 'text-slate-400 group-focus-within:text-[#E70C65]'
                   }`} />
                   <input
+                    id="login-password"
                     required
+                    autoComplete="current-password"
                     type={showPwd ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}

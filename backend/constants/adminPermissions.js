@@ -23,11 +23,13 @@ const ADMIN = [
   'users.credits', // free card credits, card limit
   'users.create', // add a site account for a customer
   'users.edit', // name, email, phone, email verified
-  'users.password', // set a new password, sign out everywhere
+  'users.password', // sign the user out everywhere (passwords are only reset by email link)
   'users.impersonate', // sign in to the site as the user (to fix their card for them)
   'export.csv',
   'plans.manage',
   'logs.view', // app logs + AI usage
+  'cards.moderate', // hide / show a card, fix its link
+  'payments.refund', // refund a plan payment
   'audit.view',
 ];
 

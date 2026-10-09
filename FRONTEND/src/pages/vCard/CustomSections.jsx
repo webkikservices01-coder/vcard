@@ -206,7 +206,7 @@ const CustomSections = () => {
                   <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" /> Modular Matrix
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-white">Custom Sections</h2>
-                <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Add custom HTML & CSS content blocks to your digital vCard</p>
+                <p className="text-xs sm:text-sm mt-1 text-pink-100 font-medium">Add custom HTML & CSS content blocks to your digital card</p>
               </div>
               {!formOpen && (
                 <div className="flex items-center gap-3 w-full sm:w-auto">

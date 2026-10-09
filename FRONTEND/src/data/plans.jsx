@@ -7,6 +7,20 @@ export const GST_RATE = 0.18;
 export const withGst = (n) => Math.round(n * (1 + GST_RATE) * 100) / 100;
 export const inr = (n) => `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
 
+// What paying yearly saves for one plan, vs 12 monthly payments (before GST).
+export const yearlySaving = (plan) => {
+  const twelve = plan.price.monthly * 12;
+  const amount = twelve - plan.price.yearly;
+  return { amount, pct: Math.round((amount / twelve) * 100), perMonth: Math.round(plan.price.yearly / 12) };
+};
+
+// The free trial (BACKEND services/trial.js TRIAL_HOURS + constants/plans.js FREE_AI_CHATS).
+// There is no free plan: after 24 hours the card pauses until a plan is chosen.
+export const FREE_TRIAL = {
+  hours: 24,
+  summary: '24-hour free trial, no credit card: 1 card, 1 theme and 4 AI chatbot answers. After 24 hours your card pauses until you pick a plan.',
+};
+
 export const plans = [
   {
     id: 'digital-id',

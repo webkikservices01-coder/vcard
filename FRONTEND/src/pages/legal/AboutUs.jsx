@@ -8,10 +8,11 @@ import PublicNav from '../../components/PublicNav';
 import PublicFooter from '../../components/PublicFooter';
 import { COMPANY } from '../../components/PublicFooter';
 
+// Product facts only (no unproven usage numbers or ratings).
 const stats = [
-  { value: '10k+', label: 'Cards created' },
-  { value: '50k+', label: 'Profile views' },
-  { value: '4.8★', label: 'Avg. rating' },
+  { value: '10', label: 'Card themes' },
+  { value: '24/7', label: 'AI assistant on your card' },
+  { value: '2015', label: 'Webkik team building since' },
 ];
 
 const values = [

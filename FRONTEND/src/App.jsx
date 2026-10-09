@@ -4,7 +4,6 @@ import { PRICING_ENABLED } from './utils/plan';
 import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
-import { ADMIN_URL } from './utils/adminUrl';
 import ScrollToTop from './components/ScrollToTop';
 import Seo from './components/Seo';
 const PlatformChatWidget = lazy(() => import('./components/platformChat/PlatformChatWidget'));
@@ -66,6 +65,7 @@ const Faqs = lazy(() => import('./pages/legal/Faqs'));
 const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
 const TermsConditions = lazy(() => import('./pages/legal/TermsConditions'));
 const RefundPolicy = lazy(() => import('./pages/legal/RefundPolicy'));
+const ShippingPolicy = lazy(() => import('./pages/legal/ShippingPolicy'));
 const CancellationPolicy = lazy(() => import('./pages/legal/CancellationPolicy'));
 const DataProcessingAddendum = lazy(() => import('./pages/legal/DataProcessingAddendum'));
 const AiDataPrivacy = lazy(() => import('./pages/legal/AiDataPrivacy'));
@@ -91,11 +91,26 @@ function DeferredChatWidget() {
   ) : null;
 }
 
-function GoToAdmin() {
-  useEffect(() => {
-    window.location.replace(ADMIN_URL);
-  }, []);
-  return null;
+// "Skip to content" for keyboard users: the first Tab stop on every page. Jumps to the page's
+// <main> (or its first heading).
+function SkipLink() {
+  const skip = (e) => {
+    const target = document.querySelector('main') || document.querySelector('h1');
+    if (!target) return;
+    e.preventDefault();
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    target.focus();
+    target.scrollIntoView({ block: 'start' });
+  };
+  return (
+    <a
+      href="#main"
+      onClick={skip}
+      className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[10000] focus:rounded-full focus:bg-[#E70C65] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+    >
+      Skip to content
+    </a>
+  );
 }
 
 // Each page loads as its own chunk; this shows while one is fetched.
@@ -117,7 +132,7 @@ const PREFETCH = [
 ];
 // Signed-in owners also get the card templates + Template Studio (the heaviest dashboard page)
 // ahead of time; visitors of the homepage don't download them.
-const SITE_PAGES = ['/', '/login', '/register', '/forgot-password', '/features', '/pricing', '/metal-nfc-card', '/about-us', '/contact-us', '/faqs'];
+const SITE_PAGES = ['/', '/login', '/register', '/forgot-password', '/features', '/pricing', '/metal-nfc-card', '/about-us', '/contact-us', '/faqs', '/shipping-policy'];
 const PREFETCH_OWNER = [() => import('./webcard/WebCard'), () => import('./pages/vCard/Theme')];
 
 // Everything inside the router. The browser wraps it in <BrowserRouter> (App below); the build's
@@ -147,7 +162,7 @@ export function AppRoutes() {
     // Only on the site's own pages: someone opening a card (often on a phone) shouldn't download
     // the dashboard in the background while the card is still loading.
     const path = window.location.pathname;
-    const sitePage = SITE_PAGES.includes(path) || /^\/(dashboard|onboarding|admin)(\/|$)/.test(path);
+    const sitePage = SITE_PAGES.includes(path) || /^\/(dashboard|onboarding)(\/|$)/.test(path);
     if (!sitePage) return;
     // Wait for the visitor's first touch/scroll/key before prefetching, so the first view on a phone
     // only downloads what it shows.
@@ -164,8 +179,8 @@ export function AppRoutes() {
     <>
       <ScrollToTop />
       <Seo />
+      <SkipLink />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
-      <DeferredChatWidget />
       {hasImpersonation() ? (
         <Suspense fallback={null}>
           <ImpersonationBanner />
@@ -206,6 +221,7 @@ export function AppRoutes() {
         <Route path="/privacy-policy"       element={page(<PrivacyPolicy />)} />
         <Route path="/terms-conditions"     element={page(<TermsConditions />)} />
         <Route path="/refund-policy"        element={page(<RefundPolicy />)} />
+        <Route path="/shipping-policy"      element={page(<ShippingPolicy />)} />
         <Route path="/cancellation-policy"  element={page(<CancellationPolicy />)} />
         <Route path="/data-processing-addendum" element={page(<DataProcessingAddendum />)} />
         <Route path="/ai-data-privacy"      element={page(<AiDataPrivacy />)} />
@@ -243,11 +259,13 @@ export function AppRoutes() {
           <Route path="profile"          element={page(<UserProfile />)} />
         </Route>
 
-        {/* The admin panel moved to its own app (ADMIN/, served by the backend); old links go there. */}
-        <Route path="/admin/*" element={<GoToAdmin />} />
+        {/* The admin panel lives on its own address (ADMIN/, served by the backend). aicardly.com/admin
+            is a plain 404, so the public site doesn't point anyone at it. */}
 
         <Route path="*" element={page(<NotFound />)} />
       </Routes>
+      {/* After the page in the DOM, so keyboard users reach the page before the chat buttons. */}
+      <DeferredChatWidget />
     </>
   );
 }

@@ -131,7 +131,7 @@ const AdvancedSettings = () => {
           <MeshBackground className="opacity-40" />
           <div className="relative py-1">
             <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Advanced Settings</h2>
-            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Fine-tune your vCard's behavior and integrations</p>
+            <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>Fine-tune your card's behavior and integrations</p>
           </div>
         </motion.div>
 
@@ -168,7 +168,7 @@ const AdvancedSettings = () => {
         {/* Card Orientation */}
         <GlassCard {...fadeUp(0.12)} className="p-6">
           <h3 className="text-sm font-bold mb-1" style={{ color: 'var(--surface-text)' }}>Card Orientation</h3>
-          <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)' }}>Choose how your vCard is displayed to visitors</p>
+          <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)' }}>Choose how your card is displayed to visitors</p>
           <div className="grid grid-cols-2 gap-3">
             {[
               { value: 'vertical', label: 'Vertical', desc: 'Standard top-to-bottom layout', icon: '▯' },

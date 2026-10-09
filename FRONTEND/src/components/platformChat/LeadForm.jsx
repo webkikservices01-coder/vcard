@@ -4,7 +4,7 @@ import { LEAD_FORM_FIELDS } from './config';
 
 const EMPTY = LEAD_FORM_FIELDS.reduce((acc, f) => ({ ...acc, [f.key]: '' }), {});
 
-const LeadForm = ({ onSubmit, submitting, error }) => {
+const LeadForm = ({ onSubmit, submitting, error, onCancel }) => {
   const [values, setValues] = useState(EMPTY);
   const set = (key) => (e) => setValues(v => ({ ...v, [key]: e.target.value }));
 
@@ -46,8 +46,13 @@ const LeadForm = ({ onSubmit, submitting, error }) => {
         Send my details
       </Button>
       <p className="text-center text-[11px]" style={{ color: 'var(--surface-text-2)' }}>
-        Please share your email or phone so we can reach you.
+        Please share your phone or email so we can reach you.
       </p>
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="mx-auto block text-[11px] font-semibold underline" style={{ color: 'var(--surface-text-2)' }}>
+          Not now, back to chat
+        </button>
+      )}
     </form>
   );
 };

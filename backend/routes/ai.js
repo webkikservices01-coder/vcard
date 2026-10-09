@@ -1087,6 +1087,9 @@ router.post('/theme', auth, themeLimiter, async (req, res) => {
 // Persona, knowledge and rules all live in constants/chatbotKnowledge.js (built once at startup).
 const CARDY_SYSTEM_PROMPT = buildCardySystemPrompt();
 
+// "Talk to a human", "call me back", "baat karni hai", "demo" … in English, Hinglish or Hindi.
+const WANTS_HUMAN = /\b(human|real person|executive|representative|sales ?team|your team|call ?back|call me|contact me|reach me|talk to|speak to|speak with|talk with|demo|baat kar|baat karni|call kar|phone kar|sampark)\b|बात कर|कॉल|संपर्क/i;
+
 // ─── POST /api/ai/platform-chat ────────────────────────────────────────────────
 router.post('/platform-chat', platformChatLimiter, async (req, res) => {
   try {
@@ -1115,7 +1118,9 @@ router.post('/platform-chat', platformChatLimiter, async (req, res) => {
     logUsage({ route: 'platform-chat', model: PLATFORM_CHAT_MODEL, usage: completion.usage });
 
     const reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
-    res.json({ reply });
+    // Wants a person / a call back: the widget shows the name + phone form, saved as a lead.
+    const lastUser = [...recentMessages].reverse().find(m => m.role === 'user')?.content || '';
+    res.json({ reply, showLeadForm: WANTS_HUMAN.test(lastUser) });
   } catch (err) {
     console.error('Platform chat error:', err.message);
     res.status(500).json({ msg: 'Cardy is having trouble responding right now. Please try WhatsApp or email instead.' });
@@ -1140,7 +1145,7 @@ router.post('/platform-feedback', feedbackLimiter, (req, res) => {
 // ─── POST /api/ai/platform-lead ────────────────────────────────────────────────
 router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
   try {
-    const { name, email, phone, businessName, need, budget, timeline, message, website } = req.body;
+    const { name, email, phone, businessName, need, budget, timeline, message, website, source } = req.body;
 
     // Honeypot: a hidden field real visitors never fill in, only bots do.
     if (website) return res.json({ msg: "Thanks! We'll be in touch soon." });
@@ -1159,15 +1164,18 @@ router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
       budget: clean(budget, 50),
       timeline: clean(timeline, 50),
       message: clean(message, 1000),
+      // Where the lead came from: Cardy (default) or the metal card order form.
+      source: ['chatbot', 'metal-card', 'contact'].includes(source) ? source : 'chatbot',
     });
 
     sendMail({
-      to: process.env.LEAD_NOTIFY_EMAIL || COMPANY.email,
-      subject: `New Aicardly lead: ${lead.name}`,
+      // Alerts go to the team inbox that is read today; the public support address is COMPANY.email.
+      to: process.env.LEAD_NOTIFY_EMAIL || 'webkikservices01@gmail.com',
+      subject: `${lead.source === 'metal-card' ? 'New metal NFC card order' : 'New Aicardly lead'}: ${lead.name}`,
       text: `Name: ${lead.name}\nEmail: ${lead.email}\nPhone: ${lead.phone}\nBusiness: ${lead.businessName}\nNeed: ${lead.need}\nBudget: ${lead.budget}\nTimeline: ${lead.timeline}\n\nMessage:\n${lead.message}`,
     });
 
-    res.json({ msg: `Thanks, ${lead.name}! Our team will reach out within 24-48 hours.` });
+    res.json({ msg: `Thanks, ${lead.name}! Our team will reach out within one business day.` });
   } catch (err) {
     console.error('Platform lead error:', err.message);
     res.status(500).json({ msg: 'Something went wrong. Please reach us directly via WhatsApp or email.' });

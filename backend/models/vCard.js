@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const vCardSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     username: { type: String, required: true, unique: true }, // Jaise: mycardlink.site/marketer-esskay
+    // Hidden from the public by an admin (card moderation): the link shows "not found".
+    adminHidden: { type: Boolean, default: false },
+    adminHiddenReason: { type: String, default: '' },
+    adminHiddenAt: { type: Date, default: null },
     theme: { type: String, default: 'webkik-signature' }, // WebCard template id (see FRONTEND/src/webcard)
     // Look of the chosen template: one of its 5 colour palettes, light/dark ('' = the template's
     // own mode), and whether the live visitor counter shows on the card.
@@ -41,7 +45,7 @@ const vCardSchema = new mongoose.Schema({
         reels:      [{ url: String, title: String }],
     },
 
-    // AI chatbot replies used on the free trial (the owner has no Smart AI Card / AI Agent Pro plan).
+    // AI chatbot replies used on the free plan (the owner has no Smart AI Card / AI Agent Pro plan).
     aiTrialUsed: { type: Number, default: 0 },
 
     viewCount: { type: Number, default: 0 },

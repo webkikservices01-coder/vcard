@@ -32,7 +32,7 @@
     },
     "/pricing": {
       "title": "Pricing – Aicardly Digital Business Card Plans in India",
-      "description": "Aicardly plans in INR: Digital Card, Smart AI Card and AI Agent Pro. Start free, pay monthly or yearly, and compare every feature.",
+      "description": "Aicardly plans in INR: Digital Card, Smart AI Card and AI Agent Pro. Try free for 24 hours, pay monthly or yearly, and compare every feature.",
       "jsonld": [
         {
           "@context": "https://schema.org",
@@ -102,6 +102,10 @@
       "title": "Refund Policy | Aicardly",
       "description": "Aicardly's refund policy for digital card plans and metal NFC card orders."
     },
+    "/shipping-policy": {
+      "title": "Shipping Policy | Aicardly",
+      "description": "Delivery areas, timelines, charges, tracking, damage and replacement terms for Aicardly metal NFC card orders."
+    },
     "/cancellation-policy": {
       "title": "Cancellation Policy | Aicardly",
       "description": "How to cancel an Aicardly plan or NFC card order, and what happens after you cancel."
@@ -155,7 +159,8 @@
             }
           ]
         }
-      ]
+      ],
+      "noindex": true
     },
     "/invites": {
       "title": "Free Digital Invites – Wedding, Birthday, Engagement, Diwali & Festival Wishes | Aicardly",
@@ -184,7 +189,6 @@
   },
   "privatePrefixes": [
     "/dashboard",
-    "/admin",
     "/onboarding",
     "/verify-email"
   ]

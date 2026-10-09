@@ -8,7 +8,10 @@
 //   - card pages (/<username>, old /c/<username>): canonical /<username>; the card's own title,
 //     description and share image come from the Node backend (bots wait for it; people get the
 //     cached copy if there is one, so a visit is never slowed down)
-//   - dashboard/admin/unknown pages: noindex, no canonical
+//   - dashboard/admin pages: noindex, no canonical
+//   - unknown pages and card links that don't exist: HTTP 404 + noindex (the app shows its
+//     branded 404 page). For people, a card the cache hasn't seen yet is looked up after the
+//     page is sent, so the next visit gets the right status without slowing this one down.
 // The tags replace the block between <!-- seo:start --> and <!-- seo:end --> in index.html.
 // If anything fails, index.html is served unchanged.
 
@@ -102,6 +105,7 @@ function fetch_card($username, $wait, $kind = '') {
 }
 
 $head = null;
+$warmCard = null;
 $isPrivate = false;
 foreach (($seo['privatePrefixes'] ?? []) as $p) {
   if ($path === $p || strpos($path, $p . '/') === 0) $isPrivate = true;
@@ -123,7 +127,7 @@ if ($isPrivate) {
   // Wedding invitation: the couple's names, date and photo for WhatsApp / social previews.
   $inv = fetch_card(strtolower($m[1]), $isBot, 'invite');
   if ($inv === 404) {
-    if ($isBot) http_response_code(404);
+    http_response_code(404);
     $head = noindex('Invitation not found | Aicardly');
   } elseif ($inv !== null) {
     $head = $inv;
@@ -137,8 +141,9 @@ if ($isPrivate) {
   $head = noindex('Invitation preview | Aicardly');
 } elseif (preg_match('#^/(?:c/)?([A-Za-z0-9-]{3,30})$#', $path, $m)) {
   $card = fetch_card(strtolower($m[1]), $isBot);
+  if ($card === null && !$isBot) $warmCard = strtolower($m[1]);
   if ($card === 404) {
-    if ($isBot) http_response_code(404);
+    http_response_code(404);
     $head = noindex('Card not found | Aicardly');
   } elseif ($card !== null) {
     $head = $card;
@@ -147,7 +152,7 @@ if ($isPrivate) {
     $head = tags('Digital Business Card | Aicardly', 'View this digital business card on Aicardly: save the contact, see their work and chat with their AI assistant.', $site . '/' . strtolower($m[1]), $site, 'profile');
   }
 } else {
-  if ($isBot) http_response_code(404);
+  http_response_code(404);
   $head = noindex('Page not found | Aicardly');
 }
 
@@ -166,3 +171,9 @@ if ($path !== '/') {
   $index = preg_replace('/<!-- home:start -->.*?<!-- home:end -->/s', '<div id="root"></div>', $index, 1);
 }
 echo $index;
+
+// Fill the card cache after the response has gone out (see the note at the top).
+if (!empty($warmCard) && function_exists('fastcgi_finish_request')) {
+  fastcgi_finish_request();
+  fetch_card($warmCard, true);
+}

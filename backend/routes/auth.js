@@ -34,7 +34,7 @@ router.post('/register', authLimiter, async (req, res) => {
         if (name.length < 2) return res.status(400).json({ msg: 'Please enter your full name.' });
         if (!EMAIL_RE.test(email)) return res.status(400).json({ msg: 'Please enter a valid email address.' });
         if (!phone) return res.status(400).json({ msg: 'Please enter a valid mobile number, e.g. +91 98123 45678.' });
-        if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
+        if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ msg: 'Password must be at least 8 characters.' });
         if (confirm !== undefined && confirm !== password) return res.status(400).json({ msg: 'Passwords do not match.' });
         // DPDP: record that the user agreed to the Terms and Privacy Policy.
         if (acceptTerms !== true) return res.status(400).json({ msg: 'Please accept the Terms & Conditions and Privacy Policy.' });
@@ -211,7 +211,7 @@ router.post('/reset-password', forgotLimiter, async (req, res) => {
     const email = normEmail(req.body.email);
     try {
         const { token, password, confirm } = req.body;
-        if (typeof password !== 'string' || password.length < 6) return res.status(400).json({ msg: 'Password must be at least 6 characters.' });
+        if (typeof password !== 'string' || password.length < 8) return res.status(400).json({ msg: 'Password must be at least 8 characters.' });
         if (confirm !== undefined && confirm !== password) return res.status(400).json({ msg: 'Passwords do not match.' });
         const user = await findByEmail(email);
         const valid = user && user.resetTokenHash && typeof token === 'string' && sha256(token) === user.resetTokenHash && user.resetTokenExpiry > new Date();

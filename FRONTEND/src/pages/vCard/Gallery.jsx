@@ -133,7 +133,7 @@ const Gallery = () => {
           <div className="relative">
             <p className="text-xs text-white/60 mb-1 uppercase tracking-wider">vCard</p>
             <h2 className="text-2xl font-black text-white leading-tight">Gallery</h2>
-            <p className="text-sm text-white/70 mt-1">Images and videos for your vCard</p>
+            <p className="text-sm text-white/70 mt-1">Images and videos for your card</p>
           </div>
         </motion.div>
 

@@ -4,7 +4,7 @@ const AdminAuditLog = require('../../models/AdminAuditLog');
 const SupportTicket = require('../../models/SupportTicket');
 const AppLog = require('../../models/AppLog');
 const AiUsageLog = require('../../models/AiUsageLog');
-const { requirePermission } = require('../../middleware/admin/auth');
+const { requirePermission, exportReason } = require('../../middleware/admin/auth');
 const { validate, z, idParams, objectId, paging, search, escapeRegex } = require('../../middleware/admin/validate');
 const { audit } = require('../../services/admin/audit');
 const { isMailConfigured } = require('../../utils/mailer');
@@ -63,6 +63,41 @@ router.put('/support/:id', requirePermission('support.update'), validate({ param
   res.json({ ticket });
 });
 
+// One ticket with its user and the replies.
+router.get('/support/:id', requirePermission('support.view'), validate({ params: idParams }), async (req, res) => {
+  const ticket = await SupportTicket.findById(req.v.params.id).populate('userId', 'name email phone plan planExpiry createdAt').lean();
+  if (!ticket) return res.status(404).json({ msg: 'Ticket not found.' });
+  res.json({ ticket });
+});
+
+// Reply to the user: saved on the ticket and emailed to them. Moves an open ticket to in-progress.
+router.post('/support/:id/reply', requirePermission('support.update'), validate({ params: idParams, body: z.object({
+  message: z.string().trim().min(2, 'write a reply').max(4000),
+  status: z.enum(['', ...TICKET_STATUSES]).optional().default(''),
+}) }), async (req, res) => {
+  const ticket = await SupportTicket.findById(req.v.params.id).populate('userId', 'name email');
+  if (!ticket) return res.status(404).json({ msg: 'Ticket not found.' });
+  const { message, status } = req.v.body;
+  const { sendMail, emailHtml } = require('../../utils/mailer');
+  const user = ticket.userId;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  let emailed = false;
+  if (user?.email && isMailConfigured()) {
+    emailed = await sendMail({
+      to: user.email,
+      subject: `Re: ${ticket.subject} [Aicardly support]`,
+      text: `Hi ${user.name || ''},\n\n${message}\n\nYou can also see your tickets in Dashboard > Support.\n\n- Team Aicardly`,
+      html: emailHtml({ heading: `Re: ${esc(ticket.subject)}`, paragraphs: [`Hi ${esc(user.name || '')},`, ...message.split(/\n{2,}/).map((p) => esc(p).replace(/\n/g, '<br>')), 'You can also see your tickets in Dashboard &gt; Support.'] }),
+    }).then((r) => r !== false).catch(() => false);
+  }
+  ticket.replies.push({ message, by: req.admin.name || req.admin.email, emailed });
+  const before = ticket.status;
+  ticket.status = status || (ticket.status === 'open' ? 'in-progress' : ticket.status);
+  await ticket.save();
+  await audit(req, 'support.reply', { targetType: 'ticket', targetId: ticket._id, summary: `Replied to "${ticket.subject}"${emailed ? ' (emailed)' : ' (email not sent)'}${before !== ticket.status ? `; ${before} to ${ticket.status}` : ''}` });
+  res.json({ msg: emailed ? 'Reply sent by email and saved on the ticket.' : 'Reply saved on the ticket. The email could not be sent (check SMTP).', ticket });
+});
+
 // ─── App logs (30 days) ──────────────────────────────────────────────────────
 router.get('/logs', requirePermission('logs.view'), validate({ query: z.object({
   type: z.string().trim().max(60).regex(/^[\w.]*$/).optional().default(''),
@@ -96,7 +131,7 @@ router.get('/ai-usage', requirePermission('logs.view'), validate({ query: z.obje
   res.json({ logs, total, page, pages: Math.max(1, Math.ceil(total / limit)), summary: totals[0] || { inputTokens: 0, outputTokens: 0, costUsd: 0 } });
 });
 
-router.get('/ai-usage/export', requirePermission('export.csv'), async (req, res) => {
+router.get('/ai-usage/export', requirePermission('export.csv'), exportReason, async (req, res) => {
   const logs = await AiUsageLog.find().sort({ createdAt: -1 }).limit(100000).populate('userId', 'name email').populate('vcardId', 'username').lean();
   // exceljs is big: loaded only when someone exports, not when the server starts.
   const ExcelJS = require('exceljs');

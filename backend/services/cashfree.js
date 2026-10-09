@@ -1,5 +1,5 @@
-// Cashfree Payment Gateway: checkout orders (the plans page, the upgrade page) and payment links
-// (sent by SMS to free-trial users whose 24 hours are up). Env: CASHFREE_ENV (production |
+// Cashfree Payment Gateway: checkout orders (the plans page, the upgrade page) and optional
+// payment links sent from the admin. Env: CASHFREE_ENV (production |
 // sandbox), CASHFREE_CLIENT_ID, CASHFREE_CLIENT_SECRET.
 const CF_ENV = process.env.CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
 // CASHFREE_API_BASE only for local tests against a mock server.
@@ -79,4 +79,11 @@ const createLink = ({ linkId, amount, purpose, user, phone, sendSms, expiresAt, 
 
 const getLink = (linkId) => cf(`/links/${encodeURIComponent(linkId)}`);
 
-module.exports = { CF_ENV, CF_BASE_URL, cfHeaders, isCashfreeConfigured, indianMobile, createOrder, getOrder, createLink, getLink };
+// Refund (all or part) of a paid checkout order.
+const createRefund = ({ orderId, refundId, amount, note }) =>
+  cf(`/orders/${encodeURIComponent(orderId)}/refunds`, {
+    method: 'POST',
+    body: { refund_id: refundId, refund_amount: amount, refund_note: String(note || '').slice(0, 100) },
+  });
+
+module.exports = { CF_ENV, CF_BASE_URL, cfHeaders, isCashfreeConfigured, indianMobile, createOrder, getOrder, createLink, getLink, createRefund };

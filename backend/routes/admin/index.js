@@ -17,6 +17,7 @@ function createAdminApi() {
 
   // Everything below needs a signed-in admin; each route also checks its permission.
   router.use(requireAdmin);
+  router.use(require('../../middleware/admin/mask').maskForSupport);
   router.use('/dashboard', require('./dashboard'));
   router.use('/users', require('./users'));
   router.use('/cards', require('./cards'));
@@ -24,6 +25,7 @@ function createAdminApi() {
   router.use('/plans', require('./plans'));
   router.use('/admins', require('./admins'));
   router.use('/leads', require('./leads'));
+  router.use('/search', require('./search'));
   router.use('/', require('./activity'));
 
   router.use((req, res) => res.status(404).json({ msg: 'Not found' }));

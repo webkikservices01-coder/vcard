@@ -48,7 +48,8 @@ const usePrefersReducedMotion = () => {
   return reduced;
 };
 
-const AUTH_PATHS = ['/login', '/register', '/forgot-password'];
+// Pages built around a form: on phones the launcher would sit on top of the fields / submit button.
+const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/contact-us', '/metal-nfc-card'];
 
 // A new answer appears word by word (like typing) instead of all at once.
 function RevealText({ text, onDone }) {
@@ -113,6 +114,14 @@ const PlatformChatWidget = () => {
   });
   const [input, setInput] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const busyRef = useRef(false);
+  // The "Chat with AI" label shows for a few seconds, then only the round button stays, so it
+  // doesn't cover prices, form fields or menus.
+  const [showLabel, setShowLabel] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShowLabel(false), 8000);
+    return () => clearTimeout(t);
+  }, []);
   const [showGreeting, setShowGreeting] = useState(false);
   const [shouldPulse] = useState(() => {
     try { return !localStorage.getItem(PULSE_SEEN_KEY); } catch { return false; }
@@ -239,7 +248,13 @@ const PlatformChatWidget = () => {
   // history: the conversation to continue from (regenerate / edit pass a trimmed one).
   const sendMessage = useCallback(async (text, history) => {
     const userText = text.trim().slice(0, MAX_MESSAGE_LENGTH);
-    if (!userText || isBusy) return;
+    if (!userText) return;
+    // Still answering the last question: keep this one in the box (never drop it silently).
+    if (isBusy || busyRef.current) {
+      setInput(userText);
+      return;
+    }
+    busyRef.current = true;
     const base = history || messages;
     const updated = [...base, { id: genId(), role: 'user', type: 'text', content: userText }];
     setMessages(updated);
@@ -270,6 +285,7 @@ const PlatformChatWidget = () => {
       appendMessage('assistant', limited ? (err.response?.data?.msg || 'Too many messages. Please wait a few minutes and try again.') : offlineAnswer(userText));
       setQuick(['Can I get a demo or talk to your team?']);
     } finally {
+      busyRef.current = false;
       setIsBusy(false);
     }
   }, [messages, isBusy, appendMessage, leadState, reducedMotion]);
@@ -336,13 +352,22 @@ const PlatformChatWidget = () => {
     const result = recommendFromAnswers(answers);
     setFlow(null);
     if (result.type === 'lead') {
-      appendMessage('assistant', "Got it — for a custom or enterprise setup, let's connect you with our team directly. Share your details below and we'll reach out within 24-48 hours.");
+      appendMessage('assistant', "Got it — for a custom or enterprise setup, let's connect you with our team directly. Share your details below and we'll reach out within one business day.");
       setLeadContext(answers);
       setLeadState('form');
     } else {
       appendMessage('assistant', `Based on that, I'd recommend **${result.plan.name}** — ${result.plan.tagline}, ₹${result.plan.price.monthly}/mo (or ₹${result.plan.price.yearly}/yr).`, { type: 'recommendation', plan: result.plan });
     }
   }, [flow, appendMessage]);
+
+  // "Book a Free Demo" without a booking page: ask for name + phone and the team calls back.
+  const openDemoForm = useCallback(() => {
+    if (leadState === 'submitting') return;
+    appendMessage('assistant', "Happy to show you Aicardly! Share your name and phone below and the team will call you to fix a demo time, usually within one business day.");
+    setLeadContext({ need: 'Free demo' });
+    setLeadError('');
+    setLeadState('form');
+  }, [leadState, appendMessage]);
 
   const handleLeadSubmit = useCallback(async (values) => {
     setLeadError('');
@@ -419,7 +444,7 @@ const PlatformChatWidget = () => {
 
   return (
     // On phones the sign-in / sign-up forms fill the screen; the launcher would cover their button.
-    <div className={`fixed bottom-5 right-3 sm:bottom-6 sm:right-6 z-[150] ${AUTH_PATHS.includes(location.pathname) ? 'hidden sm:block' : ''}`}>
+    <div className={`cardy-root fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-[150] ${AUTH_PATHS.includes(location.pathname) ? 'hidden sm:block' : ''}`}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -482,18 +507,22 @@ const PlatformChatWidget = () => {
               </div>
 
               {/* Always-visible primary CTAs */}
-              <div className={`grid shrink-0 gap-2 border-b px-3 py-2.5 ${BOOKING_HREF ? 'grid-cols-2' : 'grid-cols-1'}`} style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-2)' }}>
+              <div className="grid shrink-0 grid-cols-2 gap-2 border-b px-3 py-2.5" style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-2)' }}>
                 <a href={WHATSAPP_HREF} target="_blank" rel="noopener noreferrer" className="min-w-0">
                   <Button variant="secondary" size="sm" fullWidth leftIcon={<FaWhatsapp className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
                     <span className="text-center leading-tight">Chat on WhatsApp</span>
                   </Button>
                 </a>
-                {BOOKING_HREF && (
+                {BOOKING_HREF ? (
                   <a href={BOOKING_HREF} target="_blank" rel="noopener noreferrer" className="min-w-0">
                     <Button variant="primary" size="sm" fullWidth leftIcon={<Calendar className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
                       <span className="text-center leading-tight">Book a Free Demo</span>
                     </Button>
                   </a>
+                ) : (
+                  <Button variant="primary" size="sm" fullWidth onClick={openDemoForm} leftIcon={<Calendar className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
+                    <span className="text-center leading-tight">Book a Free Demo</span>
+                  </Button>
                 )}
               </div>
 
@@ -664,7 +693,7 @@ const PlatformChatWidget = () => {
                 {flow ? (
                   <FlowStep step={FLOW_STEPS[flow.stepIndex]} onAnswer={handleFlowAnswer} />
                 ) : leadState === 'form' || leadState === 'submitting' ? (
-                  <LeadForm onSubmit={handleLeadSubmit} submitting={leadState === 'submitting'} error={leadError} />
+                  <LeadForm onSubmit={handleLeadSubmit} submitting={leadState === 'submitting'} error={leadError} onCancel={() => setLeadState(null)} />
                 ) : (
                   <form
                     onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
@@ -701,9 +730,8 @@ const PlatformChatWidget = () => {
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-                      placeholder={voice.listening ? 'Listening…' : 'Type or speak your question…'}
+                      placeholder={voice.listening ? 'Listening…' : isBusy ? 'Cardy is answering…' : 'Type or speak your question…'}
                       maxLength={MAX_MESSAGE_LENGTH}
-                      disabled={isBusy}
                       aria-label="Message"
                       className="input-premium flex-1 !py-2.5 text-sm"
                     />
@@ -755,9 +783,11 @@ const PlatformChatWidget = () => {
         .cardy-ring { animation: cardyRing 2.2s ease-out infinite }
         .cardy-label { animation: cardyLabel .4s ease-out both }
         @media (prefers-reduced-motion: reduce) { .cardy-float, .cardy-wiggle, .cardy-ring, .cardy-label { animation: none } }
+        /* Out of the way while a site menu is open (it would cover the menu's last buttons). */
+        body:has([data-site-menu]) .cardy-root { display: none }
       `}</style>
       <div ref={launcherRef} className={`relative flex items-center gap-2 ${!isOpen ? 'cardy-float' : ''}`}>
-        {!isOpen && !showGreeting && (
+        {!isOpen && !showGreeting && showLabel && (
           <button
             type="button"
             onClick={() => setIsOpen(true)}
@@ -767,13 +797,13 @@ const PlatformChatWidget = () => {
             <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" /> Chat with AI · 24/7
           </button>
         )}
-        {!isOpen && <span aria-hidden="true" className="cardy-ring pointer-events-none absolute right-0 h-14 w-14 rounded-full" style={{ backgroundImage: 'var(--background-image-gradient-crimson)' }} />}
+        {!isOpen && <span aria-hidden="true" className="cardy-ring pointer-events-none absolute right-0 h-12 w-12 sm:h-14 sm:w-14 rounded-full" style={{ backgroundImage: 'var(--background-image-gradient-crimson)' }} />}
         <IconButton
           variant="bare"
           size="lg"
           onClick={() => { setIsOpen(o => !o); setShowGreeting(false); }}
           title={isOpen ? 'Close Aicardly assistant' : 'Chat with the Aicardly AI assistant'}
-          className={`relative !h-14 !w-14 text-white shadow-lg ${!isOpen ? 'cardy-wiggle' : ''}`}
+          className={`relative !h-12 !w-12 sm:!h-14 sm:!w-14 text-white shadow-lg ${!isOpen ? 'cardy-wiggle' : ''}`}
           style={{ backgroundImage: 'var(--background-image-gradient-crimson)', boxShadow: 'var(--shadow-glow-crimson-lg)' }}
         >
           {!isOpen && (

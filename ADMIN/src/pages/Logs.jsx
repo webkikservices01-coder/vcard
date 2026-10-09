@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Download, Search } from 'lucide-react';
-import { qs, downloadUrl } from '../lib/api';
+import { Search } from 'lucide-react';
+import { qs } from '../lib/api';
 import { useApi, useDebounced, useFilters } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
-import { dateTime, num } from '../lib/format';
+import { dateTime, num, words, actionLabel } from '../lib/format';
+import ExportButton from '../components/ExportButton';
 import { Badge, Card, ErrorBox, Input, PageHeader, Pagination, Select, Stat, Table, Tabs } from '../components/ui';
 
 const LEVEL = { info: 'slate', warn: 'amber', error: 'red' };
@@ -45,6 +46,8 @@ function AppLogs({ f, set }) {
             <option value="card_order">Card orders</option>
             <option value="http">Server errors</option>
             <option value="cardy">Cardy feedback (👍/👎)</option>
+            <option value="cashfree">Cashfree</option>
+            <option value="trial">Free trial / upgrade links</option>
           </Select>
         </div>
         {error ? (
@@ -57,8 +60,8 @@ function AppLogs({ f, set }) {
             empty="No events (kept for 30 days)."
             columns={[
               { key: 'createdAt', label: 'When', render: (l) => <span className="whitespace-nowrap">{dateTime(l.createdAt)}</span> },
-              { key: 'level', label: 'Level', render: (l) => <Badge color={LEVEL[l.level]}>{l.level}</Badge> },
-              { key: 'type', label: 'Event', render: (l) => <span className="font-mono text-xs">{l.type}</span> },
+              { key: 'level', label: 'Level', render: (l) => <Badge color={LEVEL[l.level]}>{words(l.level)}</Badge> },
+              { key: 'type', label: 'Event', render: (l) => <span className="text-xs" title={l.type}>{actionLabel(l.type)}</span> },
               { key: 'msg', label: 'Message', render: (l) => <div className="max-w-lg"><p>{l.msg}</p>{l.email && <p className="text-xs text-slate-500">{l.email}</p>}</div> },
             ]}
           />
@@ -82,14 +85,14 @@ function AiUsage({ f, set }) {
           <Stat label="Cost (USD)" value={`$${Number(data.summary.costUsd || 0).toFixed(2)}`} />
         </div>
       )}
-      <Card padded={false} actions={can('export.csv') && <a href={downloadUrl('/ai-usage/export')} className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"><Download className="h-3.5 w-3.5" /> Export (.xlsx)</a>} title="AI requests">
+      <Card padded={false} actions={can('export.csv') && <ExportButton path="/ai-usage/export" label="Export (.xlsx)" what="AI usage (with user names and emails)" />} title="AI requests">
         <Table
           loading={loading}
           rows={data?.logs}
           rowKey={(l) => l._id}
           columns={[
             { key: 'createdAt', label: 'When', render: (l) => <span className="whitespace-nowrap">{dateTime(l.createdAt)}</span> },
-            { key: 'route', label: 'Feature', render: (l) => l.route },
+            { key: 'route', label: 'Feature', render: (l) => words(l.route) },
             { key: 'user', label: 'User', render: (l) => (l.userId ? `${l.userId.name} (${l.userId.email})` : '—') },
             { key: 'vcard', label: 'Card', render: (l) => l.vcardId?.username || '—' },
             { key: 'model', label: 'Model', render: (l) => <span className="text-xs">{l.model}</span> },

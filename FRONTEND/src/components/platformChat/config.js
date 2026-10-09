@@ -7,7 +7,7 @@ import { COMPANY } from '../PublicFooter';
 export const ALLOWED_PATHS = [
   '/', '/login', '/register', '/forgot-password',
   '/about-us', '/contact-us', '/faqs', '/features', '/pricing', '/metal-nfc-card',
-  '/privacy-policy', '/terms-conditions', '/refund-policy', '/cancellation-policy',
+  '/privacy-policy', '/terms-conditions', '/refund-policy', '/shipping-policy', '/cancellation-policy',
 ];
 
 export const GREETING_DELAY_MS = 4500;
@@ -19,8 +19,9 @@ export const GREETING_SESSION_KEY = 'webcard_platform_chat_greeting_shown';
 export const WELCOME_TEXT = "Hi, I'm Cardy from Aicardly 👋 We help you build a digital business card with AI chat, voice, and WhatsApp features built in. How can I help you today?";
 
 export const WHATSAPP_HREF = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent("Hi Aicardly team, I'd like to know more about Aicardly.")}`;
-// Calendly booking page for demo calls. Override with VITE_BOOKING_URL; set it empty to hide the button.
-export const BOOKING_HREF = import.meta.env.VITE_BOOKING_URL ?? 'https://calendly.com/webkikservices';
+// Booking page for demo calls (an Aicardly-named Calendly / Google Calendar link) via VITE_BOOKING_URL.
+// Without one, "Book a Free Demo" opens the demo request form in the chat (saved as a lead).
+export const BOOKING_HREF = import.meta.env.VITE_BOOKING_URL || '';
 export const PRICING_HREF = '/#pricing';
 
 // Hidden from the chat while pricing is switched off.
@@ -117,7 +118,7 @@ export const getKeyHighlights = (plan) => {
 
 export const LEAD_FORM_FIELDS = [
   { key: 'name', label: 'Your name', type: 'text', required: true },
-  { key: 'email', label: 'Email', type: 'email', required: false },
   { key: 'phone', label: 'Phone / WhatsApp', type: 'tel', required: false },
+  { key: 'email', label: 'Email', type: 'email', required: false },
   { key: 'message', label: 'Tell us a bit about what you need', type: 'textarea', required: false },
 ];

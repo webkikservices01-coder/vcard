@@ -135,4 +135,4 @@ const monthStartIST = () => {
   return new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), 1) - 5.5 * 3600 * 1000);
 };
 
-module.exports = { PLAN_LIMITS, THEME_ORDER, allowedThemes, limitsFor, monthStartIST, GST_RATE, withGst, FREE_THEME, FREE_AI_CHATS, isPaid, hasPaidAi, PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, isLifetime, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures };
+module.exports = { PLAN_LIMITS, THEME_ORDER, allowedThemes, limitsFor, monthStartIST, GST_RATE, withGst, FREE_THEME, FREE_AI_CHATS, isPaid, hasPaidAi, PLANS, CATALOG, priceFor, CHAT_FILL_PLANS, VOICE_FILL_PLANS, PRICING_ENABLED, activePlan, isLifetime, hasChatFill, hasVoiceFill, hasCardAi, hasDashboardAi, callFeatures, LIFETIME_EMAILS };

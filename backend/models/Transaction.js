@@ -10,12 +10,23 @@ const transactionSchema = new mongoose.Schema({
     expireDays:  { type: Number, default: 365 },
     cfOrderId:        { type: String, default: '' },
     paymentSessionId: { type: String, default: '' },
-    cfLinkId:    { type: String, default: '', index: true }, // Cashfree payment link (sent by SMS to trial users)
+    cfLinkId:    { type: String, default: '', index: true }, // Cashfree payment link
     source:      { type: String, default: '' },              // plans | upgrade-page | sms-link
     status:      { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
     invoiceNumber: { type: String, default: '' },
     refrensInvoiceId: { type: String, default: '' },
-    refrensPdfUrl:    { type: String, default: '' }
+    refrensPdfUrl:    { type: String, default: '' },
+    // Refund (admin panel). Cashfree refunds via its API; payments it can't refund (payment links)
+    // are refunded in the Cashfree dashboard and recorded here as "manual".
+    refund: {
+        status:  { type: String, enum: ['', 'pending', 'processed', 'failed', 'manual'], default: '' },
+        amount:  { type: Number, default: 0 },
+        id:      { type: String, default: '' },
+        reason:  { type: String, default: '' },
+        error:   { type: String, default: '' },
+        at:      { type: Date, default: null },
+        planEnded: { type: Boolean, default: false },
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

@@ -16,7 +16,7 @@ const VcardSettings = require('../models/VcardSettings');
 const Enquiry = require('../models/Enquiry');
 const User = require('../models/User');
 const { FREE_THEME, isPaid, allowedThemes } = require('../constants/plans');
-const { accountStatus } = require('../utils/accountStatus');
+const { isPublicCard } = require('../utils/cardVisibility');
 const { trialState, nudge } = require('../services/trial');
 const { sendMail, emailHtml } = require('../utils/mailer');
 const background = require('../utils/background');
@@ -87,7 +87,7 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
                         ? 'This template is on AI Agent Pro. Upgrade to use all 10 templates.'
                         : isPaid(owner)
                             ? 'This template is on higher plans: Smart AI Card has 3 templates and AI Agent Pro all 10.'
-                            : 'This template is on paid plans. The free plan includes Webkik Signature; Smart AI Card has 3 templates and AI Agent Pro all 10.';
+                            : 'This template is on paid plans. The free trial includes Webkik Signature; Smart AI Card has 3 templates and AI Agent Pro all 10.';
                     return res.status(402).json({ msg, upgrade: true, freeTheme: FREE_THEME, allowedThemes: allowed });
                 }
             } else updateFields.theme = theme;
@@ -242,8 +242,8 @@ router.post('/reels/import', auth, async (req, res) => {
 router.get('/public/:username', async (req, res) => {
     try {
         const card = await vCard.findOne({ username: req.params.username });
-        // A user removed in the admin panel no longer has a public card.
-        if (!card || (await accountStatus(card.userId)) === 'removed') return res.status(404).json({ msg: 'Card not found' });
+        // Removed / deleted owner, or hidden by an admin: no public card.
+        if (!(await isPublicCard(card))) return res.status(404).json({ msg: 'Card not found' });
         // Free trial over and not paid: the card is paused until the owner upgrades (services/trial.js).
         const owner = await User.findById(card.userId).select('name email phone plan planExpiry lifetime isAdmin upgrade');
         const trial = owner ? await trialState(owner) : { active: false };
@@ -321,7 +321,7 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ msg: 'Please enter a valid email' });
 
         const card = await vCard.findOne({ username: req.params.username });
-        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        if (!(await isPublicCard(card))) return res.status(404).json({ msg: 'Card not found' });
 
         const enquiry = await Enquiry.create({ vcardId: card._id, name, email, mobile, message, consentAt: new Date(), cohort });
         logEvent(req, 'enquiry.new', `Enquiry on /${card.username} from ${name}`, { userId: card.userId, email });
@@ -437,7 +437,7 @@ router.put('/custom-theme', auth, async (req, res) => {
 router.get('/:username', async (req, res) => {
     try {
         const card = await vCard.findOne({ username: req.params.username });
-        if (!card) return res.status(404).json({ msg: 'Card not found' });
+        if (!(await isPublicCard(card))) return res.status(404).json({ msg: 'Card not found' });
         res.json(card);
     } catch (err) { res.status(500).send('Server Error'); }
 });

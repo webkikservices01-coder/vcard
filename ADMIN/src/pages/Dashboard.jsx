@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
-import { money, num, dateTime } from '../lib/format';
+import { money, num, dateTime, actionLabel, words } from '../lib/format';
 import { Badge, Card, ErrorBox, Spinner, Stat, Trend } from '../components/ui';
 import { AreaChart, BarList, Funnel, ChartTable } from '../components/charts';
 
@@ -103,16 +103,16 @@ export default function Dashboard() {
       </div>
 
       {/* Headline numbers */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat hero label="New users" value={num(k.users.period)} icon={UserPlus} tone="brand" trend={<Trend now={k.users.period} prev={k.users.prev} />} sub={`${num(k.users.today)} today · ${num(k.users.total)} total`} />
-        <Stat hero label="Revenue" value={money(k.revenue.period)} icon={IndianRupee} tone="brand" trend={<Trend now={k.revenue.period} prev={k.revenue.prev} />} sub={`${money(k.revenue.total)} all time`} />
+        <Stat hero label="Revenue" value={money(k.revenue.period)} icon={IndianRupee} tone="brand" trend={<Trend now={k.revenue.period} prev={k.revenue.prev} />} sub={`${money(k.revenue.total)} all time · test payments left out`} />
         <Stat hero label="Cards created" value={num(k.cards.period)} icon={IdCard} tone="brand" trend={<Trend now={k.cards.period} prev={k.cards.prev} />} sub={`${num(k.cards.total)} cards total`} />
         <Stat hero label="Card views" value={num(k.views.period)} icon={Eye} tone="brand" trend={<Trend now={k.views.period} prev={k.views.prev} />} sub="people opening cards" />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="AI chats on cards" value={num(k.aiChats.period)} icon={Bot} trend={<Trend now={k.aiChats.period} prev={k.aiChats.prev} />} sub={`${num(k.aiChats.messages)} messages`} />
-        <Stat label="Leads & enquiries" value={num(k.leads.period)} icon={Inbox} sub={`${num(k.leads.newCardy)} new website leads`} />
-        <Stat label="Active paid plans" value={num(k.activePlans)} icon={Layers} sub="running right now" />
+        <Stat label="Leads for the team" value={num(k.leads.period)} icon={Inbox} sub={`${num(k.leads.newCardy)} still new · ${num(k.enquiries?.period)} enquiries to card owners`} />
+        <Stat label="Active paid plans" value={num(k.activePlans)} icon={Layers} sub="running now, lifetime included" />
         <Stat label="AI cost" value={`$${d.ai.cost.period.toFixed(2)}`} icon={Sparkles} trend={<Trend now={d.ai.cost.period} prev={d.ai.cost.prev} invert />} sub={periodWord} />
       </div>
 
@@ -227,7 +227,7 @@ export default function Dashboard() {
                     <p className="truncate text-xs text-slate-500">{u.email}</p>
                   </div>
                   <div className="text-right">
-                    <Badge color={u.plan === 'Free Trial' ? 'slate' : 'pink'}>{TIER_LABEL[u.plan] || 'Free'}</Badge>
+                    <Badge color={u.plan === 'Free Trial' ? 'slate' : 'pink'}>{TIER_LABEL[u.plan] || 'Free trial'}</Badge>
                     <p className="mt-1 text-[11px] text-slate-400">{dateTime(u.at)}</p>
                   </div>
                 </Link>
@@ -262,14 +262,15 @@ export default function Dashboard() {
           <div className="-mx-2 space-y-0.5">
             <HealthRow ok={d.health.email} icon={Mail} label="Email (SMTP)" detail={d.health.email ? 'Verification, payment & delivery emails go out' : 'Not set up — emails are not sent'} />
             <HealthRow ok={d.health.whatsapp} icon={MessageCircle} label="WhatsApp" detail={d.health.whatsapp ? 'Payment links and cards go out on WhatsApp' : 'Not set up — cards go by email only'} />
-            <HealthRow ok={d.health.payments} icon={CreditCard} label="Razorpay payment links" detail={d.health.payments ? 'Card payments are on' : 'Not set up — no payment links'} />
+            <HealthRow ok={d.health.cashfree && !d.health.paymentLinksIssue} warn={d.health.cashfree} icon={Wallet} label="Cashfree (plan payments)" detail={!d.health.cashfree ? 'Not set up — plans cannot be bought' : d.health.paymentLinksIssue ? 'Checkout works; SMS payment links are off. Ask Cashfree to enable "Payment Links".' : 'Checkout and SMS payment links work'} to={d.health.paymentLinksIssue && can('logs.view') ? '/logs?type=cashfree' : undefined} />
+            <HealthRow ok={d.health.payments} warn icon={CreditCard} label="Razorpay (card orders)" detail={d.health.payments ? 'Card payment links are on' : 'Not set up — "Get my card" orders are off (optional)'} />
             <HealthRow ok={!d.health.stuckDeliveries} icon={PackageX} label="Card deliveries" detail={d.health.stuckDeliveries ? `${d.health.stuckDeliveries} paid card(s) not delivered yet` : 'Every paid card was delivered'} to={d.health.stuckDeliveries && can('payments.view') ? '/payments?status=PAID' : undefined} />
             <HealthRow ok={!d.health.errors24h} warn={d.health.errors24h > 0 && d.health.errors24h < 10} icon={Activity} label="Errors (24h)" detail={`${num(d.health.errors24h)} errors · ${num(d.health.warnings24h)} warnings`} to={can('logs.view') ? '/logs?level=error' : undefined} />
-            <HealthRow ok={!d.health.openTickets} warn icon={LifeBuoy} label="Support tickets" detail={`${num(d.health.openTickets)} open`} to={can('support.view') ? '/support?status=open' : undefined} />
+            <HealthRow ok={!d.health.openTickets} warn icon={LifeBuoy} label="Support tickets" detail={d.health.openTickets ? `${num(d.health.ticketsOpen)} not answered · ${num(d.health.ticketsInProgress)} in progress` : 'Nothing waiting'} to={can('support.view') ? `/support${d.health.ticketsOpen ? '?status=open' : '?status=in-progress'}` : undefined} />
           </div>
         </Card>
 
-        <Card title="Website leads" subtitle="From Cardy's contact form" icon={Inbox} padded={false} actions={can('leads.view') && <Link to="/leads" className="text-xs font-semibold text-brand-500 hover:underline">All leads</Link>}>
+        <Card title="Leads for the team" subtitle="Chatbot, contact page, metal card form" icon={Inbox} padded={false} actions={can('leads.view') && <Link to="/leads" className="text-xs font-semibold text-brand-500 hover:underline">All leads</Link>}>
           {d.leads.recent.length ? (
             <ul className="divide-y divide-slate-100">
               {d.leads.recent.map((l) => (
@@ -279,14 +280,17 @@ export default function Dashboard() {
                     <p className="truncate text-sm font-medium text-slate-900">{l.name}{l.businessName ? ` · ${l.businessName}` : ''}</p>
                     <p className="truncate text-xs text-slate-500">{l.need || l.email || l.phone}</p>
                   </div>
-                  <Badge color={l.status === 'new' ? 'amber' : l.status === 'contacted' ? 'blue' : 'slate'}>{l.status}</Badge>
+                  <Badge color={l.status === 'new' ? 'amber' : l.status === 'contacted' ? 'blue' : 'slate'}>{words(l.status)}</Badge>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="px-5 py-8 text-center text-sm text-slate-500">No leads yet.</p>
           )}
-          <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-500">{num(d.leads.cardEnquiries)} enquiries sent to card owners in the {periodWord}.</p>
+          <p className="border-t border-slate-100 px-5 py-2.5 text-xs text-slate-500">
+            {num(d.leads.cardEnquiries)} enquiries sent to card owners in the {periodWord}.{' '}
+            {can('leads.view') && <Link to="/leads?tab=enquiries" className="font-semibold text-brand-500 hover:underline">See them</Link>}
+          </p>
         </Card>
 
         <Card title="Admin activity" icon={ScrollText} padded={false} actions={can('audit.view') && <Link to="/audit" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-500 hover:underline">Audit log <ArrowRight className="h-3 w-3" /></Link>}>
@@ -295,7 +299,7 @@ export default function Dashboard() {
               {d.recent.activity.map((a) => (
                 <li key={a.id} className="px-5 py-2.5">
                   <div className="flex items-center gap-2">
-                    <Badge color={a.success ? 'slate' : 'red'}>{a.action}</Badge>
+                    <Badge color={a.success ? 'slate' : 'red'}>{actionLabel(a.action)}</Badge>
                     <span className="ml-auto text-[11px] text-slate-400">{dateTime(a.createdAt)}</span>
                   </div>
                   <p className="mt-1 truncate text-xs text-slate-600">{a.summary}</p>

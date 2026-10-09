@@ -6,6 +6,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
+app.disable('x-powered-by');
 // A proxy sits in front of the app (Vercel, or AWS App Runner): trust its X-Forwarded-For so rate
 // limits and logs see the real visitor IP.
 app.set('trust proxy', 1);
@@ -112,7 +113,10 @@ app.use('/api/card-orders',     require('./routes/cardOrders'));
 app.use('/api/webhooks',        require('./routes/webhooks'));
 app.use('/api/cron',            require('./routes/cron'));
 
-app.get('/', (req, res) => res.send('Aicardly API running!'));
+// No banner on the bare API address, and every unknown path gets a plain JSON 404 (never
+// Express's default HTML page, which names the framework).
+app.get('/', (req, res) => res.status(404).json({ msg: 'Not found' }));
+app.use((req, res) => res.status(404).json({ msg: 'Not found' }));
 
 // Anything a route didn't catch: log it and answer with JSON instead of an HTML stack trace.
 // eslint-disable-next-line no-unused-vars

@@ -46,6 +46,16 @@ const cardSlug = (path) => {
 // PublicVcard: honour the owner's "Search Engine Indexing" switch (Advanced Settings).
 export const setCardIndexing = (allowed) => setMeta('name', 'robots', allowed ? 'index, follow' : 'noindex, follow');
 
+// PublicVcard: the card owner's name as the page and link-preview title (same wording as the
+// backend's /api/og tags), in case og.php served the generic tags before its cache was warm.
+export const setCardMeta = (name, role) => {
+  if (!name) return;
+  const title = `${name}${role ? ` – ${role}` : ''} | Aicardly`;
+  document.title = title;
+  setMeta('property', 'og:title', title);
+  setMeta('name', 'twitter:title', title);
+};
+
 // PublicVcard calls this when a username has no card, so the empty page isn't indexed.
 export const markNotFound = () => {
   setMeta('name', 'robots', 'noindex, follow');

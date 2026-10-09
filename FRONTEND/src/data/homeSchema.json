@@ -10,12 +10,16 @@
       "a": "An NFC business card has a tiny chip inside it. When someone taps the card on the back of their phone, your Aicardly digital business card opens instantly in their browser. Nothing has to be typed or scanned, and it works with most modern iPhone and Android phones."
     },
     {
+      "q": "How much does the metal NFC card cost, and how long does delivery take?",
+      "a": "The price depends on finish, quantity and engraving, so we send you a quote first. The metal card is included with the AI Agent Pro plan. Delivery is anywhere in India in 5–7 working days, and cards damaged in transit or with a faulty chip are replaced free (see the Shipping Policy)."
+    },
+    {
       "q": "Do visitors need to install an app?",
       "a": "No. Visitors do not need to install anything. Your card opens in any phone or desktop browser through your link, QR code, or NFC tap. You only need a free Aicardly account to create and manage your card."
     },
     {
-      "q": "Is Aicardly free?",
-      "a": "Yes, you can create your digital business card for free with no credit card required. Paid plans unlock the AI chat assistant and other advanced features, and premium metal NFC cards are available when you want to upgrade."
+      "q": "Is there a free trial?",
+      "a": "You can try it free for 24 hours with no credit card: 1 card, 1 theme and 4 AI chatbot answers. After 24 hours your card pauses until you choose a paid plan. Plans start at ₹99 a month + GST."
     },
     {
       "q": "How does the AI chat widget work?",
@@ -32,21 +36,37 @@
       "@id": "https://aicardly.com/#organization",
       "name": "Aicardly",
       "url": "https://aicardly.com/",
-      "logo": { "@type": "ImageObject", "url": "https://aicardly.com/logo.png", "width": 512, "height": 512 },
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://aicardly.com/logo.png",
+        "width": 512,
+        "height": 512
+      },
       "image": "https://aicardly.com/og-image.jpg",
       "description": "Aicardly is an AI-powered digital business card platform with QR code, NFC and WhatsApp sharing, plus premium metal NFC business cards.",
-      "email": "webkikservices01@gmail.com",
+      "email": "supportaicardly@gmail.com",
       "telephone": "+91-9868698698",
-      "parentOrganization": { "@id": "https://aicardly.com/#webkik" },
+      "parentOrganization": {
+        "@id": "https://aicardly.com/#webkik"
+      },
       "areaServed": "IN",
       "contactPoint": {
         "@type": "ContactPoint",
         "contactType": "customer support",
         "telephone": "+91-9868698698",
-        "email": "webkikservices01@gmail.com",
+        "email": "supportaicardly@gmail.com",
         "areaServed": "IN",
-        "availableLanguage": ["English", "Hindi"]
-      }
+        "availableLanguage": [
+          "English",
+          "Hindi"
+        ]
+      },
+      "sameAs": [
+        "https://www.instagram.com/aicardly/",
+        "https://www.threads.net/@aicardly",
+        "https://www.facebook.com/share/19ZQsqTj1Z/",
+        "https://www.linkedin.com/in/ai-cardly-360718442/"
+      ]
     },
     {
       "@type": "ProfessionalService",
@@ -55,7 +75,7 @@
       "url": "https://aicardly.com/",
       "image": "https://aicardly.com/og-image.jpg",
       "telephone": "+91-9868698698",
-      "email": "webkikservices01@gmail.com",
+      "email": "supportaicardly@gmail.com",
       "priceRange": "₹",
       "address": {
         "@type": "PostalAddress",
@@ -73,7 +93,9 @@
       "name": "Aicardly",
       "description": "AI digital business card and metal NFC business cards in India",
       "inLanguage": "en-IN",
-      "publisher": { "@id": "https://aicardly.com/#organization" }
+      "publisher": {
+        "@id": "https://aicardly.com/#organization"
+      }
     },
     {
       "@type": "SoftwareApplication",
@@ -84,7 +106,9 @@
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, iOS, Android",
       "image": "https://aicardly.com/og-image.jpg",
-      "publisher": { "@id": "https://aicardly.com/#organization" },
+      "publisher": {
+        "@id": "https://aicardly.com/#organization"
+      },
       "offers": {
         "@type": "Offer",
         "price": "0",

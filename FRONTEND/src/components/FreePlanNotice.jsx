@@ -26,7 +26,7 @@ export default function FreePlanNotice({ show = ['ai'], className = '' }) {
   if (!s) return null;
 
   const notes = [];
-  // 24-hour trial: a countdown, then "paused" (the card's public page says so) until they upgrade.
+  // 24-hour trial: a countdown, then "paused" until they upgrade.
   const tr = s.trial;
   if (show.includes('trial') && tr?.active && tr.started) {
     notes.push(
@@ -36,7 +36,7 @@ export default function FreePlanNotice({ show = ['ai'], className = '' }) {
             icon: PauseCircle,
             tone: 'red',
             title: 'Your card is paused',
-            text: `Your ${tr.hours}-hour free trial is over, so people opening your card see that it's paused. Pick a plan to switch it back on instantly. ${tr.linkSentAt ? 'We\'ve also sent you a payment link by email.' : ''}`,
+            text: `Your ${tr.hours}-hour free trial is over, so people opening your card see that it's paused. Pick a plan to switch it back on instantly. ${tr.linkSentAt ? "We've also sent you a payment link by email." : ''}`,
             cta: 'Upgrade & reactivate',
           }
         : {
@@ -58,8 +58,8 @@ export default function FreePlanNotice({ show = ['ai'], className = '' }) {
       tone: over ? 'red' : 'amber',
       title: over ? 'Your card’s AI chatbot is paused' : `Free AI chatbot: ${t.left} of ${t.limit} chats left`,
       text: over
-        ? `Visitors used your ${t.limit} free AI chats, so the chatbot is hidden on your card. Upgrade to Smart AI Card to switch it back on, with unlimited chats and AI voice calls.`
-        : `On the free plan your card’s AI answers ${t.limit} questions as a trial. Upgrade to Smart AI Card for unlimited chats and AI voice calls.`,
+        ? `Visitors used your ${t.limit} free AI chats, so the chatbot is hidden on your card. Pick a plan to switch it back on: Smart AI Card gives 25 chats a month plus AI voice calls.`
+        : `On the free trial your card’s AI answers ${t.limit} questions. Pick a plan for more: Digital Card 10 chats a month, Smart AI Card 25 plus AI voice calls, AI Agent Pro unlimited.`,
       cta: 'Upgrade for chatbot',
     });
   }

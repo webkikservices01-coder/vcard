@@ -31,6 +31,8 @@ const UserSchema = new mongoose.Schema({
     blockedAt:     { type: Date, default: null },
     blockedReason: { type: String, default: '' },
     deletedAt:     { type: Date, default: null },
+    // Marked in the admin panel as a team / test account: left out of the dashboard numbers.
+    isTest:        { type: Boolean, default: false },
     // Free card deliveries granted by an admin: the next "Get my card" order skips the payment link.
     freeCardCredits: { type: Number, default: 0, min: 0 },
     // Sign-in tokens issued before this time stop working (password changed / reset, or an

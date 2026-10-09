@@ -963,7 +963,7 @@ export function ReelMedia({ reel, index = 0, openable = true }) {
   const fill = { position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' };
   let media = null;
   if (viewerOpen && openable) {
-    media = reel.thumb ? <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} /> : null;
+    media = reel.thumb ? <img src={reel.thumb} alt={reel.title || 'Video thumbnail'} style={{ ...fill, objectFit: 'cover' }} /> : null;
   } else if (reel.kind === 'file') {
     media = (
       <video
@@ -987,13 +987,13 @@ export function ReelMedia({ reel, index = 0, openable = true }) {
         style={{ ...fill, background: '#000' }}
       />
     ) : (
-      <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />
+      <img src={reel.thumb} alt={reel.title || 'Video thumbnail'} style={{ ...fill, objectFit: 'cover' }} />
     );
   } else if (reel.kind === 'instagram') {
     media = visible ? (
       <IgFrame src={reel.embed} title={reel.title || 'Instagram reel'} />
     ) : reel.thumb ? (
-      <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />
+      <img src={reel.thumb} alt={reel.title || 'Video thumbnail'} style={{ ...fill, objectFit: 'cover' }} />
     ) : null;
   } else if (reel.kind === 'facebook') {
     const base = EMBED_BASE[reel.kind];
@@ -1010,10 +1010,10 @@ export function ReelMedia({ reel, index = 0, openable = true }) {
         />
       </div>
     ) : reel.thumb ? (
-      <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />
+      <img src={reel.thumb} alt={reel.title || 'Video thumbnail'} style={{ ...fill, objectFit: 'cover' }} />
     ) : null;
   } else if (reel.thumb) {
-    media = <img src={reel.thumb} alt="" style={{ ...fill, objectFit: 'cover' }} />;
+    media = <img src={reel.thumb} alt={reel.title || 'Video thumbnail'} style={{ ...fill, objectFit: 'cover' }} />;
   }
   const playable = reel.kind !== 'external';
   return (

@@ -51,14 +51,15 @@ const sendMail = async ({ to, subject, text, html, attachments, replyTo, icalEve
 const BRAND = {
   name: 'AiCardly',
   site: (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, ''),
-  contact: process.env.CONTACT_EMAIL || 'hello@aicardly.com',
+  contact: process.env.CONTACT_EMAIL || 'supportaicardly@gmail.com',
 };
 const SOCIALS = [
   ['Instagram', process.env.SOCIAL_INSTAGRAM ?? 'https://www.instagram.com/aicardly/'],
   ['Threads', process.env.SOCIAL_THREADS ?? 'https://www.threads.net/@aicardly'],
   ['YouTube', process.env.SOCIAL_YOUTUBE ?? ''],
-  ['Facebook', process.env.SOCIAL_FACEBOOK ?? 'https://www.facebook.com/webkikservices/'],
-  ['LinkedIn', process.env.SOCIAL_LINKEDIN ?? 'https://www.linkedin.com/company/webkik-services'],
+  // Aicardly's own pages (the old defaults pointed at Webkik's).
+  ['Facebook', process.env.SOCIAL_FACEBOOK ?? 'https://www.facebook.com/share/19ZQsqTj1Z/'],
+  ['LinkedIn', process.env.SOCIAL_LINKEDIN ?? 'https://www.linkedin.com/in/ai-cardly-360718442/'],
 ].filter(([, url]) => /^https:\/\//.test(url));
 
 // The Aicardly logo (served by this backend at /brand/email-logo.png). Its cell is white with a

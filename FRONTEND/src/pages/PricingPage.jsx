@@ -5,7 +5,7 @@ import { Check, X as XIcon, ArrowRight } from 'lucide-react';
 import MeshBackground from '../components/ui/MeshBackground';
 import PublicNav from '../components/PublicNav';
 import PublicFooter from '../components/PublicFooter';
-import { plans, featureSections, withGst, inr } from '../data/plans.jsx';
+import { plans, featureSections, withGst, inr, yearlySaving, FREE_TRIAL } from '../data/plans.jsx';
 
 // Public /pricing page (the dashboard's Plans page is for signed-in owners). Prices come from
 // data/plans.jsx, the same list the dashboard and the server's catalog use.
@@ -22,7 +22,7 @@ export default function PricingPage() {
             Simple plans for every professional
           </h1>
           <p className="mx-auto mt-3 max-w-2xl" style={{ color: 'var(--surface-text-2)' }}>
-            Start free. Upgrade when you want the AI assistant, more cards or your own branding. Prices in INR.
+            Try it free for 24 hours, then pick the plan that fits. Prices in INR.
           </p>
           <div className="mt-8 inline-flex rounded-full p-1" style={{ background: 'var(--surface-2)' }}>
             {['monthly', 'yearly'].map((b) => (
@@ -40,7 +40,15 @@ export default function PricingPage() {
           </div>
         </motion.div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <p
+          className="mx-auto mt-10 max-w-3xl rounded-2xl border px-5 py-3 text-center text-sm"
+          style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}
+        >
+          <span className="font-bold">Free trial: </span>
+          {FREE_TRIAL.summary}
+        </p>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
           {plans.map((p, i) => {
             const price = billing === 'yearly' ? p.price.yearly : p.price.monthly;
             return (
@@ -64,6 +72,11 @@ export default function PricingPage() {
                   <span className="text-sm font-medium" style={{ color: 'var(--surface-text-2)' }}> / {billing === 'yearly' ? 'year' : 'month'} + GST</span>
                 </p>
                 <p className="mt-1 text-xs" style={{ color: 'var(--surface-text-2)' }}>{inr(withGst(price))} incl. 18% GST</p>
+                {billing === 'yearly' && yearlySaving(p).amount > 0 && (
+                  <p className="mt-1 text-xs font-semibold text-green-600">
+                    ₹{yearlySaving(p).perMonth.toLocaleString('en-IN')}/month · save {yearlySaving(p).pct}% vs monthly
+                  </p>
+                )}
                 <ul className="mt-6 space-y-2 text-sm flex-1" style={{ color: 'var(--surface-text)' }}>
                   {p.highlights.map((h) => (
                     <li key={h} className="flex items-start gap-2">
@@ -88,6 +101,9 @@ export default function PricingPage() {
 
         <section className="mt-16 overflow-x-auto rounded-3xl border" style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-1)' }}>
           <h2 className="px-6 pt-6 text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Compare all features</h2>
+          <p className="px-6 pt-1 text-xs sm:hidden" style={{ color: 'var(--surface-text-2)' }} aria-hidden="true">
+            Swipe sideways to see every plan →
+          </p>
           <table className="mt-4 w-full min-w-[560px] text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>

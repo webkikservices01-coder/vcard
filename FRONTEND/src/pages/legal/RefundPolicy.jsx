@@ -6,10 +6,11 @@ const H2 = ({ children }) => (
 );
 
 const RefundPolicy = () => (
-  <LegalLayout title="Refund Policy" updated="18 July 2026">
+  <LegalLayout title="Refund Policy" updated="9 October 2026">
     <p>
-      This Refund Policy applies to all paid plans (Digital Card, Smart AI Card, AI Agent Pro)
-      purchased on Aicardly, operated by <strong>{COMPANY.name}</strong>.
+      This Refund Policy applies to all paid plans (Digital Card, Smart AI Card, AI Agent Pro) and
+      to premium metal NFC card orders purchased on Aicardly, operated by <strong>{COMPANY.name}</strong>.
+      Sections 1 to 3 cover plans; section 4 covers the metal card.
     </p>
 
     <H2>1. Digital Subscription Service</H2>
@@ -45,7 +46,34 @@ const RefundPolicy = () => (
       <li>Third-party payment gateway charges/fees, where applicable.</li>
     </ul>
 
-    <H2>4. How to Request a Refund</H2>
+    <H2>4. Metal NFC Card (Physical Product)</H2>
+    <ul>
+      <li>
+        <strong>Custom-made:</strong> every metal card is engraved with your name and logo, so it can't be
+        returned or refunded for a change of mind, or for errors in details you approved.
+      </li>
+      <li>
+        <strong>Damaged in transit:</strong> report it within 48 hours of delivery with photos of the card and
+        package, and we will send a free replacement.
+      </li>
+      <li>
+        <strong>Faulty NFC chip:</strong> if the chip doesn't open your card within 30 days of delivery, we
+        will replace the card free of charge.
+      </li>
+      <li>
+        <strong>Our engraving error, or never delivered:</strong> we re-make the card free of charge, or refund
+        the card price in full if you prefer.
+      </li>
+      <li>
+        A card cancelled before engraving has started is refunded in full. Once engraving has started it
+        can't be cancelled.
+      </li>
+    </ul>
+    <p>
+      Delivery times and charges are in our <a href="/shipping-policy">Shipping Policy</a>.
+    </p>
+
+    <H2>5. How to Request a Refund</H2>
     <p>
       Email <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> or call{' '}
       <a href={COMPANY.phoneHref}>{COMPANY.phone}</a> with your registered email address and
@@ -53,7 +81,7 @@ const RefundPolicy = () => (
       business days.
     </p>
 
-    <H2>5. Refund Processing Time</H2>
+    <H2>6. Refund Processing Time</H2>
     <p>
       Approved refunds are processed back to your original payment method via Cashfree within
       5–7 business days, depending on your bank/payment provider.

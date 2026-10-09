@@ -49,4 +49,4 @@ async function markCompleted(txn) {
   return true;
 }
 
-module.exports = { markCompleted };
+module.exports = { markCompleted, makeInvoiceNumber };

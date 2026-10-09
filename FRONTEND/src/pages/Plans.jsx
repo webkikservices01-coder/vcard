@@ -10,7 +10,7 @@ import Button from '../components/ui/Button';
 import IconButton from '../components/ui/IconButton';
 import MeshBackground from '../components/ui/MeshBackground';
 import { fadeUp } from '../utils/motion';
-import { plans, featureSections, withGst, inr } from '../data/plans.jsx';
+import { plans, featureSections, withGst, inr, yearlySaving } from '../data/plans.jsx';
 import axiosClient from 'axios';
 
 let cashfreePromise = null;
@@ -78,12 +78,10 @@ const FeatureComparisonTable = ({ highlightId }) => (
   </div>
 );
 
-// Derived from real plan pricing, not hardcoded — stays accurate if prices in data/plans.jsx change.
-// Plans on a ₹1 test price are left out so they don't inflate the saving.
+// The biggest real saving of any plan (each plan card shows its own). Derived from data/plans.jsx;
+// plans on a ₹1 test price are left out.
 const pricedPlans = plans.filter(p => p.price.monthly > 1);
-const yearlySavingsPct = Math.round(
-  (pricedPlans.reduce((sum, p) => sum + (1 - p.price.yearly / (p.price.monthly * 12)), 0) / (pricedPlans.length || 1)) * 100
-);
+const maxSavingPct = Math.max(0, ...pricedPlans.map(p => yearlySaving(p).pct));
 
 const Plans = () => {
   const location = useLocation();
@@ -213,7 +211,7 @@ const Plans = () => {
               <span className={`relative z-10 inline-flex items-center ${billing === 'yearly' ? 'text-white' : 'hover:text-brand-500'}`}>
                 Yearly
                 <span className="ml-1.5 text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded-full">
-                  SAVE {yearlySavingsPct}%
+                  SAVE UP TO {maxSavingPct}%
                 </span>
               </span>
             </button>
@@ -280,9 +278,9 @@ const Plans = () => {
                 </div>
                 <p className="text-xs mb-5" style={{ color: 'var(--surface-text-2)' }}>
                   + 18% GST per {billing === 'yearly' ? 'year' : 'month'} ({inr(withGst(price))} total) · billed {billing}
-                  {billing === 'yearly' && (
-                    <span className="ml-1 text-green-600 font-semibold">
-                      (₹{plan.price.monthly}/mo value)
+                  {billing === 'yearly' && yearlySaving(plan).amount > 0 && (
+                    <span className="block text-green-600 font-semibold">
+                      Works out to ₹{yearlySaving(plan).perMonth.toLocaleString('en-IN')}/month · you save {yearlySaving(plan).pct}% (₹{yearlySaving(plan).amount.toLocaleString('en-IN')} a year)
                     </span>
                   )}
                 </p>
@@ -352,7 +350,7 @@ const Plans = () => {
         <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--surface-text-2)' }} />
         <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>
           Secure payments powered by <strong>Cashfree</strong>. Cancel anytime.
-          For enterprise or agency pricing, <a href="mailto:support@aicardly.com" className="font-semibold text-brand-500 hover:underline">contact us</a>.
+          For enterprise or agency pricing, <a href="mailto:supportaicardly@gmail.com" className="font-semibold text-brand-500 hover:underline">contact us</a>.
         </p>
       </div>
 

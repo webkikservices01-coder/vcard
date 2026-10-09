@@ -1,16 +1,19 @@
-import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { hasValidSession } from '../utils/session';
 
 const ProtectedRoute = ({ children }) => {
-  // Check karte hain ki localStorage mein token hai ya nahi
-  const token = localStorage.getItem('token');
-
-  // Agar token nahi hai, toh wapas login page par bhej do
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  // No token, or it has expired (7 days): sign in again. The dashboard never opens on an old session.
+  if (!hasValidSession()) {
+    let hadToken = false;
+    try {
+      hadToken = !!localStorage.getItem('token');
+      localStorage.removeItem('token');
+    } catch {
+      /* storage blocked */
+    }
+    return <Navigate to={hadToken ? '/login?expired=1' : '/login'} replace />;
   }
 
-  // Agar token hai, toh jo page manga tha (dashboard) wo dikha do
   return children;
 };
 

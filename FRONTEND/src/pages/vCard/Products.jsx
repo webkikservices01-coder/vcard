@@ -27,7 +27,7 @@ const emptyForm = { title: '', description: '', price: '', link: '', coverImage:
 // so their link is required.
 const COPY = {
   product: {
-    heading: 'Products', sub: 'Showcase the products you sell on your vCard', one: 'Product', search: 'Search products...',
+    heading: 'Products', sub: 'Showcase the products you sell on your card', one: 'Product', search: 'Search products...',
     empty: 'No products yet. Add your first one.', titlePh: 'Product name', linkLabel: 'Link URL', pricePh: '999', next: '/dashboard/vcard/services',
   },
   service: {

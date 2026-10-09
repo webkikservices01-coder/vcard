@@ -98,7 +98,8 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
           flex flex-col h-screen shrink-0 overflow-y-auto border-r
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
         `}
-        style={{ borderColor: 'var(--surface-border)' }}
+        // Solid, so page text doesn't show through the menu (light mode).
+        style={{ background: 'var(--surface-1)', borderColor: 'var(--surface-border)' }}
       >
         {/* Logo Header */}
         <div className="h-20 flex items-center justify-between px-6 shrink-0" style={{ borderBottom: '1px solid var(--surface-border)' }}>
@@ -120,7 +121,7 @@ const Sidebar = ({ isOpen, onClose, userPlan }) => {
           <Link to="/dashboard/vcard/profile" onClick={onClose} className="block">
             <NavPill active={isVcardActive} delay={0.1}>
               <UserCircle className="w-4 h-4 shrink-0" />
-              <span>My vCard</span>
+              <span>My Card</span>
             </NavPill>
           </Link>
 

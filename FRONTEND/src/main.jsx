@@ -3,6 +3,9 @@ import { createRoot, hydrateRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { installSessionGuard } from './utils/session.js'
+
+installSessionGuard()
 
 const app = (
   <StrictMode>

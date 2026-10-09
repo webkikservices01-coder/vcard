@@ -40,7 +40,7 @@ import PublicFooter, { COMPANY } from "../components/PublicFooter";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import LogoMark from "../components/ui/LogoMark";
 import CyberCard3D from "./CyberCard3D";
-import { plans as realPlans } from "../data/plans";
+import { plans as realPlans, FREE_TRIAL } from "../data/plans";
 import HOME_SCHEMA from "../data/homeSchema.json";
 import MetalCardSection from "../components/MetalCardSection";
 import HomeExplainer from "../components/HomeExplainer";
@@ -200,7 +200,7 @@ function TypewriterText({ text, speed = 45, delay = 700 }) {
           <span className="sr-only">{text}</span>
           <span aria-hidden="true">{displayedText}</span>
           {!isTypingComplete && (
-            <span className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
+            <span aria-hidden="true" className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
           )}
         </span>
       </p>
@@ -226,12 +226,12 @@ function SectionHeading({ eyebrow, title, subtitle }) {
 }
 
 const features = [
-  { icon: Smartphone, title: "Digital Business Card", desc: "Share Your Identity With A Tap. No App Required — Works On Any Device, Instantly." },
-  { icon: Bot, title: "AI Persona & Chat Widget", desc: "A Configurable AI Assistant On Your Card That Greets Visitors And Answers For You, 24/7." },
-  { icon: QrCode, title: "Smart QR Codes", desc: "Generate Elegant QR Codes That Route Straight To Your Card. Print, Share, Scan." },
-  { icon: BarChart3, title: "Visit Analytics", desc: "Track Profile Views, Link Taps, And Engagement With A Refined, Executive Dashboard." },
-  { icon: MessageCircle, title: "WhatsApp Quick Connect", desc: "Let Visitors Reach You On WhatsApp In One Tap, Straight From Your Card." },
-  { icon: Globe, title: "Custom Public Link", desc: "Your Own Aicardly.com/Yourname Link — Polished, Memorable, And Ready To Share Anywhere." },
+  { icon: Smartphone, title: "Digital Business Card", desc: "Share your identity with a tap. No app required — works on any device, instantly." },
+  { icon: Bot, title: "AI Persona & Chat Widget", desc: "A configurable AI assistant on your card that greets visitors and answers for you, 24/7." },
+  { icon: QrCode, title: "Smart QR Codes", desc: "Generate elegant QR codes that route straight to your card. Print, share, scan." },
+  { icon: BarChart3, title: "Visit Analytics", desc: "Track profile views, link taps, and engagement with a refined, executive dashboard." },
+  { icon: MessageCircle, title: "WhatsApp Quick Connect", desc: "Let visitors reach you on WhatsApp in one tap, straight from your card." },
+  { icon: Globe, title: "Custom Public Link", desc: "Your own aicardly.com/yourname link — polished, memorable, and ready to share anywhere." },
 ];
 
 const PLAN_ICONS = {
@@ -240,26 +240,25 @@ const PLAN_ICONS = {
   "ai-agent-pro": Phone,
 };
 
-const testimonials = [
-  { name: "Aarav Sharma", role: "Founder, Studio Nine", quote: "Aicardly Replaced The Paper Cards I Kept Forgetting At Home. Clients Scan The QR And My Whole Profile Is Right There." },
-  { name: "Meera Iyer", role: "Real Estate Consultant", quote: "The AI Chat Widget Answers Basic Questions For Leads Even When I Am With Another Client. It Genunely Saves Me Calls." },
-  { name: "Rohan Verma", role: "Freelance Designer", quote: "The Themes Feel Premium — It Is The First Digital Card I Have Used That Actually Looks The Way I Wanted My Brand To Feel." },
-  { name: "Ananya Deshmukh", role: "Creative Director, Aura Studio", quote: "Clients Are Blown Away By The Live Interaction. My Lead Conversions Jumped 40% In Just Two Weeks." },
-  { name: "Vikram Malhotra", role: "Managing Partner, Zenith Capital", quote: "Sharing My Portfolio During High-Stake Networking Dinners Has Never Looked This Crisp And Professional." },
-  { name: "Pooja Hegde", role: "Fitness & Wellness Coach", quote: "The WhatsApp Quick Connect Feature Made It Effortless For My Instagram Followers To Book 1-On-1 Sessions Directly." },
-  { name: "Karan Singhania", role: "Tech Lead, DevGrid", quote: "Lightning-Fast Loading Speeds And Responsive Theme Physics. Easily The Best Tech-Forward Digital Card Platform." },
-  { name: "Neha Chawla", role: "Brand Strategist", quote: "Having My AI Assistant Explain My Past Case Studies To Potential Partners 24/7 Feels Like Having An Unfair Advantage." },
-  { name: "Dr. Sameer Joshi", role: "Dental Surgeon", quote: "Patients Easily Scan My QR Code At Conferences To Get Directions, Timings, And Book Consultations Instantly." },
-  { name: "Rhea Kapoor", role: "Event Architect", quote: "The Custom Vanity Link Is Clean And Memorable. It Completely Eliminated The Clutter Of Traditional Bio Link Tools." },
-  { name: "Arjun Reddy", role: "Commercial Realtor", quote: "Prospective Buyers View Property Brochures And Schedule Site Visits Right From My Smart Card." },
-  { name: "Tanya Sen", role: "Growth Marketer", quote: "The Dashboard Analytics Show Me Exactly Which Campaigns And Events Drove The Highest Card Views." },
-  { name: "Kabir Mehta", role: "Angel Investor", quote: "Founders Love Scanning It At Demo Days. Clean, Sleek, And Leaves A Memorable High-End Impression." },
+// Example ways people use their card. These are illustrations, not customer reviews: no names,
+// ratings or results. Swap in real stories (with the person's consent, photo and company) when
+// you have them.
+const useCases = [
+  { role: "Founders", text: "Replace paper cards with one link. People scan the QR at a meeting and the whole profile, website and portfolio is right there." },
+  { role: "Real estate consultants", text: "The card's AI assistant answers basic questions about listings while you are with another client, and saves the enquiry for you." },
+  { role: "Designers & creatives", text: "Pick a theme that matches your brand and show your best work in the gallery and portfolio sections." },
+  { role: "Coaches & trainers", text: "WhatsApp quick connect lets followers message you in one tap to ask about sessions." },
+  { role: "Doctors & clinics", text: "Patients scan the QR at the front desk to get directions, timings and the clinic's contact details." },
+  { role: "Sales teams", text: "Share your card after every meeting and see how many people viewed it and which links they tapped." },
+  { role: "Event professionals", text: "One short link, aicardly.com/yourname, instead of a cluttered bio-link page." },
+  { role: "Agencies", text: "Show your services with links to your website, and let the AI book meetings with new leads." },
 ];
 
+// Product facts only (no unproven usage numbers or ratings).
 const stats = [
-  { value: "10k+", label: "Cards Created" },
-  { value: "50k+", label: "Profile Views" },
-  { value: "4.8★", label: "Avg. Rating" },
+  { value: "10", label: "Card Themes" },
+  { value: "24/7", label: "AI Assistant On Your Card" },
+  { value: "₹99", label: "Plans From / Month" },
 ];
 
 const audience = [
@@ -272,10 +271,10 @@ const audience = [
 ];
 
 const steps = [
-  { icon: Sparkles, title: "Sign Up In Seconds", desc: "Create Your Free Account With Your Name, Email And Phone — No App To Install, No Credit Card." },
-  { icon: Smartphone, title: "Design Your Card", desc: "Set Your Title, Add A Photo, Pick A Theme, And Switch On Your AI Persona To Greet Visitors." },
-  { icon: QrCode, title: "Share It Anywhere", desc: "Download Your QR Code Or Share Your Mycardlink.Site URL — Your Card Opens Instantly On Any Device." },
-  { icon: BarChart3, title: "Track & Grow", desc: "See Card Views, Manage Products & Testimonials, And Keep An Eye On Your Plan From One Dashboard." },
+  { icon: Sparkles, title: "Sign Up In Seconds", desc: "Create your account with your name, email and phone — no app to install, no credit card. The first 24 hours are free." },
+  { icon: Smartphone, title: "Design Your Card", desc: "Set your title, add a photo, pick a theme, and switch on your AI persona to greet visitors." },
+  { icon: QrCode, title: "Share It Anywhere", desc: "Download your QR code or share your aicardly.com/yourname link — your card opens instantly on any device." },
+  { icon: BarChart3, title: "Track & Grow", desc: "See card views, manage products & testimonials, and keep an eye on your plan from one dashboard." },
 ];
 
 /* -------- Enhanced Interactive Mockups -------- */
@@ -327,7 +326,7 @@ function SignupMock() {
           <span>Continue</span> <ArrowRight className="h-3.5 w-3.5" />
         </button>
         <p className={`mt-2 text-center text-[10px] ${isDark ? "text-slate-400" : "text-slate-500 font-medium"}`}>
-          No Credit Card Required. Free Tier Forever.
+          No credit card required. 24-hour free trial.
         </p>
       </div>
     </div>
@@ -421,7 +420,7 @@ function ShareMock() {
     <div className="flex h-full flex-col justify-between items-center text-center p-1">
       <div>
         <span className="text-xs font-semibold uppercase tracking-widest text-[#ff6b9d]">Instant QR & URL</span>
-        <p className={`text-[11px] mt-0.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>Share With A Tap Or Camera Scan</p>
+        <p className={`text-[11px] mt-0.5 ${isDark ? "text-slate-300" : "text-slate-600"}`}>Share with a tap or camera scan</p>
 
         <div className="relative mx-auto mt-3.5 grid h-28 w-28 place-items-center rounded-2xl border border-white/25 bg-white p-2 shadow-xl overflow-hidden">
           <QrCode className="h-20 w-20 text-slate-900" />
@@ -473,8 +472,8 @@ function TrackMock() {
   const dashboardStats = [
     { icon: Eye, label: "Live Card Views", value: views },
     { icon: Package, label: "AI Queries Handled", value: "84" },
-    { icon: Star, label: "Review Rating", value: "4.9★" },
-    { icon: CreditCard, label: "Active Plan", value: "Pro AI" },
+    { icon: Star, label: "Link Taps", value: "126" },
+    { icon: CreditCard, label: "Active Plan", value: "AI Agent Pro" },
   ];
 
   return (
@@ -509,7 +508,7 @@ function TrackMock() {
       </div>
 
       <p className={`text-center text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-        AI Automatically Optimizes Follow-Up Responses Based On View Stats.
+        AI automatically optimizes follow-up responses based on view stats.
       </p>
     </div>
   );
@@ -618,13 +617,13 @@ function StepsDemo({ isVisible }) {
 
         <div className="mt-4 flex items-center justify-center">
           {steps.map((_, i) => (
-            // 36px tap area around a small dot, so it is easy to hit with a finger.
+            // 44px tap area around a small dot, so it is easy to hit with a finger.
             <button
               key={i}
               type="button"
               aria-label={`Show Step ${i + 1}`}
               onClick={() => setActiveStep(i)}
-              className="grid h-9 min-w-9 place-items-center px-1 cursor-pointer"
+              className="grid h-11 min-w-11 place-items-center px-1 cursor-pointer"
             >
               <span
                 className={`block h-1.5 rounded-full transition-all duration-500 ${
@@ -659,9 +658,46 @@ function StepsDemo({ isVisible }) {
   );
 }
 
+// In-page links (#stories, #pricing, #nfc-card). Sections further up render late
+// (content-visibility, images), which moves the target after a plain jump, so keep
+// re-aligning until the target stops moving.
+function jumpToSection(id) {
+  let last = null;
+  let steady = 0;
+  let tries = 0;
+  const step = () => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ block: "start" });
+    const top = Math.round(el.getBoundingClientRect().top);
+    steady = top === last ? steady + 1 : 0;
+    last = top;
+    if (steady < 2 && ++tries < 20) setTimeout(step, 120);
+  };
+  step();
+  try {
+    window.history.replaceState(null, "", `#${id}`);
+  } catch {
+    /* ignore */
+  }
+}
+const sectionLink = (id, after) => (e) => {
+  e.preventDefault();
+  after?.();
+  jumpToSection(id);
+};
+
 export function LandingPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Arriving on /#pricing, /#stories … from another page or Cardy's links.
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!/^[a-z0-9-]+$/i.test(id)) return;
+    const t = setTimeout(() => jumpToSection(id), 300);
+    return () => clearTimeout(t);
+  }, []);
 
   const heroVideoRef = useRef(null);
   const heroSectionRef = useRef(null);
@@ -902,7 +938,7 @@ export function LandingPage() {
 
             {/* Navigation Links */}
             <div
-              className={`hidden items-center gap-1 rounded-full transition-all duration-500 ease-out md:flex ${
+              className={`hidden items-center gap-1 rounded-full transition-all duration-500 ease-out lg:flex ${
                 isScrolled
                   ? "border border-transparent bg-transparent p-0"
                   : isDark
@@ -936,11 +972,12 @@ export function LandingPage() {
               </Link>
               <a
                 href="#stories"
+                onClick={sectionLink("stories")}
                 className={`nav-link-glow anim-nav-stories rounded-full px-4 py-1.5 text-xs font-semibold transition-all duration-300 ease-in-out active:scale-95 ${
                   isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                 }`}
               >
-                Stories
+                Use Cases
               </a>
               <Link
                 to="/contact-us"
@@ -974,7 +1011,7 @@ export function LandingPage() {
               <div className="anim-signin-btn">
                 <Link
                   to="/login"
-                  className={`nav-link-glow hidden text-sm font-semibold transition-colors duration-200 sm:inline pb-1 ${
+                  className={`nav-link-glow hidden whitespace-nowrap text-sm font-semibold transition-colors duration-200 sm:inline pb-1 ${
                     isDark ? "text-slate-300 hover:text-white" : "text-slate-700 hover:text-[#9F1C44]"
                   }`}
                 >
@@ -997,7 +1034,7 @@ export function LandingPage() {
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
-                className={`grid h-10 w-10 place-items-center rounded-full border md:hidden ${
+                className={`grid h-10 w-10 place-items-center rounded-full border lg:hidden ${
                   isDark ? "border-white/15 bg-white/[0.06] text-white" : "border-pink-100 bg-white text-slate-800"
                 }`}
               >
@@ -1014,7 +1051,8 @@ export function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`mt-2 rounded-2xl border p-2 shadow-2xl md:hidden ${
+                data-site-menu
+                className={`mt-2 rounded-2xl border p-2 shadow-2xl lg:hidden ${
                   isDark ? "border-white/10 bg-slate-950/95 text-white" : "border-pink-100 bg-white text-slate-900"
                 }`}
               >
@@ -1029,8 +1067,8 @@ export function LandingPage() {
                     {label} <ArrowRight className="h-4 w-4 opacity-40" />
                   </Link>
                 ))}
-                <a href="#stories" onClick={() => setMenuOpen(false)} className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-semibold">
-                  Stories <ArrowRight className="h-4 w-4 opacity-40" />
+                <a href="#stories" onClick={sectionLink("stories", () => setMenuOpen(false))} className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-semibold">
+                  Use Cases <ArrowRight className="h-4 w-4 opacity-40" />
                 </a>
                 <div className={`mt-1 grid grid-cols-2 gap-2 border-t pt-3 ${isDark ? "border-white/10" : "border-pink-100"}`}>
                   <Link to="/contact-us" className={`rounded-xl border py-3 text-center text-sm font-semibold ${isDark ? "border-white/15" : "border-slate-200"}`}>
@@ -1068,7 +1106,7 @@ export function LandingPage() {
                   ? "border-white/10 bg-white/[0.05] text-[#ff6b9d]" 
                   : "border-[#E70C65]/20 bg-pink-50 text-[#9F1C44]"
               }`}>
-                <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> AI Digital Business Card &amp; Metal NFC Cards
+                <Sparkles className="h-3.5 w-3.5 text-[#E70C65]" /> AI digital business card &amp; metal NFC cards
               </span>
               <h1 className={`mt-5 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl ${
                 isDark ? "text-white" : "text-slate-900"
@@ -1100,6 +1138,7 @@ export function LandingPage() {
                 </Link>
                 <a
                   href="#nfc-card"
+                  onClick={sectionLink("nfc-card")}
                   className={`rounded-full border px-5 py-3 text-sm font-medium backdrop-blur transition-all duration-300 ease-out ${
                     isDark 
                       ? "border-white/15 bg-white/[0.04] text-white hover:border-white/30 hover:bg-white/[0.08]" 
@@ -1110,19 +1149,7 @@ export function LandingPage() {
                 </a>
               </div>
               <div className="mt-8 flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {["#9F1C44", "#E70C65", "#b3154b", "#cf0555"].map((c) => (
-                    <span key={c} className={`h-8 w-8 rounded-full ring-2 shadow-sm ${isDark ? 'ring-slate-900' : 'ring-white'}`} style={{ background: c }} />
-                  ))}
-                </div>
-                <div>
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-3.5 w-3.5 fill-[#E70C65] text-[#E70C65]" />
-                    ))}
-                  </div>
-                  <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>Trusted by 10,000+ Professionals in India</p>
-                </div>
+                <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600 font-medium'}`}>Made in India · No app needed · 24-hour free trial</p>
               </div>
               <p className={`mt-6 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 A product by{' '}
@@ -1197,7 +1224,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
           <SectionHeading 
             eyebrow="Hardware Meets Intelligence" 
-            title="Next-Gen 3D Metal NFC Business Card." 
+            title="Next-gen 3D metal NFC business card." 
             subtitle="Rotate and interact with your custom 3D metal NFC business card. One tap shares your digital business card, contact details, and AI assistant with any phone, with no app needed."
           />
 
@@ -1242,10 +1269,10 @@ export function LandingPage() {
                   <Cpu className="h-6 w-6" />
                 </div>
                 <h3 className={`mt-5 text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                  Embedded EMV Chip & Instant NFC Beam
+                  NFC chip, tap to open
                 </h3>
                 <p className={`mt-2 text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-                  Tap Against Any Modern iPhone Or Android Smartphone To Trigger Your Digital Portfolio, Contact File, And AI Chat Assistant Instantly — Zero Companion App Required.
+                  Tap the card on a modern iPhone or Android phone and your Aicardly card opens in the browser, with your contact details and AI assistant. No app needed.
                 </p>
               </div>
 
@@ -1259,7 +1286,7 @@ export function LandingPage() {
                   Obsidian Metal & Frosted Satin Craftsmanship
                 </h3>
                 <p className={`mt-2 text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-                  Designed For High-Stake Networking Dinners, Founder Pitches, And Conferences. Every Card Comes Encrypted With Your Vanity Routing Link And Dynamic Contact Sync.
+                  Stainless steel engraved with your name and logo, for meetings, pitches and conferences. The card opens your aicardly.com/yourname link, so updates to your details show up without reprinting.
                 </p>
               </div>
 
@@ -1365,7 +1392,7 @@ export function LandingPage() {
       >
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-3/4 max-w-3xl rounded-full bg-gradient-to-tr from-[#E70C65]/20 via-[#6366f1]/15 to-transparent blur-[120px] opacity-75" />
 
-        <SectionHeading eyebrow="Features" title="Everything To Make A Lasting Impression." subtitle="Thoughtful Details, Refined Visuals, And AI Where It Actually Helps." />
+        <SectionHeading eyebrow="Features" title="Everything to make a lasting impression." subtitle="Thoughtful details, refined visuals, and AI where it actually helps." />
 
         <div 
           ref={featuresGridRef} 
@@ -1417,10 +1444,10 @@ export function LandingPage() {
 
       {/* ── 6. Pricing Section ──────────────────────────────── */}
       {PRICING_ENABLED && (
-      <section id="pricing" className="cv-auto relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
+      <section id="pricing" className="cv-auto scroll-mt-20 relative mx-auto max-w-7xl px-6 py-24 lg:px-10 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/20 via-[#6366f1]/15 to-[#9F1C44]/20 blur-[140px] opacity-80" />
 
-        <SectionHeading eyebrow="Pricing" title="Simple Plans That Grow With You." subtitle="Start Free, Upgrade When Your First Impressions Need Superpowers." />
+        <SectionHeading eyebrow="Pricing" title="Simple Plans That Grow With You." subtitle="Try it free for 24 hours, then pick the plan that fits." />
 
         <div 
           ref={pricingGridRef} 
@@ -1537,15 +1564,18 @@ export function LandingPage() {
             );
           })}
         </div>
+        <p className={`relative z-10 mx-auto mt-10 max-w-3xl text-center text-sm ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+          <span className="font-bold">Free trial: </span>{FREE_TRIAL.summary}
+        </p>
       </section>
       )}
 
-      {/* ── 7. Stories Section ──────────────────────────────── */}
-      <section id="stories" className="cv-auto relative py-24 overflow-hidden">
+      {/* ── 7. Use Cases Section ──────────────────────────────── */}
+      <section id="stories" className="cv-auto scroll-mt-20 relative py-24 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[350px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/15 via-[#6366f1]/15 to-[#9F1C44]/15 blur-[120px] opacity-75" />
 
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <SectionHeading eyebrow="Stories" title="Loved By Professionals Who Care." subtitle="Real Stories From Founders, Consultants, And Leaders Elevating Their Brand." />
+          <SectionHeading eyebrow="Use Cases" title="How professionals use Aicardly." subtitle="Example ways founders, consultants and creators use their card." />
         </div>
 
         <div className="relative mt-16 w-full overflow-hidden">
@@ -1557,9 +1587,9 @@ export function LandingPage() {
           }`} />
 
           <div className="marquee-track gap-6 py-4">
-            {[...testimonials, ...testimonials].map((t, idx) => (
+            {[...useCases, ...useCases].map((t, idx) => (
               <div 
-                key={`${t.name}-${idx}`} 
+                key={`${t.role}-${idx}`} 
                 className={`group relative flex w-[320px] sm:w-[380px] shrink-0 flex-col justify-between overflow-hidden rounded-3xl border p-7 shadow-xl backdrop-blur-xl transition-all duration-500 ease-out hover:-translate-y-2 hover:border-[#E70C65]/60 hover:shadow-[0_20px_45px_rgba(231,12,101,0.2)] ${
                   isDark 
                     ? "border-white/10 bg-white/[0.03] hover:bg-white/[0.07]" 
@@ -1569,29 +1599,23 @@ export function LandingPage() {
                 <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#E70C65]/20 blur-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                 <div>
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-[#E70C65] text-[#E70C65] drop-shadow-[0_0_6px_rgba(231,12,101,0.6)]" />
-                    ))}
-                  </div>
-
-                  <p className={`mt-5 text-sm leading-relaxed ${isDark ? "text-slate-200" : "text-slate-700 font-medium"}`}>
-                    "{t.quote}"
+                  <p className={`text-sm leading-relaxed ${isDark ? "text-slate-200" : "text-slate-700 font-medium"}`}>
+                    {t.text}
                   </p>
                 </div>
 
                 <div className={`mt-7 flex items-center gap-3.5 border-t pt-5 ${isDark ? "border-white/10" : "border-slate-100"}`}>
                   <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-xs font-bold text-white shadow-md shadow-[#E70C65]/30 transition-transform duration-300 group-hover:scale-105">
-                    {t.name.split(" ").map((n) => n[0]).join("")}
+                    {t.role.split(" ").filter((n) => /^[A-Za-z]/.test(n)).map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <p className={`text-sm font-bold transition-colors duration-200 ${
                       isDark ? "text-white" : "text-slate-900"
                     }`}>
-                      {t.name}
+                      {t.role}
                     </p>
                     <p className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                      {t.role}
+                      Example use case
                     </p>
                   </div>
                 </div>
@@ -1609,7 +1633,7 @@ export function LandingPage() {
       >
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[450px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/15 via-[#6366f1]/15 to-[#9F1C44]/15 blur-[130px] opacity-70" />
 
-        <SectionHeading eyebrow="How It Works" title="Your Card, Live In Four Simple Steps." subtitle="From Sign-Up To Sharing — No Design Skills, No App Installs, No Waiting." />
+        <SectionHeading eyebrow="How It Works" title="Your card, live in four simple steps." subtitle="From sign-up to sharing — no design skills, no app installs, no waiting." />
         
         <StepsDemo isVisible={isHowItWorksVisible} />
 
@@ -1622,7 +1646,7 @@ export function LandingPage() {
 
       {/* ── 9. FAQ Section (same Q&A as the FAQPage schema: src/data/homeSchema.json) ── */}
       <section id="faq" className="cv-auto relative mx-auto max-w-3xl px-6 pb-24 lg:px-10">
-        <SectionHeading eyebrow="FAQ" title="Questions, Answered." subtitle="Everything People Ask Before Making Their First Aicardly." />
+        <SectionHeading eyebrow="FAQ" title="Questions, Answered." subtitle="Everything people ask before making their first Aicardly." />
         <div className="mt-12 space-y-3">
           {HOME_SCHEMA.faqs.map((f) => (
             <details

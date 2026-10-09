@@ -13,7 +13,8 @@ async function audit(req, action, { targetType = '', targetId = '', summary = ''
       targetType,
       targetId: targetId ? String(targetId) : '',
       summary: String(summary).slice(0, 500),
-      meta,
+      // Exports carry the reason the admin typed (middleware/admin/auth.js exportReason).
+      meta: req?.exportReason ? { ...(meta || {}), reason: req.exportReason } : meta,
       ip: clientIp(req),
       userAgent: String(req?.get?.('user-agent') || '').slice(0, 300),
       success,

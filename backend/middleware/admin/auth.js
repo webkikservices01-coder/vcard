@@ -50,4 +50,12 @@ const requirePermission = (permission) => (req, res, next) => {
   next();
 };
 
-module.exports = { requireAdmin, requirePermission, signAccessToken, verifyAccessToken, AUDIENCE, ISSUER };
+// Downloads of customer data need a reason (?reason=...), saved in the audit log with the export.
+function exportReason(req, res, next) {
+  const reason = String(req.query.reason || '').trim().slice(0, 300);
+  if (reason.length < 3) return res.status(400).json({ msg: 'Please give a reason for this export.' });
+  req.exportReason = reason;
+  next();
+}
+
+module.exports = { requireAdmin, requirePermission, signAccessToken, verifyAccessToken, AUDIENCE, ISSUER , exportReason };

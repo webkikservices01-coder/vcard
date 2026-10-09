@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import WebCard, { nativeModeOf } from '../webcard/WebCard';
 import { getVideoRoomUrl } from '../utils/videoRoom';
-import { markNotFound, setCardIndexing } from '../components/Seo';
+import { markNotFound, setCardIndexing, setCardMeta } from '../components/Seo';
 import { faviconHref, setPageFavicon } from '../utils/favicon';
 import { getImageUrl } from '../utils/media';
 import AiCallHost from '../webcard/AiCallHost';
 
 const API = import.meta.env.VITE_API_URL;
+// Branded 404 (site header + footer), loaded only when a card link is wrong.
+const NotFound = lazy(() => import('./NotFound'));
 
 // The owner's WhatsApp link (for "WhatsApp them" after an AI call).
 const whatsappOf = (card) => {
@@ -107,9 +109,10 @@ const PublicVcard = () => {
   }, [slug]);
 
   const name = data?.card?.personalInfo?.name;
+  const role = [data?.card?.personalInfo?.designation, data?.card?.personalInfo?.company].filter(Boolean).join(' · ');
   useEffect(() => {
-    if (name) document.title = `${name} · Aicardly`;
-  }, [name]);
+    setCardMeta(name, role);
+  }, [name, role]);
 
   // Browser-tab icon chosen by the owner (Advanced Settings → Card favicon).
   const favicon = data ? faviconHref(data.settings?.favicon, data.card) : null;
@@ -153,15 +156,9 @@ const PublicVcard = () => {
 
   if (notFound || !data)
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-[#faf8f9] font-['Inter'] p-4">
-        <div className="text-center text-slate-900">
-          <h1 className="text-3xl font-black text-[#E70C65] mb-2">404</h1>
-          <p className="text-slate-600 text-xs mb-3">This profile does not exist.</p>
-          <a href="/" className="px-4 py-2 rounded-full bg-[#E70C65] text-white text-xs font-bold shadow-sm">
-            Go to Home
-          </a>
-        </div>
-      </div>
+      <Suspense fallback={null}>
+        <NotFound message="This card does not exist. Check the link, or make your own Aicardly card." />
+      </Suspense>
     );
 
   // ?template=<id>&palette=<1-5>&mode=light|dark lets the owner preview a look before saving it.

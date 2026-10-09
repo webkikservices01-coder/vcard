@@ -19,6 +19,8 @@ const { can } = require('../../constants/adminPermissions');
 const { isMailConfigured } = require('../../utils/mailer');
 const { isWhatsAppConfigured } = require('../../utils/whatsapp');
 const { isRazorpayConfigured } = require('../../utils/razorpay');
+const { activeByTier } = require('../../services/admin/planSync');
+const { activePlan } = require('../../constants/plans');
 
 const router = express.Router();
 const DAY = 24 * 60 * 60 * 1000;
@@ -48,7 +50,12 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
   const prevFrom = new Date(from.getTime() - days * DAY);
   const inPeriod = { $gte: from };
   const inPrev = { $gte: prevFrom, $lt: from };
-  const notRemoved = { deletedAt: null };
+  // Team / test accounts and test-sized payments (Rs 5 or less) stay out of the numbers.
+  const testIds = await User.find({ isTest: true }).distinct('_id');
+  const notRemoved = { deletedAt: null, isTest: { $ne: true } };
+  const realCard = { userId: { $nin: testIds } };
+  const realOrder = { user: { $nin: testIds }, amount: { $gt: 500 } };
+  const realTxn = { userId: { $nin: testIds }, amount: { $gt: 5 } };
   const viewDays = Array.from({ length: days }, (_, i) => dayKey(from.getTime() + i * DAY));
   const prevViewDays = Array.from({ length: days }, (_, i) => dayKey(prevFrom.getTime() + i * DAY));
 
@@ -72,23 +79,24 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
     User.countDocuments({ ...notRemoved, createdAt: inPeriod }),
     User.countDocuments({ ...notRemoved, createdAt: inPrev }),
     User.countDocuments({ ...notRemoved, createdAt: { $gte: today } }),
-    vCard.countDocuments(),
-    vCard.countDocuments({ createdAt: inPeriod }),
-    vCard.countDocuments({ createdAt: inPrev }),
-    perDay(User, 'createdAt', { createdAt: inPeriod }),
-    perDay(vCard, 'createdAt', { createdAt: inPeriod }),
-    perDay(CardOrder, 'paidAt', { status: 'PAID', paidAt: inPeriod }, { $divide: ['$amount', 100] }),
-    perDay(Transaction, 'updatedAt', { status: 'completed', updatedAt: inPeriod }, '$amount'),
-    CardOrder.aggregate([{ $match: { status: 'PAID' } }, { $group: { _id: null, n: { $sum: { $divide: ['$amount', 100] } } } }]),
-    Transaction.aggregate([{ $match: { status: 'completed' } }, { $group: { _id: null, n: { $sum: '$amount' } } }]),
-    CardOrder.aggregate([{ $match: { status: 'PAID', paidAt: inPrev } }, { $group: { _id: null, n: { $sum: { $divide: ['$amount', 100] } } } }]),
-    Transaction.aggregate([{ $match: { status: 'completed', updatedAt: inPrev } }, { $group: { _id: null, n: { $sum: '$amount' } } }]),
+    vCard.countDocuments(realCard),
+    vCard.countDocuments({ ...realCard, createdAt: inPeriod }),
+    vCard.countDocuments({ ...realCard, createdAt: inPrev }),
+    perDay(User, 'createdAt', { ...notRemoved, createdAt: inPeriod }),
+    perDay(vCard, 'createdAt', { ...realCard, createdAt: inPeriod }),
+    perDay(CardOrder, 'paidAt', { ...realOrder, status: 'PAID', paidAt: inPeriod }, { $divide: ['$amount', 100] }),
+    perDay(Transaction, 'updatedAt', { ...realTxn, status: 'completed', updatedAt: inPeriod }, '$amount'),
+    CardOrder.aggregate([{ $match: { ...realOrder, status: 'PAID' } }, { $group: { _id: null, n: { $sum: { $divide: ['$amount', 100] } } } }]),
+    Transaction.aggregate([{ $match: { ...realTxn, status: 'completed' } }, { $group: { _id: null, n: { $sum: '$amount' } } }]),
+    CardOrder.aggregate([{ $match: { ...realOrder, status: 'PAID', paidAt: inPrev } }, { $group: { _id: null, n: { $sum: { $divide: ['$amount', 100] } } } }]),
+    Transaction.aggregate([{ $match: { ...realTxn, status: 'completed', updatedAt: inPrev } }, { $group: { _id: null, n: { $sum: '$amount' } } }]),
     CardOrder.aggregate([
       { $project: { s: { $cond: [{ $and: [{ $eq: ['$status', 'PENDING_PAYMENT'] }, { $lte: ['$expiresAt', now] }] }, 'EXPIRED', '$status'] } } },
       { $group: { _id: '$s', n: { $sum: 1 } } },
     ]),
-    User.countDocuments({ ...notRemoved, plan: { $ne: 'Free Trial' }, planExpiry: { $gt: now } }),
-    User.aggregate([{ $match: { ...notRemoved, plan: { $ne: 'Free Trial' }, planExpiry: { $gt: now } } }, { $group: { _id: '$plan', n: { $sum: 1 } } }]),
+    // Paid plans running now, lifetime accounts included.
+    activeByTier().then((a) => a.total),
+    activeByTier().then((a) => Object.entries(a.byTier).map(([k, n]) => ({ _id: k, n }))),
     CardDayView.aggregate([{ $match: { day: { $in: viewDays } } }, { $group: { _id: '$day', n: { $sum: '$count' } } }]),
     CardDayView.aggregate([{ $match: { day: { $in: prevViewDays } } }, { $group: { _id: null, n: { $sum: '$count' } } }]),
     CardPresence.countDocuments({ lastSeen: { $gte: new Date(Date.now() - 60 * 1000) } }),
@@ -104,7 +112,7 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
     PlatformLead.find().sort({ createdAt: -1 }).limit(5).select('name email phone businessName need status createdAt').lean(),
     Enquiry.countDocuments({ createdAt: inPeriod }),
     Enquiry.countDocuments({ createdAt: inPrev }),
-    SupportTicket.countDocuments({ status: { $in: ['open', 'in-progress'] } }),
+    SupportTicket.aggregate([{ $match: { status: { $in: ['open', 'in-progress'] } } }, { $group: { _id: '$status', n: { $sum: 1 } } }]),
     CardOrder.countDocuments({ status: 'PAID', 'delivery.status': { $in: ['PENDING', 'FAILED'] } }),
     AppLog.aggregate([{ $match: { createdAt: { $gte: new Date(Date.now() - DAY) } } }, { $group: { _id: '$level', n: { $sum: 1 } } }]),
     User.find(notRemoved).sort({ createdAt: -1 }).limit(6).select('name email phone plan planExpiry createdAt').lean(),
@@ -112,7 +120,8 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
     Transaction.find({ status: 'completed' }).sort({ updatedAt: -1 }).limit(6).populate('userId', 'name email').lean(),
     can(req.admin.role, 'audit.view') ? AdminAuditLog.find().sort({ createdAt: -1 }).limit(8).lean() : [],
     // Funnel, all time: each step counts people (not orders).
-    vCard.distinct('userId').then((a) => a.length),
+    // Only accounts that still exist (not removed): a card of a deleted account isn't a signup.
+    vCard.distinct('userId').then((ids) => User.countDocuments({ _id: { $in: ids }, deletedAt: null })),
     CardOrder.distinct('user').then((a) => a.length),
     CardOrder.distinct('user', { status: 'PAID' }).then((a) => a.length),
     CardOrder.distinct('user', { status: 'PAID', 'delivery.status': { $in: ['SENT', 'DELIVERED', 'READ'] } }).then((a) => a.length),
@@ -154,7 +163,8 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
       revenue: { total: (cardRevAll[0]?.n || 0) + (planRevAll[0]?.n || 0), period: revenuePeriod, prev: revenuePrev },
       views: { period: sumBy(views, 'value'), prev: viewsPrev[0]?.n || 0, liveNow: liveVisitors },
       aiChats: { period: chat.sessions, prev: chatsPrev, messages: chat.messages },
-      leads: { period: leadsPeriod + enquiries, prev: enquiriesPrev, newCardy: leadsNew },
+      leads: { period: leadsPeriod, newCardy: leadsNew },
+      enquiries: { period: enquiries, prev: enquiriesPrev },
       activePlans,
     },
     series: {
@@ -191,7 +201,7 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
       return { id: String(t._id), username: c.username, name: c.personalInfo?.name || c.username, photo: c.personalInfo?.profilePic || '', views: t.n, totalViews: c.viewCount || 0, ownerId: c.userId ? String(c.userId) : '' };
     }),
     recent: {
-      signups: recentUsers.map((u) => ({ id: String(u._id), name: u.name, email: u.email, plan: u.planExpiry && new Date(u.planExpiry) > now ? u.plan : 'Free Trial', at: u.createdAt })),
+      signups: recentUsers.map((u) => ({ id: String(u._id), name: u.name, email: u.email, plan: activePlan(u) || 'Free Trial', at: u.createdAt })),
       payments: [
         ...recentOrders.map((o) => ({ id: String(o._id), kind: o.complimentary ? 'Free card' : 'Card', amount: o.amount / 100, user: o.user && { id: String(o.user._id), name: o.user.name, email: o.user.email }, at: o.paidAt })),
         ...recentTxns.map((t) => ({ id: String(t._id), kind: t.plan, amount: t.amount, user: t.userId && { id: String(t.userId._id), name: t.userId.name, email: t.userId.email }, at: t.updatedAt })),
@@ -202,9 +212,14 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
       email: isMailConfigured(),
       whatsapp: isWhatsAppConfigured(),
       payments: isRazorpayConfigured(),
+      cashfree: require('../../services/cashfree').isCashfreeConfigured(),
+      // Cashfree refused to create payment links in the last 7 days (product not enabled).
+      paymentLinksIssue: (await AppLog.findOne({ type: 'cashfree.links.disabled', createdAt: { $gte: new Date(Date.now() - 7 * DAY) } }).sort({ createdAt: -1 }).select('message createdAt').lean()) || null,
       errors24h: levels.error || 0,
       warnings24h: levels.warn || 0,
-      openTickets,
+      openTickets: openTickets.reduce((a, t) => a + t.n, 0),
+      ticketsOpen: openTickets.find((t) => t._id === 'open')?.n || 0,
+      ticketsInProgress: openTickets.find((t) => t._id === 'in-progress')?.n || 0,
       stuckDeliveries,
       unpaidLinks: statusCount.PENDING_PAYMENT || 0,
     },

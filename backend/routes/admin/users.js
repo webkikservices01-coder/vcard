@@ -1,7 +1,7 @@
 // /api/admin/users: list, export, detail, block, remove, plans, credits.
 const express = require('express');
 const Plan = require('../../models/Plan');
-const { requirePermission } = require('../../middleware/admin/auth');
+const { requirePermission, exportReason } = require('../../middleware/admin/auth');
 const { validate, z, idParams, objectId, paging, search } = require('../../middleware/admin/validate');
 const svc = require('../../services/admin/users');
 const { audit } = require('../../services/admin/audit');
@@ -12,7 +12,7 @@ const router = express.Router();
 const listQuery = z.object({
   ...paging,
   q: search,
-  status: z.enum(['', 'active', 'blocked', 'removed', 'all']).optional().default(''),
+  status: z.enum(['', 'active', 'blocked', 'removed', 'all', 'test']).optional().default(''),
   plan: z.string().trim().max(40).optional().default(''),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
@@ -28,7 +28,7 @@ router.get('/', requirePermission('users.view'), validate({ query: listQuery }),
   res.json(await svc.listUsers(req.v.query));
 });
 
-router.get('/export', requirePermission('export.csv'), validate({ query: listQuery }), async (req, res) => {
+router.get('/export', requirePermission('export.csv'), exportReason, validate({ query: listQuery }), async (req, res) => {
   const rows = await svc.listUsers(req.v.query, { all: true });
   await audit(req, 'export.users', { summary: `Exported ${rows.length} users (CSV)`, meta: { filters: req.v.query } });
   sendCsv(res, 'aicardly-users', rows, [
@@ -53,7 +53,6 @@ router.post('/', requirePermission('users.create'), validate({
     name: z.string().trim().min(2, 'name is too short').max(80),
     email: z.string().trim().toLowerCase().email('not a valid email').max(200),
     phone: z.string().trim().max(30).optional().default(''),
-    password: z.string().min(8, 'use at least 8 characters').max(128).optional().or(z.literal('').transform(() => undefined)),
     emailVerified: z.boolean().default(true),
     reason: z.string().trim().max(500).optional().default(''),
   }),
@@ -196,7 +195,7 @@ router.post('/:id/plan/change', ...act('users.plan', z.object({ planId: objectId
 router.post('/:id/plan/revoke', ...act('users.plan', z.object({ reason: z.string().trim().min(3, 'please give a reason').max(500) }), async (req, res) => {
   const user = await svc.revokePlan(req.v.params.id);
   await audit(req, 'plan.revoke', { targetType: 'user', targetId: user._id, summary: `Revoked plan of ${user.email}`, meta: { reason: req.v.body.reason } });
-  res.json({ msg: 'Plan revoked. The user is on the free tier now.' });
+  res.json({ msg: 'Plan revoked. Their card pauses until they choose a plan.' });
 }));
 
 // Lifetime account: the plan never expires (AI Agent Pro when the user has no paid plan).
@@ -204,6 +203,10 @@ router.post('/:id/lifetime', ...act('users.plan', z.object({ lifetime: z.boolean
   const User = require('../../models/User');
   const user = await User.findByIdAndUpdate(req.v.params.id, { $set: { lifetime: req.v.body.lifetime } }, { returnDocument: 'after' }).select('email lifetime');
   if (!user) return res.status(404).json({ msg: 'User not found.' });
+  // Plan history: a "Lifetime" row while it is on, ended when it is switched off.
+  const { ensureLifetimeRows, endLifetimeRow } = require('../../services/admin/planSync');
+  if (req.v.body.lifetime) await ensureLifetimeRows();
+  else await endLifetimeRow(user._id);
   await audit(req, req.v.body.lifetime ? 'plan.lifetime_on' : 'plan.lifetime_off', { targetType: 'user', targetId: user._id, summary: `${req.v.body.lifetime ? 'Made' : 'Removed'} lifetime ${req.v.body.lifetime ? 'for' : 'from'} ${user.email}`, meta: { reason: req.v.body.reason } });
   res.json({ msg: req.v.body.lifetime ? 'Lifetime on: this plan never expires.' : 'Lifetime off: the plan follows its expiry date again.', lifetime: user.lifetime });
 }));
@@ -214,6 +217,15 @@ router.post('/:id/credits', ...act('users.credits', z.object({ credits: z.coerce
   const user = await svc.addCredits(req.v.params.id, { credits, cardLimit });
   await audit(req, 'user.credits', { targetType: 'user', targetId: user._id, summary: `Credits ${credits >= 0 ? '+' : ''}${credits} (now ${user.freeCardCredits})${cardLimit !== undefined ? `, card limit ${cardLimit}` : ''} for ${user.email}`, meta: { credits, cardLimit, reason: why } });
   res.json({ msg: 'Saved.', freeCardCredits: user.freeCardCredits, cardLimit: user.cardLimit });
+}));
+
+// Team / test account: kept, but left out of the dashboard numbers.
+router.post('/:id/test', ...act('users.edit', z.object({ isTest: z.boolean(), reason }), async (req, res) => {
+  const User = require('../../models/User');
+  const user = await User.findByIdAndUpdate(req.v.params.id, { $set: { isTest: req.v.body.isTest } }, { returnDocument: 'after' }).select('email isTest');
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  await audit(req, req.v.body.isTest ? 'user.test_on' : 'user.test_off', { targetType: 'user', targetId: user._id, summary: `${req.v.body.isTest ? 'Marked' : 'Unmarked'} ${user.email} as a test account`, meta: { reason: req.v.body.reason } });
+  res.json({ msg: req.v.body.isTest ? 'Marked as a test account: left out of the dashboard numbers.' : 'No longer a test account.', isTest: user.isTest });
 }));
 
 // Upgrade link (24-hour trial): email with the choose-a-plan page + Cashfree SMS link, sent now.
@@ -257,16 +269,7 @@ router.post('/:id/profile', ...act('users.edit', z.object({
   res.json({ msg: 'Profile saved.' });
 }));
 
-router.post('/:id/password', ...act('users.password', z.object({
-  password: z.string().min(8, 'use at least 8 characters').max(128),
-  signOut: z.boolean().default(true),
-  reason: why,
-}), async (req, res) => {
-  const user = await svc.setPassword(req.v.params.id, req.v.body.password, { signOut: req.v.body.signOut });
-  // Never the password itself in the log.
-  await audit(req, 'user.password', { targetType: 'user', targetId: user._id, summary: `Set a new password for ${user.email}${req.v.body.signOut ? ' and signed them out everywhere' : ''}`, meta: { reason: req.v.body.reason } });
-  res.json({ msg: `Password changed. Share it with the user privately${req.v.body.signOut ? '; their other sessions are signed out' : ''}.` });
-}));
+// Admins never choose a user's password: they email the user a reset link (/:id/email-link).
 
 router.post('/:id/signout', ...act('users.password', z.object({ reason }), async (req, res) => {
   const user = await svc.signOutEverywhere(req.v.params.id);

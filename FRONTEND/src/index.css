@@ -452,3 +452,9 @@
 .aiface-live { animation: aiface-live 7s ease-in-out infinite; }
 @keyframes aiface-live { 0%, 100% { transform: translate(0, 0) scale(1.02) rotate(0deg); } 30% { transform: translate(-0.6%, 0.4%) scale(1.035) rotate(-0.4deg); } 65% { transform: translate(0.5%, -0.3%) scale(1.025) rotate(0.35deg); } }
 @media (prefers-reduced-motion: reduce) { .aiface-eyes, .aiface-live { animation: none; } }
+
+/* Light theme: the bright pink label colour (#ff6b9d) is too faint on white and pale-pink
+   backgrounds (below WCAG AA). Use the darker brand pink there; dark theme keeps the bright one. */
+html.light .text-\[\#ff6b9d\] {
+  color: #c00a55;
+}

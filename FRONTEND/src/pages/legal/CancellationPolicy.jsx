@@ -6,7 +6,7 @@ const H2 = ({ children }) => (
 );
 
 const CancellationPolicy = () => (
-  <LegalLayout title="Cancellation Policy" updated="18 July 2026">
+  <LegalLayout title="Cancellation Policy" updated="9 October 2026">
     <p>
       This Cancellation Policy explains how you can cancel your Aicardly subscription, operated by{' '}
       <strong>{COMPANY.name}</strong>.
@@ -21,16 +21,15 @@ const CancellationPolicy = () => (
     <H2>2. Access After Cancellation</H2>
     <p>
       When you cancel, your plan (and its features — AI chat, voice assistant, premium themes, etc.)
-      remains active until the end of the billing period you already paid for. After that date, your
-      account reverts to the free tier: your vCard and its public link stay live, but paid features
-      are disabled.
+      remains active until the end of the billing period you already paid for. After that date your
+      card pauses (visitors see that it is paused) until you renew or choose another plan. It is live
+      again the moment you pay.
     </p>
 
     <H2>3. Your Data After Cancellation</H2>
     <p>
-      We do not delete your vCard, products, portfolio, or gallery content when a plan expires — only
-      the plan-gated features (AI chat/voice, hide-branding, etc.) are turned off. Your public card
-      link continues to work on the free tier.
+      We do not delete your card, products, portfolio, or gallery content when a plan expires. Your
+      card link stays the same, so it works again as soon as you renew.
     </p>
 
     <H2>4. Cancelling Mid-Cycle</H2>

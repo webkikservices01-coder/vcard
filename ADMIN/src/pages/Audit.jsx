@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { qs } from '../lib/api';
 import { useApi, useDebounced, useFilters } from '../lib/hooks';
-import { dateTime } from '../lib/format';
+import { dateTime, actionLabel } from '../lib/format';
 import { Badge, Card, ErrorBox, Input, PageHeader, Pagination, Select, Table } from '../components/ui';
 
 const DEFAULTS = { q: '', action: '', success: '', from: '', page: '1' };
@@ -58,7 +58,7 @@ export default function Audit() {
               columns={[
                 { key: 'createdAt', label: 'When', render: (l) => <span className="whitespace-nowrap">{dateTime(l.createdAt)}</span> },
                 { key: 'admin', label: 'Who', render: (l) => <div><p className="text-slate-900">{l.adminEmail || '—'}</p><p className="text-xs text-slate-500">{l.adminRole}</p></div> },
-                { key: 'action', label: 'Action', render: (l) => <Badge color={l.success ? 'slate' : 'red'}>{l.action}</Badge> },
+                { key: 'action', label: 'Action', render: (l) => <Badge color={l.success ? 'slate' : 'red'}>{actionLabel(l.action)}</Badge> },
                 { key: 'summary', label: 'What', render: (l) => <div className="max-w-md"><p>{l.summary}</p>{l.meta?.reason && <p className="mt-0.5 text-xs text-slate-500">Reason: {l.meta.reason}</p>}{l.targetType && <p className="mt-0.5 text-xs text-slate-400">{l.targetType} {l.targetId}</p>}</div> },
                 { key: 'ip', label: 'From', render: (l) => <span className="font-mono text-xs">{l.ip || '—'}</span> },
               ]}

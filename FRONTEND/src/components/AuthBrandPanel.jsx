@@ -2,10 +2,11 @@ import { motion } from 'framer-motion';
 import { QrCode, Star } from 'lucide-react';
 import Logo from './ui/Logo';
 
+// Product facts only (no unproven user numbers or ratings).
 const stats = [
-  ['12k+', 'Professionals'],
-  ['480k', 'Cards shared'],
-  ['4.9★', 'Avg. rating'],
+  ['10', 'Card themes'],
+  ['24/7', 'AI assistant'],
+  ['24h', 'Free trial'],
 ];
 
 const AuthBrandPanel = () => (
@@ -86,7 +87,7 @@ const AuthBrandPanel = () => (
           transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="mt-4 text-base leading-relaxed text-slate-300"
         >
-          Join thousands of executives, founders, and creatives who replaced paper cards with a velvet touch.
+          Make a digital business card for founders, professionals and creatives, and share it in one tap.
         </motion.p>
 
         {/* 1. Aligned Stats Container (Edge matches x=48 baseline) */}

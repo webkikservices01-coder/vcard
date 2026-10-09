@@ -83,7 +83,7 @@ router.post('/change-password', auth, async (req, res) => {
     try {
         const bcrypt = require('bcryptjs');
         const { password } = req.body;
-        if (!password || password.length < 6) return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+        if (!password || password.length < 8) return res.status(400).json({ msg: 'Password must be at least 8 characters' });
         const hashed = await bcrypt.hash(password, 10);
         await User.findByIdAndUpdate(req.user.userId, { $set: { password: hashed } });
         res.json({ msg: 'Password updated' });

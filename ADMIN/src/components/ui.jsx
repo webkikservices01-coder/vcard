@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, CheckCircle2, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, CheckCircle2, Info, TrendingUp, TrendingDown, Minus, SlidersHorizontal } from 'lucide-react';
 
 const cx = (...c) => c.filter(Boolean).join(' ');
 
@@ -148,11 +148,64 @@ export const ErrorBox = ({ error, onRetry }) => (
   </div>
 );
 
-// columns: [{ key, label, render?(row), className? }]
-export function Table({ columns, rows, loading, empty = 'Nothing here yet.', onRowClick, rowKey = (r) => r.id || r._id }) {
+// columns: [{ key, label, render?(row), className?, mobile?: false (hide on phones), primary?: true }]
+// Phones (below 768px) get a list of cards instead of a wide table: the first column (or the one
+// marked primary) is the card's title, the others are label / value rows. Tables never scroll
+// sideways on a phone.
+export function Table(props) {
+  return (
+    <>
+      <div className="md:hidden">
+        <MobileList {...props} />
+      </div>
+      <div className="hidden md:block">
+        <WideTable {...props} />
+      </div>
+    </>
+  );
+}
+
+function MobileList({ columns, rows, loading, empty = 'Nothing here yet.', onRowClick, rowKey = (r) => r.id || r._id }) {
+  if (loading && !rows?.length) return <Spinner />;
+  if (!rows?.length) return <p className="px-4 py-10 text-center text-sm text-slate-500">{empty}</p>;
+  const isSelect = (c) => c.key === 'select' || c.key === 'pick';
+  const primary = columns.find((c) => c.primary) || columns.find((c) => !isSelect(c)) || columns[0];
+  const select = columns.find(isSelect);
+  const rest = columns.filter((c) => c !== primary && c !== select && c.mobile !== false);
+  const cell = (c, r) => (c.render ? c.render(r) : (r[c.key] ?? '—'));
+  return (
+    <ul className={cx('divide-y divide-slate-100', loading && 'opacity-60')}>
+      {rows.map((r) => (
+        <li
+          key={rowKey(r)}
+          onClick={onRowClick ? () => onRowClick(r) : undefined}
+          className={cx('px-4 py-3.5', onRowClick && 'cursor-pointer active:bg-slate-50')}
+        >
+          <div className="flex items-start gap-3">
+            {select && <div className="pt-0.5">{cell(select, r)}</div>}
+            <div className="min-w-0 flex-1 text-sm text-slate-900">{cell(primary, r)}</div>
+            {onRowClick && <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />}
+          </div>
+          {rest.length > 0 && (
+            <dl className={cx('mt-2 grid grid-cols-2 gap-x-4 gap-y-2', select && 'pl-7')}>
+              {rest.map((c) => (
+                <div key={c.key} className={cx('min-w-0', c.wide && 'col-span-2')}>
+                  {c.label && <dt className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400">{c.label}</dt>}
+                  <dd className="mt-0.5 break-words text-[13px] text-slate-700">{cell(c, r)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function WideTable({ columns, rows, loading, empty = 'Nothing here yet.', onRowClick, rowKey = (r) => r.id || r._id }) {
   return (
     <div className="table-wrap">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50">
             {columns.map((c) => (
@@ -318,3 +371,25 @@ export const DefList = ({ items }) => (
     ))}
   </dl>
 );
+
+// Filters above a list. Phones show the search (first child) and a "Filters" button that opens
+// the rest; tablets and desktops show everything in a grid.
+export function FilterBar({ children, className = 'sm:grid-cols-2 lg:grid-cols-6', active = 0 }) {
+  const [open, setOpen] = useState(false);
+  const items = Array.isArray(children) ? children.filter(Boolean) : [children];
+  const [first, ...rest] = items;
+  return (
+    <div className="border-b border-slate-100 p-3">
+      <div className="flex gap-2 md:hidden">
+        <div className="min-w-0 flex-1">{first}</div>
+        {rest.length > 0 && (
+          <Button variant="secondary" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="shrink-0">
+            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" /> Filters{active ? ` (${active})` : ''}
+          </Button>
+        )}
+      </div>
+      {open && <div className="mt-2 grid gap-2 md:hidden">{rest}</div>}
+      <div className={cx('hidden gap-2 md:grid', className)}>{items}</div>
+    </div>
+  );
+}

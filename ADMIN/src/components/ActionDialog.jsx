@@ -55,7 +55,7 @@ export default function ActionDialog({ open, onClose, title, description, confir
       <form onSubmit={submit} className="space-y-4">
         {description && <p className="text-sm text-slate-600">{description}</p>}
         {children}
-        <Field label={reasonRequired ? reasonLabel : `${reasonLabel} (optional)`}>
+        <Field label={reasonRequired || /optional/i.test(reasonLabel) ? reasonLabel : `${reasonLabel} (optional)`}>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="e.g. Customer asked on WhatsApp" />
         </Field>
         {confirmText && (

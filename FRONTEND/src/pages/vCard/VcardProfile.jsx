@@ -466,7 +466,7 @@ const VcardProfile = () => {
 
                 <div>
                   <label className={`block text-xs sm:text-sm font-bold mb-2 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                    Routing Vanity URL <span className="text-[#E70C65]">*</span>
+                    Your link <span className="text-[#E70C65]">*</span>
                   </label>
                   <div className="flex rounded-xl overflow-hidden shadow-inner">
                     <span className={`inline-flex items-center px-4 text-xs font-bold shrink-0 border-r ${
@@ -526,7 +526,7 @@ const VcardProfile = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className={`block text-xs sm:text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                      Executive Bio <span className="text-[#E70C65]">*</span>
+                      Bio <span className="text-[#E70C65]">*</span>
                     </label>
                     <div className="flex items-center gap-2">
                       <button
@@ -554,7 +554,7 @@ const VcardProfile = () => {
                     onChange={handleChange} 
                     rows="3"
                     className="cyber-input w-full px-4 py-3 rounded-xl text-xs sm:text-sm outline-none resize-none font-medium"
-                    placeholder="Write a concise executive summary..." 
+                    placeholder="A short line about you or your business..." 
                     required
                   />
                 </div>
