@@ -125,6 +125,26 @@ const Plans = () => {
   // Tapping a plan card opens its details popup.
   const openPanel = (plan) => setSelectedPlan(plan);
 
+  // Coupon typed in the plan popup: checked by the server for this plan and period.
+  const [couponCode, setCouponCode] = useState('');
+  const [coupon, setCoupon] = useState(null); // { code, planId, billing, discount, amount, msg }
+  const [couponBusy, setCouponBusy] = useState(false);
+  const couponFor = (plan) => (coupon && coupon.planId === plan.id && coupon.billing === billing ? coupon : null);
+  const applyCoupon = async (plan) => {
+    if (!couponCode.trim()) return;
+    setCouponBusy(true);
+    try {
+      const { data } = await axiosClient.post(`${import.meta.env.VITE_API_URL}/api/transactions/coupon`, { code: couponCode.trim(), planId: plan.id, billing }, { headers: { 'x-auth-token': localStorage.getItem('token') } });
+      setCoupon({ ...data, planId: plan.id, billing });
+      toast.success(data.msg);
+    } catch (err) {
+      setCoupon(null);
+      toast.error(err.response?.data?.msg || 'This coupon code is not valid.');
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
   const handleSubscribe = async (plan) => {
     setLoading(plan.id);
     try {
@@ -132,7 +152,7 @@ const Plans = () => {
       const axios = axiosClient;
       // The server prices the order from its own catalog; we only say which plan and period.
       const orderRes = await axios.post(`${import.meta.env.VITE_API_URL}/api/transactions/create-order`, {
-        planId: plan.id, billing,
+        planId: plan.id, billing, coupon: couponFor(plan)?.code || couponCode.trim(),
       }, { headers: { 'x-auth-token': token } });
 
       const cashfree = await getCashfree();
@@ -219,6 +239,13 @@ const Plans = () => {
         </motion.div>
       </div>
 
+      {/* Coupon: checked by the server when you pay (the plan popup also shows the new price). */}
+      <div className="flex flex-wrap items-center justify-end gap-2 text-xs" style={{ color: 'var(--surface-text-2)' }}>
+        <label htmlFor="coupon-top">Have a coupon code?</label>
+        <input id="coupon-top" value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase().replace(/\s/g, '')); setCoupon(null); }} maxLength={30} placeholder="e.g. DIWALI20" className="h-9 w-40 rounded-lg border px-3 text-xs uppercase outline-none focus:border-brand-500" style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-2)', color: 'var(--surface-text)' }} />
+        {couponCode && <span>It's applied when you click Get started.</span>}
+      </div>
+
       {/* Plan Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {plans.map((plan, i) => {
@@ -259,7 +286,8 @@ const Plans = () => {
                   {plan.icon}
                 </motion.div>
                 <h3 className="text-sm font-black tracking-wide mb-0.5" style={{ color: 'var(--surface-text)' }}>{plan.name}</h3>
-                <p className="text-xs mb-4" style={{ color: 'var(--surface-text-2)' }}>{plan.tagline}</p>
+                <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>{plan.tagline}</p>
+                {plan.bestFor && <p className="mb-4 mt-0.5 text-[11px] font-semibold text-[#E70C65]">{plan.bestFor}</p>}
 
                 <div className="flex items-baseline space-x-1 mb-0.5">
                   <AnimatePresence mode="wait">
@@ -411,7 +439,19 @@ const Plans = () => {
                     </span>
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--surface-text-2)' }}>
-                    You pay {inr(withGst(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly))} (incl. 18% GST)
+                    {couponFor(selectedPlan) ? (
+                      <>You pay <s>{inr(withGst(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly))}</s> <b className="text-emerald-500">₹{Number(couponFor(selectedPlan).amount).toLocaleString('en-IN')}</b> (incl. 18% GST, coupon {couponFor(selectedPlan).code})</>
+                    ) : (
+                      <>You pay {inr(withGst(billing === 'yearly' ? selectedPlan.price.yearly : selectedPlan.price.monthly))} (incl. 18% GST)</>
+                    )}
+                  </p>
+                  <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); applyCoupon(selectedPlan); }}>
+                    <label className="sr-only" htmlFor="coupon-code">Coupon code</label>
+                    <input id="coupon-code" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase().replace(/\s/g, ''))} maxLength={30} placeholder="Coupon code" className="h-9 w-36 rounded-lg border px-3 text-xs uppercase outline-none focus:border-brand-500" style={{ borderColor: 'var(--surface-border)', background: 'var(--surface-2)', color: 'var(--surface-text)' }} />
+                    <button type="submit" disabled={couponBusy || !couponCode.trim()} className="h-9 rounded-lg border px-3 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--surface-border)', color: 'var(--surface-text)' }}>{couponBusy ? 'Checking…' : 'Apply'}</button>
+                  </form>
+                  <p className="mt-2 text-[11px]" style={{ color: 'var(--surface-text-2)' }}>
+                    Secure payment by Cashfree: UPI, cards, net banking. GST invoice by email. <a href="/refund-policy" target="_blank" rel="noopener" className="underline">Refund policy</a>
                   </p>
                 </div>
                 <div className="w-full sm:w-56">

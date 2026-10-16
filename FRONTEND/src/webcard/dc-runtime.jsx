@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useReducer, useRef, useState, useCallback } from 'react';
 import { useSpeechInput, speak, stopSpeaking } from '../components/platformChat/speech';
 import { themeTree } from './theme/themeTree.js';
-import axios from 'axios';
+import { http } from '../utils/http';
 import { QRCodeSVG } from 'qrcode.react';
 import { CARD, saveContact, shareCard, scrollToSection } from './cardData.js';
 import { getImageUrl, siteShot } from '../utils/media';
+import { openCalendly, CALENDLY_BOOKED } from './CalendlyOverlay';
+import CameraCapture, { fileToJpeg } from '../components/CameraCapture';
 
 export { saveContact, shareCard, scrollToSection };
 
@@ -178,6 +180,13 @@ export function useChat() {
   useEffect(() => {
     if (CARD.slug && messages.some((m) => m.role === 'user')) store.set(savedKey, JSON.stringify({ sessionId, messages: messages.slice(-40) }));
   }, [messages, sessionId, savedKey]);
+  // Booked on Calendly: confirm it in the chat.
+  useEffect(() => {
+    const booked = () =>
+      setMessages((m) => [...m, { role: 'assistant', content: `Your meeting with ${first} is booked ✅ Calendly has emailed the invite with the time and meeting link to you both.` }]);
+    window.addEventListener(CALENDLY_BOOKED, booked);
+    return () => window.removeEventListener(CALENDLY_BOOKED, booked);
+  }, [first]);
   const consentKey = 'wc-chat-consent-' + (CARD.slug || '');
   const [consented, setConsented] = useState(() => !!store.get(consentKey));
   // A question typed before the visitor accepted the notice; sent once they do.
@@ -203,7 +212,7 @@ export function useChat() {
     busyRef.current = true;
     setBusy(true);
     try {
-      const res = await axios.post(`${API}/api/ai/chat/${CARD.slug}`, {
+      const res = await http.post(`${API}/api/ai/chat/${CARD.slug}`, {
         messages: next.map(({ role, content }) => ({ role, content })),
         consent: true,
         sessionId,
@@ -212,6 +221,8 @@ export function useChat() {
       const cards = Array.isArray(res.data.cards) ? res.data.cards.slice(0, 10) : [];
       const updated = [...next, { role: 'assistant', content: res.data.reply, ...(cards.length ? { cards } : {}) }];
       setMessages(updated);
+      // The AI set up a meeting on the owner's Calendly: open the calendar (details filled in).
+      if (res.data.meeting?.calendly && res.data.meeting.meetingUrl) setTimeout(() => openCalendly(res.data.meeting.meetingUrl), 600);
       if (res.data.showOffer && CARD.ai?.offer) setOffer((o) => (o === 'hidden' ? 'shown' : o));
       // Ask for a rating once the conversation has had a few real answers.
       const answers = updated.filter((m) => m.role === 'assistant').length - 1;
@@ -269,7 +280,7 @@ export function useChat() {
 
   const clickOffer = () => {
     setOffer('clicked');
-    axios.post(`${API}/api/ai/offer-click/${CARD.slug}`, { sessionId }).catch(() => {});
+    http.post(`${API}/api/ai/offer-click/${CARD.slug}`, { sessionId }).catch(() => {});
     const o = CARD.ai.offer;
     const go = o.url || CARD.href?.WhatsApp || CARD.href?.Call || '';
     if (go) openLink(go)();
@@ -280,7 +291,7 @@ export function useChat() {
   const rate = async (score, comment) => {
     setNps('done');
     try {
-      await axios.post(`${API}/api/ai/feedback/${CARD.slug}`, { sessionId, score, comment });
+      await http.post(`${API}/api/ai/feedback/${CARD.slug}`, { sessionId, score, comment });
     } catch {
       /* feedback is best-effort */
     }
@@ -812,8 +823,10 @@ export function ImageSlot({ id, placeholder, shape, radius, style }) {
 // itself. Wide banners span the full width; tall or square images and logos keep a margin.
 export function CoverFit({ src, alt = '', style }) {
   const ref = useRef(null);
-  // 'fill' | 'wide' | 'tall'
-  const [fit, setFit] = useState(/\.svg(\?|$)/i.test(src) ? 'tall' : 'fill');
+  // 'fill' | 'wide' | 'tall'. Starts as 'wide' (the whole picture over its blurred copy): right for
+  // most banners and never cuts anything, and it is also how the server-drawn copy of the card
+  // shows it (no JavaScript there to measure the picture), so the swap to the app's copy is seamless.
+  const [fit, setFit] = useState(/\.svg(\?|$)/i.test(src) ? 'tall' : 'wide');
   const onLoad = (e) => {
     const img = e.currentTarget;
     const box = ref.current?.getBoundingClientRect();
@@ -1460,7 +1473,7 @@ export function PhotoSlides({ items, pad = 16 }) {
             background: tint(8),
           }}
         >
-          <Fill src={ph.src} alt={`${CARD.fullName || 'Gallery'} – photo ${i + 1}`} />
+          <Fill src={ph.thumb || ph.src} alt={`${CARD.fullName || 'Gallery'} – photo ${i + 1}`} />
         </div>
       ))}
     </SwipeRow>
@@ -1485,12 +1498,20 @@ export function SwipeRow({ style, children, label = 'Projects', itemLabel = 'Pro
         p.i === i && p.n === n && p.start === row.scrollLeft < 4 && p.end === end ? p : { i, n, start: row.scrollLeft < 4, end },
       );
     };
-    update();
-    row.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    // At most once a frame, in the frame itself: reading the row's size straight from a scroll
+    // event (dozens a second while the row auto-slides) or while the card is still being drawn
+    // made the browser lay out the whole page again each time.
+    let frame = 0;
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; update(); });
+    };
+    schedule();
+    row.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
     return () => {
-      row.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
+      cancelAnimationFrame(frame);
+      row.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
     };
   }, [count]);
   const go = (to) => {
@@ -1603,6 +1624,11 @@ export function useReelCarousel(root) {
     const noNativeDrag = (e) => e.preventDefault();
 
     let rows = [];
+    // Only rows on screen slide (one off screen would scroll, and make the phone work, for nothing).
+    const onScreen = new WeakSet();
+    const io = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver((entries) => entries.forEach((en) => (en.isIntersecting ? onScreen.add(en.target) : onScreen.delete(en.target))))
+      : null;
     const bind = () => {
       const found = [...(root.current?.querySelectorAll('[data-wc-reels], [data-wc-projects]') || [])];
       found
@@ -1616,6 +1642,8 @@ export function useReelCarousel(root) {
           r.addEventListener('dragstart', noNativeDrag);
           r.style.cursor = 'grab';
           r.style.overscrollBehaviorX = 'contain';
+          if (io) io.observe(r);
+          else onScreen.add(r);
         });
       rows = found;
     };
@@ -1623,7 +1651,7 @@ export function useReelCarousel(root) {
       bind();
       if (reelStore.index >= 0 || document.hidden) return;
       for (const row of rows) {
-        if (drag || Math.max(pausedUntil.get(row) || 0, +row.dataset.wcPause || 0) > Date.now()) continue;
+        if (!onScreen.has(row) || drag || Math.max(pausedUntil.get(row) || 0, +row.dataset.wcPause || 0) > Date.now()) continue;
         const max = row.scrollWidth - row.clientWidth;
         if (max < 8) continue;
         const step = rowStep(row);
@@ -1639,6 +1667,7 @@ export function useReelCarousel(root) {
     const t = setInterval(tick, 3500);
     return () => {
       clearInterval(t);
+      io?.disconnect();
       rows.forEach((r) => {
         r.removeEventListener('pointerdown', pause);
         r.removeEventListener('wheel', pause);
@@ -1704,6 +1733,19 @@ export const openLink = (href) => (e) => {
   else if (/^(tel|mailto):/.test(href)) window.location.href = href;
   else window.open(href, '_blank', 'noopener,noreferrer');
 };
+
+// A key-numbers tile that has a link (followers → that profile): tap / Enter opens it.
+export const statLink = (st) =>
+  st?.href
+    ? {
+        role: 'link',
+        tabIndex: 0,
+        className: 'wc-stat-link',
+        'aria-label': `${st.v} ${st.l}: open profile`,
+        onClick: openLink(st.href),
+        onKeyDown: (e) => (e.key === 'Enter' || e.key === ' ') && openLink(st.href)(e),
+      }
+    : {};
 
 // ── PDF viewer: one per page ────────────────────────────────────────────────
 const pdfStore = { url: '', listeners: new Set() };
@@ -1853,12 +1895,49 @@ export function EnquiryForm({
   const [status, setStatus] = useState('idle');
   const [errMsg, setErrMsg] = useState('');
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  // "Scan my visiting card": the visitor's own card fills name, phone and email (nothing is saved
+  // until they send the form).
+  const [cam, setCam] = useState(false);
+  const [scan, setScan] = useState({ state: 'idle', msg: '' }); // idle | busy | done | error
+  const cameraInput = useRef(null);
+  // "Hi, I'm Prankul Jain, Founder at Medical Management." / "Hi, this is Global Healthline."
+  const introLine = (d) => {
+    const co = String(d.company || '').replace(/\.+$/, '');
+    if (d.kind !== 'person' || !d.designation) return `Hi, this is ${d.name || co}${d.kind === 'person' && co && co !== d.name ? ` from ${co}` : ''}. `;
+    return `Hi, I'm ${d.name}, ${d.designation}${co ? ` at ${co}` : ''}. `;
+  };
+  const readCard = async (images) => {
+    setScan({ state: 'busy', msg: 'Reading your card…' });
+    try {
+      const { data: d } = await http.post(`${import.meta.env.VITE_API_URL}/api/ai/scan-card/public/${CARD.slug}`, { images }, { timeout: 90000 });
+      setForm((p) => ({
+        ...p,
+        name: d.name || p.name,
+        mobile: d.mobile || p.mobile,
+        email: d.email || p.email,
+        message: p.message || introLine(d),
+      }));
+      setScan({ state: 'done', msg: 'Filled from your card. Check the details, add your message and send.' });
+    } catch (err) {
+      setScan({ state: 'error', msg: err.response?.data?.msg || 'Could not read the card. Please type your details.' });
+    }
+  };
+  const pickPhoto = async (e) => {
+    const files = [...(e.target.files || [])].slice(0, 3);
+    e.target.value = '';
+    if (!files.length) return;
+    try {
+      await readCard(await Promise.all(files.map(fileToJpeg)));
+    } catch (err) {
+      setScan({ state: 'error', msg: err.message });
+    }
+  };
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.message.trim() || !CARD.slug || !agree) return;
     setStatus('sending');
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard/public/${CARD.slug}/enquiry`, {
+      await http.post(`${import.meta.env.VITE_API_URL}/api/vcard/public/${CARD.slug}/enquiry`, {
         ...form,
         consent: true,
         cohort: visitorCohort(),
@@ -1908,6 +1987,21 @@ export function EnquiryForm({
   }
   return (
     <form onSubmit={submit} className="wc-form" style={{ display: 'flex', flexDirection: 'column', gap, '--wc-ph': placeholderColor }}>
+      {CARD.slug ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', fontSize: '13px', opacity: 0.95 }}>
+          <span style={{ flex: '1 1 160px' }}>Have a visiting card? Fill this form from it:</span>
+          <button type="button" disabled={scan.state === 'busy'} onClick={() => setCam(true)} style={{ border: '1px solid currentColor', background: 'transparent', color: 'inherit', borderRadius: '999px', padding: '7px 13px', font: 'inherit', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+            📷 Take photo
+          </button>
+          <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={pickPhoto} aria-label="Take a photo of your visiting card" />
+          {scan.state !== 'idle' && (
+            <span role="status" style={{ flexBasis: '100%', fontSize: '12.5px', color: scan.state === 'error' ? '#DC2626' : 'inherit', opacity: scan.state === 'error' ? 1 : 0.85 }}>
+              {scan.msg}
+            </span>
+          )}
+          <CameraCapture open={cam} onClose={() => setCam(false)} onCapture={readCard} onFallback={() => cameraInput.current?.click()} title="Scan your visiting card" />
+        </div>
+      ) : null}
       <input required placeholder="Name" value={form.name} onChange={set('name')} style={input} />
       <input type="tel" placeholder="Phone" value={form.mobile} onChange={set('mobile')} style={input} />
       <input type="email" placeholder="Email" value={form.email} onChange={set('email')} style={input} />

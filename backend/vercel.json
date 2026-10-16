@@ -10,7 +10,8 @@
           "constants/**",
           "admin-ui/index.html",
           "admin-ui/favicon.svg",
-          "assets/brand/**"
+          "assets/brand/**",
+          "ssr/**"
         ]
       }
     },

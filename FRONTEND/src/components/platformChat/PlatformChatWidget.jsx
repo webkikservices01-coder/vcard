@@ -10,6 +10,7 @@ import GlassCard from '../ui/GlassCard';
 import { CardyMessage } from './markdown';
 import FlowStep from './FlowStep';
 import LeadForm from './LeadForm';
+import BookingCalendar from './BookingCalendar';
 import {
   ALLOWED_PATHS, GREETING_DELAY_MS, GREETING_SESSION_KEY, WELCOME_TEXT,
   WHATSAPP_HREF, BOOKING_HREF, PRICING_HREF, FAQ_CHIPS, FLOW_TRIGGER_CHIP, FLOW_STEPS,
@@ -20,6 +21,8 @@ import HistoryPanel from './HistoryPanel';
 import { loadChats, saveChats, getActiveId, setActiveId, newChatId, upsertChat } from './history';
 import { useSpeechInput, speak, stopSpeaking, canSpeak, VOICE_LANGS } from './speech';
 import { followUps, offlineAnswer } from './replies';
+import { useSiteSettings } from '../../utils/siteSettings';
+import { onFirstInteraction } from '../../utils/firstInteraction';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const PULSE_SEEN_KEY = 'webcard_platform_chat_pulsed';
@@ -103,6 +106,11 @@ function AnswerActions({ msg, isLast, feedback, onFeedback, onRegenerate, speaki
 
 const PlatformChatWidget = () => {
   const location = useLocation();
+  // Admin panel → Settings → Website chatbot: on/off, welcome line, demo booking link.
+  const site = useSiteSettings();
+  const cardyOn = site?.cardy?.enabled !== false;
+  const welcomeText = site?.cardy?.welcome || WELCOME_TEXT;
+  const bookingHref = site?.cardy ? site.cardy.bookingUrl || '' : BOOKING_HREF;
   const allowed = ALLOWED_PATHS.includes(location.pathname);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -196,18 +204,24 @@ const PlatformChatWidget = () => {
       }, GREETING_DELAY_MS);
       return () => clearTimeout(bubble);
     }
-    const open = setTimeout(() => {
-      try { sessionStorage.setItem(GREETING_SESSION_KEY, '1'); } catch { /* ignore */ }
-      autoOpen.current = true;
-      setIsOpen(true);
-    }, Math.min(GREETING_DELAY_MS, 1500));
-    const close = setTimeout(() => {
-      if (!autoOpen.current) return; // visitor is using it: leave it open
-      autoOpen.current = false;
-      setIsOpen(false);
-      setShowGreeting(true);
-    }, Math.min(GREETING_DELAY_MS, 1500) + 5000);
-    return () => { clearTimeout(open); clearTimeout(close); };
+    // It opens once the visitor is active on the page (first mouse move / scroll / key), so it
+    // does not pop up over a page that is still settling.
+    let open;
+    let close;
+    const cancel = onFirstInteraction(() => {
+      open = setTimeout(() => {
+        try { sessionStorage.setItem(GREETING_SESSION_KEY, '1'); } catch { /* ignore */ }
+        autoOpen.current = true;
+        setIsOpen(true);
+      }, Math.min(GREETING_DELAY_MS, 1500));
+      close = setTimeout(() => {
+        if (!autoOpen.current) return; // visitor is using it: leave it open
+        autoOpen.current = false;
+        setIsOpen(false);
+        setShowGreeting(true);
+      }, Math.min(GREETING_DELAY_MS, 1500) + 5000);
+    });
+    return () => { cancel(); clearTimeout(open); clearTimeout(close); };
   }, [allowed, location.pathname]);
 
   // Any tap or key inside the panel means the visitor took over: no auto-close.
@@ -241,6 +255,10 @@ const PlatformChatWidget = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // The booking calendar inside the panel (name and email filled in once the visitor gave them).
+  const [booking, setBooking] = useState(false);
+  const [prefill, setPrefill] = useState({ name: '', email: '' });
+
   const appendMessage = useCallback((role, content, extra = {}) => {
     setMessages(prev => [...prev, { id: genId(), role, type: 'text', content, ...extra }]);
   }, []);
@@ -272,9 +290,11 @@ const PlatformChatWidget = () => {
       });
       const id = genId();
       setMessages(prev => [...prev, { id, role: 'assistant', type: 'text', content: res.data.reply }]);
+      // Wants a demo / meeting: open the booking calendar right here.
+      if (res.data.bookCall && bookingHref) setTimeout(() => setBooking(true), 700);
       if (!reducedMotion) setRevealId(id);
       setQuick(followUps(res.data.reply, updated.filter(m => m.role === 'user').map(m => m.content)));
-      if (res.data.showLeadForm && leadState !== 'done') {
+      if (res.data.showLeadForm && !(res.data.bookCall && bookingHref) && leadState !== 'done') {
         setLeadContext(null);
         setLeadError('');
         setLeadState('form');
@@ -288,7 +308,7 @@ const PlatformChatWidget = () => {
       busyRef.current = false;
       setIsBusy(false);
     }
-  }, [messages, isBusy, appendMessage, leadState, reducedMotion]);
+  }, [messages, isBusy, appendMessage, leadState, reducedMotion, bookingHref]);
 
   // Ask the last question again (drops the last answer).
   const regenerate = useCallback(() => {
@@ -360,6 +380,12 @@ const PlatformChatWidget = () => {
     }
   }, [flow, appendMessage]);
 
+  const onBooked = useCallback(() => {
+    setBooking(false);
+    appendMessage('assistant', "Your demo is booked! 🎉 Calendly has emailed you the invite with the time and meeting link. See you then.");
+    setQuick([]);
+  }, [appendMessage]);
+
   // "Book a Free Demo" without a booking page: ask for name + phone and the team calls back.
   const openDemoForm = useCallback(() => {
     if (leadState === 'submitting') return;
@@ -379,6 +405,7 @@ const PlatformChatWidget = () => {
         timeline: leadContext?.timeline || '',
         budget: leadContext?.budget || '',
       });
+      setPrefill({ name: values.name || '', email: values.email || '' });
       appendMessage('assistant', res.data.msg || "Thanks! Our team will reach out soon.");
       setLeadState('done');
     } catch (err) {
@@ -438,7 +465,7 @@ const PlatformChatWidget = () => {
     [isBusy, flow, leadState, messages.length]
   );
 
-  if (!allowed) return null;
+  if (!allowed || !cardyOn) return null;
 
   const panelTransition = reducedMotion ? { duration: 0 } : { type: 'spring', damping: 28, stiffness: 360 };
 
@@ -464,6 +491,7 @@ const PlatformChatWidget = () => {
             }}
           >
             <div className="relative flex h-full flex-col">
+              {booking && bookingHref && <BookingCalendar url={bookingHref} prefill={prefill} onClose={() => setBooking(false)} onBooked={onBooked} />}
               <AnimatePresence>
                 {showHistory && (
                   <HistoryPanel
@@ -513,12 +541,10 @@ const PlatformChatWidget = () => {
                     <span className="text-center leading-tight">Chat on WhatsApp</span>
                   </Button>
                 </a>
-                {BOOKING_HREF ? (
-                  <a href={BOOKING_HREF} target="_blank" rel="noopener noreferrer" className="min-w-0">
-                    <Button variant="primary" size="sm" fullWidth leftIcon={<Calendar className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
-                      <span className="text-center leading-tight">Book a Free Demo</span>
-                    </Button>
-                  </a>
+                {bookingHref ? (
+                  <Button variant="primary" size="sm" fullWidth onClick={() => setBooking(true)} leftIcon={<Calendar className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
+                    <span className="text-center leading-tight">Book a Free Demo</span>
+                  </Button>
                 ) : (
                   <Button variant="primary" size="sm" fullWidth onClick={openDemoForm} leftIcon={<Calendar className="h-3.5 w-3.5 shrink-0" />} className="!min-h-[42px] !px-2 !text-[11px]">
                     <span className="text-center leading-tight">Book a Free Demo</span>
@@ -529,7 +555,7 @@ const PlatformChatWidget = () => {
               {/* Messages */}
               <div className="relative flex min-h-0 flex-1 flex-col">
               <div ref={scrollRef} onScroll={onScrollMessages} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" style={{ overscrollBehavior: 'contain' }}>
-                {messages.map(msg => (
+                {messages.map((m) => (m.id === 'welcome' ? { ...m, content: welcomeText } : m)).map(msg => (
                   <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.type === 'recommendation' ? (
                       <div className="max-w-[92%] space-y-2">
@@ -762,7 +788,7 @@ const PlatformChatWidget = () => {
               className="flex-1 text-left text-[12.5px] leading-snug"
               style={{ color: 'var(--surface-text)' }}
             >
-              {WELCOME_TEXT}
+              {welcomeText}
             </button>
             <IconButton variant="ghost" size="sm" onClick={() => setShowGreeting(false)} title="Dismiss">
               <X className="h-3 w-3" />

@@ -37,7 +37,7 @@ const words = (list, max = 40) => (Array.isArray(list) ? list : []).map(v => str
 const RESERVED_USERNAMES = new Set([
     'admin', 'api', 'dashboard', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'onboarding', 'c', 'www', 'support', 'help',
     'about', 'about-us', 'contact', 'contact-us', 'faqs', 'privacy-policy', 'terms-conditions', 'refund-policy',
-    'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined', 'wedding', 'invite', 'wedding-preview',
+    'cancellation-policy', 'data-processing-addendum', 'metal-nfc-card', 'features', 'ai-data-privacy', 'pricing', 'plans', 'assets', 'aicardly', 'settings', 'null', 'undefined', 'wedding', 'invite', 'wedding-preview', 'pay', 'upgrade', 'invites',
 ]);
 const usernameProblem = (u) => {
     if (!u) return 'Please choose a username.';
@@ -87,7 +87,7 @@ router.post('/', [auth, upload.fields([{ name: 'profileImage' }, { name: 'banner
                         ? 'This template is on AI Agent Pro. Upgrade to use all 10 templates.'
                         : isPaid(owner)
                             ? 'This template is on higher plans: Smart AI Card has 3 templates and AI Agent Pro all 10.'
-                            : 'This template is on paid plans. The free trial includes Webkik Signature; Smart AI Card has 3 templates and AI Agent Pro all 10.';
+                            : 'This template is on paid plans. The free trial includes Aicardly Signature; Smart AI Card has 3 templates and AI Agent Pro all 10.';
                     return res.status(402).json({ msg, upgrade: true, freeTheme: FREE_THEME, allowedThemes: allowed });
                 }
             } else updateFields.theme = theme;
@@ -239,33 +239,40 @@ router.post('/reels/import', auth, async (req, res) => {
     }
 });
 
+// A public card's page data: { status: 200, body, card, owner, trial } | { status: 404 | 402, body }.
+// Also used by the card server render (routes/og.js).
+async function publicCard(username) {
+    const card = await vCard.findOne({ username });
+    // Removed / deleted owner, or hidden by an admin: no public card.
+    if (!(await isPublicCard(card))) return { status: 404, body: { msg: 'Card not found' } };
+    // Free trial over and not paid: the card is paused until the owner upgrades (services/trial.js).
+    const owner = await User.findById(card.userId).select('name email phone plan planExpiry lifetime isAdmin upgrade');
+    const trial = owner ? await trialState(owner) : { active: false };
+    if (trial.paused) {
+        return { status: 402, body: { msg: 'This card is paused', paused: true, name: card.title || owner.name || '' }, owner, trial };
+    }
+
+    const [products, portfolio, testimonials, gallery, customSections, settings] = await Promise.all([
+        Product.find({ vcardId: card._id }).sort('order'),
+        Portfolio.find({ vcardId: card._id }).sort('order'),
+        Testimonial.find({ vcardId: card._id }),
+        Gallery.find({ vcardId: card._id }).sort('order'),
+        CustomSection.find({ vcardId: card._id }).sort('order'),
+        VcardSettings.findOne({ vcardId: card._id })
+    ]);
+    return { status: 200, body: { card, products, portfolio, testimonials, gallery, customSections, settings: settings || {} }, owner, trial };
+}
+
 router.get('/public/:username', async (req, res) => {
     try {
-        const card = await vCard.findOne({ username: req.params.username });
-        // Removed / deleted owner, or hidden by an admin: no public card.
-        if (!(await isPublicCard(card))) return res.status(404).json({ msg: 'Card not found' });
-        // Free trial over and not paid: the card is paused until the owner upgrades (services/trial.js).
-        const owner = await User.findById(card.userId).select('name email phone plan planExpiry lifetime isAdmin upgrade');
-        const trial = owner ? await trialState(owner) : { active: false };
+        const r = await publicCard(req.params.username);
         // Upgrade link due (trial over, or a card from before the trial rule): send it now.
-        if (trial.linkDue) background(nudge(owner, trial));
-        if (trial.paused) {
-            return res.status(402).json({ msg: 'This card is paused', paused: true, name: card.title || owner.name || '' });
-        }
-
-        const [products, portfolio, testimonials, gallery, customSections, settings] = await Promise.all([
-            Product.find({ vcardId: card._id }).sort('order'),
-            Portfolio.find({ vcardId: card._id }).sort('order'),
-            Testimonial.find({ vcardId: card._id }),
-            Gallery.find({ vcardId: card._id }).sort('order'),
-            CustomSection.find({ vcardId: card._id }).sort('order'),
-            VcardSettings.findOne({ vcardId: card._id })
-        ]);
-
-        res.json({ card, products, portfolio, testimonials, gallery, customSections, settings: settings || {} });
+        if (r.trial?.linkDue) background(nudge(r.owner, r.trial));
+        res.status(r.status).json(r.body);
+        if (r.status !== 200) return;
         // Services / projects with a website but no picture get a saved screenshot of that page.
-        fillShotsLater(Product, products, 'link', `p${card._id}`);
-        fillShotsLater(Portfolio, portfolio, 'url', `f${card._id}`);
+        fillShotsLater(Product, r.body.products, 'link', `p${r.body.card._id}`);
+        fillShotsLater(Portfolio, r.body.portfolio, 'url', `f${r.body.card._id}`);
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
@@ -339,19 +346,22 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
             const esc = (v) => String(v || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
             const site = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
             const row = (label, value) => `<b>${label}:</b> ${value}`;
+            const { emailText } = require('../services/emailTemplates');
+            const t = await emailText('enquiryOwner', { name: owner?.firstName || owner?.name || '', visitor: name });
             const sent = await sendMail({
                 to: to.join(', '),
                 replyTo: email || undefined,
-                subject: `New enquiry from ${name} on your AiCardly card`,
+                subject: t.subject,
                 text: `Hi ${owner?.firstName || owner?.name || ''},\n\nSomeone filled the contact form on your card aicardly.com/${card.username}.\n\nName: ${name}\nEmail: ${email || '—'}\nPhone: ${mobile || '—'}\n\nMessage:\n${message}\n\n${email ? 'Reply to this email to answer them.' : 'They left no email; call or WhatsApp them.'}\nAll enquiries: ${site}/dashboard/vcard/enquiries\n\n– Team AiCardly`,
                 html: emailHtml({
-                    heading: `New enquiry from ${esc(name)}`,
+                    heading: esc(t.heading),
                     paragraphs: [
+                        t.intro,
                         `Someone filled the contact form on your card <a href="${site}/${esc(card.username)}" style="color:#E70C65">aicardly.com/${esc(card.username)}</a>.`,
                         [row('Name', esc(name)), row('Email', email ? `<a href="mailto:${esc(email)}" style="color:#E70C65">${esc(email)}</a>` : '—'), row('Phone', mobile ? `<a href="tel:${esc(mobile.replace(/[^\d+]/g, ''))}" style="color:#E70C65">${esc(mobile)}</a>` : '—')].join('<br>'),
                         `<b>Message:</b><br>${esc(message).replace(/\n/g, '<br>')}`,
                         email ? 'Just reply to this email to answer them.' : 'They left no email address, so call or WhatsApp them.',
-                    ],
+                    ].filter(Boolean),
                     button: { label: 'Open my enquiries', url: `${site}/dashboard/vcard/enquiries` },
                 }),
             });
@@ -364,19 +374,21 @@ router.post('/public/:username/enquiry', enquiryLimiter, async (req, res) => {
             const publicEmail = (card.dynamicLinks || [])
                 .map((l) => String(l.url || '').replace(/^mailto:/i, '').trim())
                 .find((v, i) => /mail/i.test(card.dynamicLinks[i].fieldType || '') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+            const tv = await emailText('enquiryVisitor', { visitor: name, owner: ownerName });
             const copySent = await sendMail({
                 to: email,
                 replyTo: publicEmail || undefined,
-                subject: `Your message to ${ownerName} was sent`,
+                subject: tv.subject,
                 text: `Hi ${name},\n\nThanks for getting in touch. Your message has reached ${ownerName} (aicardly.com/${card.username}).\n\nYour details:\nName: ${name}\nEmail: ${email}\nPhone: ${mobile || '—'}\n\nYour message:\n${message}\n\n${publicEmail ? `You can reply to this email to write to ${ownerName} directly.` : `${ownerName} will get back to you soon.`}\n\n– Team AiCardly`,
                 html: emailHtml({
-                    heading: `Your message to ${esc(ownerName)} was sent`,
+                    heading: esc(tv.heading),
                     paragraphs: [
+                        tv.intro,
                         `Hi ${esc(name)}, thanks for getting in touch. Your message has reached <b>${esc(ownerName)}</b>.`,
                         [row('Name', esc(name)), row('Email', esc(email)), row('Phone', mobile ? esc(mobile) : '—')].join('<br>'),
                         `<b>Your message:</b><br>${esc(message).replace(/\n/g, '<br>')}`,
                         publicEmail ? `You can reply to this email to write to ${esc(ownerName)} directly.` : `${esc(ownerName)} will get back to you soon.`,
-                    ],
+                    ].filter(Boolean),
                     button: { label: `View ${esc(ownerName)}'s card`, url: `${site}/${encodeURIComponent(card.username)}` },
                 }),
             });
@@ -443,3 +455,4 @@ router.get('/:username', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.publicCard = publicCard;

@@ -17,6 +17,13 @@ export const avatarUrl = (imgPath) => {
   return url ? url.replace('/image/upload/f_auto,q_auto,c_limit,w_1200/', '/image/upload/f_auto,q_auto,c_limit,w_480/') : url;
 };
 
+// Service / product / project pictures sit in a card at most ~360px wide: 720px is sharp on any
+// phone and about half the bytes of the 1200px file.
+export const tileImageUrl = (imgPath) => {
+  const url = getImageUrl(imgPath);
+  return url ? url.replace('/image/upload/f_auto,q_auto,c_limit,w_1200/', '/image/upload/f_auto,q_auto,c_limit,w_720/') : url;
+};
+
 export const getImageUrl = (imgPath) => {
   if (!imgPath) return null;
   if (imgPath.startsWith('http')) return optimizeImage(imgPath);

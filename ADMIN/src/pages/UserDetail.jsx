@@ -9,6 +9,7 @@ import { Badge, Button, Card, DefList, ErrorBox, Field, Input, PageHeader, Selec
 import { useToast } from '../components/ui';
 import ActionDialog from '../components/ActionDialog';
 import OrderActions from '../components/OrderActions';
+import ExportButton from '../components/ExportButton';
 
 const SITE = 'https://aicardly.com';
 
@@ -65,22 +66,43 @@ export default function UserDetail() {
       throw err;
     }
   };
+  // Pick the plan (1st, 2nd or 3rd) and how long: 1 month or 1 year. The matching plan from the
+  // Plans page is used; the days are sent so the length is exactly what was picked.
+  const TIERS = [['DIGITAL CARD', '1 · Digital Card'], ['SMART AI CARD', '2 · Smart AI Card'], ['AI AGENT PRO', '3 · AI Agent Pro']];
+  const PERIODS = [['month', '1 month', 30], ['year', '1 year', 365]];
+  const pickPlan = (tier, period) => {
+    const days = PERIODS.find(([v]) => v === period)?.[2] || 30;
+    const ofTier = activePlans.filter((p) => p.tier === tier);
+    const plan = ofTier.find((p) => p.durationDays === days) || ofTier[0];
+    setForm((f) => ({ ...f, tier, period, planId: plan?._id || '', days: String(days) }));
+  };
+  const chip = (on) => `rounded-xl border px-3 py-2 text-sm font-semibold transition ${on ? 'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`;
   const planPicker = (
-    <Field label="Plan">
-      <Select value={form.planId || ''} onChange={(e) => setForm((f) => ({ ...f, planId: e.target.value }))}>
-        <option value="">Choose a plan…</option>
-        {activePlans.map((p) => (
-          <option key={p._id} value={p._id}>
-            {p.name} — {money(p.price)} + GST · {p.durationDays} days · unlocks {planLabel(p.tier)}
-          </option>
-        ))}
-      </Select>
-    </Field>
-  );
-  const daysField = (label, hint) => (
-    <Field label={label} hint={hint}>
-      <Input type="number" min={1} max={3650} value={form.days || ''} onChange={(e) => setForm((f) => ({ ...f, days: e.target.value }))} />
-    </Field>
+    <>
+      <Field label="Plan">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Plan">
+          {TIERS.map(([tier, label]) => (
+            <button key={tier} type="button" role="radio" aria-checked={form.tier === tier} disabled={!activePlans.some((p) => p.tier === tier)} onClick={() => pickPlan(tier, form.period || 'month')} className={chip(form.tier === tier)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="For how long">
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="For how long">
+          {PERIODS.map(([v, label]) => (
+            <button key={v} type="button" role="radio" aria-checked={form.period === v} disabled={!form.tier} onClick={() => pickPlan(form.tier, v)} className={chip(form.period === v)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      {form.tier && form.period && (
+        <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          {TIERS.find(([t]) => t === form.tier)?.[1].replace(/^\d · /, '')} for {form.period === 'year' ? '1 year (365 days)' : '1 month (30 days)'}, until about {dateOnly(new Date(Date.now() + Number(form.days) * 864e5))}.
+        </p>
+      )}
+    </>
   );
 
   const orderColumns = [
@@ -142,6 +164,7 @@ export default function UserDetail() {
               ) : (
                 <Button variant="secondary" onClick={() => open('remove')}><UserX className="h-4 w-4" /> Remove</Button>
               ))}
+            {can('export.csv') && <ExportButton path={`/users/${id}/export`} label="Export their data" what={`everything Aicardly holds about ${user.name} (account, cards, enquiries, payments, invites) as a JSON file, e.g. for a data request`} />}
             {can('users.purge') && <Button variant="danger" onClick={() => open('purge')}><Trash2 className="h-4 w-4" /> Delete permanently</Button>}
           </>
         }
@@ -210,7 +233,7 @@ export default function UserDetail() {
                 {user.planActive && <Button size="sm" variant="secondary" onClick={() => open('extend')}><CalendarPlus className="h-3.5 w-3.5" /> Extend</Button>}
                 <Button size="sm" variant="secondary" onClick={() => open('change')}><Repeat className="h-3.5 w-3.5" /> Change</Button>
                 {user.planActive && <Button size="sm" variant="secondary" onClick={() => open('revoke')}><XCircle className="h-3.5 w-3.5" /> Revoke</Button>}
-                {!user.lifetimeFixed && <Button size="sm" variant="secondary" onClick={() => open('lifetime')}><InfinityIcon className="h-3.5 w-3.5" /> {user.lifetime ? 'Remove lifetime' : 'Lifetime'}</Button>}
+                {user.lifetime && !user.lifetimeFixed && <Button size="sm" variant="secondary" onClick={() => open('lifetime')}><InfinityIcon className="h-3.5 w-3.5" /> Remove lifetime</Button>}
               </div>
             )
           }
@@ -276,7 +299,18 @@ export default function UserDetail() {
         )}
       </Card>
 
-      <Card title="Card payments (Razorpay links)" className="mt-4" padded={false}>
+      <Card
+        title="Card payments (Cashfree links)"
+        className="mt-4"
+        padded={false}
+        actions={
+          can('payments.resend') && cards.length > 0 && !orders.some((o) => o.status === 'PAID') ? (
+            <Button size="sm" variant="secondary" onClick={() => open('cardLink')}>
+              <Send className="h-3.5 w-3.5" /> {orders.some((o) => o.status === 'PENDING_PAYMENT') ? 'Send card payment link again' : 'Send card payment link'}
+            </Button>
+          ) : null
+        }
+      >
         <Table columns={orderColumns} rows={orders} empty="No card orders yet." />
       </Card>
 
@@ -371,9 +405,8 @@ export default function UserDetail() {
         confirmText={user.email}
         onSubmit={({ reason }) => run('', { confirmEmail: user.email }, 'DELETE')({ reason })}
       />
-      <ActionDialog open={dialog === 'grant'} onClose={close} title="Grant a plan" description="If the same tier is already running, the days are added on top." confirmLabel="Grant plan" canSubmit={!!form.planId} onSubmit={run('/plan/grant', { planId: form.planId, days: form.days ? Number(form.days) : undefined, type: form.type })}>
+      <ActionDialog open={dialog === 'grant'} onClose={close} title="Grant a plan" description="If the same tier is already running, the days are added on top." confirmLabel="Grant plan" canSubmit={!!form.planId && !!form.period} onSubmit={run('/plan/grant', { planId: form.planId, days: form.days ? Number(form.days) : undefined, type: form.type })}>
         {planPicker}
-        {daysField('Days (leave empty for the plan’s own duration)')}
         <Field label="Type">
           <Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
             <option value="free">Free grant</option>
@@ -381,13 +414,21 @@ export default function UserDetail() {
           </Select>
         </Field>
       </ActionDialog>
-      <ActionDialog open={dialog === 'extend'} onClose={close} title="Extend plan" confirmLabel="Extend" canSubmit={Number(form.days) > 0} onSubmit={run('/plan/extend', { days: Number(form.days) })}>
-        {daysField('Add days', `Currently until ${dateOnly(user.planExpiry)}`)}
+      <ActionDialog open={dialog === 'extend'} onClose={close} title="Extend plan" confirmLabel="Extend" canSubmit={!!form.period && Number(form.days) > 0} onSubmit={run('/plan/extend', { days: Number(form.days) })}>
+        <Field label="Add" hint={`Currently until ${dateOnly(user.planExpiry)}`}>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Add">
+            {PERIODS.map(([v, label, d]) => (
+              <button key={v} type="button" role="radio" aria-checked={form.period === v} onClick={() => setForm((f) => ({ ...f, period: v, days: String(d) }))} className={chip(form.period === v)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </Field>
       </ActionDialog>
-      <ActionDialog open={dialog === 'change'} onClose={close} title="Change plan" description="Keeps the current end date unless you give a number of days." confirmLabel="Change plan" canSubmit={!!form.planId} onSubmit={run('/plan/change', { planId: form.planId, days: form.days ? Number(form.days) : undefined })}>
+      <ActionDialog open={dialog === 'change'} onClose={close} title="Change plan" description="Switches to the plan you pick, starting today." confirmLabel="Change plan" canSubmit={!!form.planId && !!form.period} onSubmit={run('/plan/change', { planId: form.planId, days: form.days ? Number(form.days) : undefined })}>
         {planPicker}
-        {daysField('Days from today (optional)')}
       </ActionDialog>
+      <ActionDialog open={dialog === 'cardLink'} onClose={close} title="Send card payment link" description={`Creates the payment link for ${user.name || 'this user'}'s card (if there isn't an open one) and sends it to ${user.email} by email (and on WhatsApp to ${user.phone || 'their number'} once WhatsApp is set up). Once they pay, the finished card goes to their WhatsApp and email automatically.`} confirmLabel="Send now" reasonRequired={false} onSubmit={run('/card-payment-link', {})} />
       <ActionDialog open={dialog === 'upgradeLink'} onClose={close} title="Send payment link" description="Emails a link to choose any plan and pay (no login), and Cashfree texts a Smart AI Card monthly payment link to the user's Indian mobile number. Paying either one switches the card back on." confirmLabel="Send now" reasonRequired={false} onSubmit={run('/upgrade-link', {})} />
       <ActionDialog open={dialog === 'lifetime'} onClose={close} title={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} description={user.lifetime ? 'The plan follows its expiry date again.' : 'The plan never expires. With no paid plan the user gets AI Agent Pro.'} confirmLabel={user.lifetime ? 'Remove lifetime' : 'Make lifetime'} onSubmit={run('/lifetime', { lifetime: !user.lifetime })} />
       <ActionDialog open={dialog === 'endTrial'} onClose={close} title="End the free trial now" description="The card pauses right away (visitors see that it's paused) and the payment link goes out by email and SMS, if it hasn't already. Paying switches the card back on." confirmLabel="End trial now" reasonRequired={false} onSubmit={run('/end-trial', {})} />

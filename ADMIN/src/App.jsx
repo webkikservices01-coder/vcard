@@ -17,10 +17,16 @@ const Support = lazy(() => import('./pages/Support'));
 const Logs = lazy(() => import('./pages/Logs'));
 const Account = lazy(() => import('./pages/Account'));
 const Leads = lazy(() => import('./pages/Leads'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Coupons = lazy(() => import('./pages/Coupons'));
+const Content = lazy(() => import('./pages/Content'));
+const Invites = lazy(() => import('./pages/Invites'));
+const Settings = lazy(() => import('./pages/Settings'));
 
-function Guarded({ perm, children }) {
+function Guarded({ perm, anyOf, children }) {
   const { can } = useAuth();
   if (perm && !can(perm)) return <Navigate to="/" replace />;
+  if (anyOf && !anyOf.some(can)) return <Navigate to="/" replace />;
   return <Suspense fallback={<Spinner />}>{children}</Suspense>;
 }
 
@@ -44,6 +50,11 @@ function Shell() {
         <Route path="plans" element={<Guarded perm="plans.view"><Plans /></Guarded>} />
         <Route path="support" element={<Guarded perm="support.view"><Support /></Guarded>} />
         <Route path="leads" element={<Guarded perm="leads.view"><Leads /></Guarded>} />
+        <Route path="orders" element={<Guarded perm="orders.view"><Orders /></Guarded>} />
+        <Route path="coupons" element={<Guarded perm="coupons.view"><Coupons /></Guarded>} />
+        <Route path="content" element={<Guarded perm="content.view"><Content /></Guarded>} />
+        <Route path="invites" element={<Guarded perm="invites.view"><Invites /></Guarded>} />
+        <Route path="settings" element={<Guarded anyOf={['settings.manage', 'ai.settings', 'emails.manage']}><Settings /></Guarded>} />
         <Route path="admins" element={<Guarded perm="admins.manage"><Admins /></Guarded>} />
         <Route path="audit" element={<Guarded perm="audit.view"><Audit /></Guarded>} />
         <Route path="logs" element={<Guarded perm="logs.view"><Logs /></Guarded>} />

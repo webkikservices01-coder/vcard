@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Phone, Lock, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import GoogleSignIn from '../components/GoogleSignIn';
 import AuthBrandPanel from '../components/AuthBrandPanel';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import BackButton from '../components/BackButton';
@@ -447,6 +448,7 @@ export const Register = () => {
                 </button>
               </motion.div>
             </form>
+            <GoogleSignIn isDark={isDark} mode="signup" onError={setError} />
 
             {/* 3. High Prominence & Contrast Sign-In Secondary Action */}
             <motion.div variants={slideFromBottom} className="mt-6 pt-2 text-center text-sm">

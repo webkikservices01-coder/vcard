@@ -10,6 +10,7 @@ const ceremonySchema = new mongoose.Schema({
   date: { type: String, default: '' },
   time: { type: String, default: '' },
   venue: { type: String, default: '' },
+  dress: { type: String, default: '' }, // dress code for this function (Invite Studio designs)
 }, { _id: false });
 
 const timelineSchema = new mongoose.Schema({
@@ -47,7 +48,13 @@ const weddingInviteSchema = new mongoose.Schema({
   aiChat: { type: Boolean, default: true }, // AI assistant guests can ask about the wedding
   opening: { type: String, default: '' }, // '' = the design's own: classic | shutter | scratch
   coupleArt: { type: String, default: '' }, // '' = the design's own, 'none', or hindu | south | nikkah | modern
+  // Invite Studio designs: which of the design's three colour palettes, and a note under the
+  // venue (parking, shuttles, valet).
+  palette: { type: Number, default: 0, min: 0, max: 2 },
+  venueNote: { type: String, default: '' },
   views: { type: Number, default: 0 },
+  adminHidden: { type: Boolean, default: false }, // taken offline by the Aicardly team
+  adminHiddenReason: { type: String, default: '' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('WeddingInvite', weddingInviteSchema);

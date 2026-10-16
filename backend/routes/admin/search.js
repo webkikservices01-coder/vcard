@@ -15,23 +15,22 @@ const LIMIT = 5;
 router.get('/', validate({ query: z.object({ q: z.string().trim().min(2).max(100) }) }), async (req, res) => {
   const { q } = req.v.query;
   const re = new RegExp(escapeRegex(q), 'i');
-  const role = req.admin.role;
   const isId = /^[a-f0-9]{24}$/i.test(q);
 
   const [users, cards, payments, orders, leads] = await Promise.all([
-    can(role, 'users.view')
+    can(req.admin, 'users.view')
       ? User.find({ $or: [{ name: re }, { email: re }, { phone: re }, ...(isId ? [{ _id: q }] : [])] }).select('name email deletedAt').limit(LIMIT).lean()
       : [],
-    can(role, 'cards.view')
+    can(req.admin, 'cards.view')
       ? vCard.find({ $or: [{ username: re }, { 'personalInfo.name': re }, { 'personalInfo.company': re }] }).select('username personalInfo.name userId').limit(LIMIT).lean()
       : [],
-    can(role, 'payments.view')
+    can(req.admin, 'payments.view')
       ? Transaction.find({ $or: [{ invoiceNumber: re }, { cfOrderId: re }, { cfLinkId: re }, ...(isId ? [{ _id: q }] : [])] }).select('plan amount status invoiceNumber createdAt').limit(LIMIT).lean()
       : [],
-    can(role, 'payments.view')
-      ? CardOrder.find({ $or: [{ razorpayPaymentId: re }, { paymentLinkId: re }, { email: re }, { phone: re }, ...(isId ? [{ _id: q }] : [])] }).select('email status amount createdAt').limit(LIMIT).lean()
+    can(req.admin, 'payments.view')
+      ? CardOrder.find({ $or: [{ paymentId: re }, { razorpayPaymentId: re }, { paymentLinkId: re }, { email: re }, { phone: re }, ...(isId ? [{ _id: q }] : [])] }).select('email status amount createdAt').limit(LIMIT).lean()
       : [],
-    can(role, 'leads.view') ? PlatformLead.find({ $or: [{ name: re }, { email: re }, { phone: re }, { businessName: re }] }).select('name need status').limit(LIMIT).lean() : [],
+    can(req.admin, 'leads.view') ? PlatformLead.find({ $or: [{ name: re }, { email: re }, { phone: re }, { businessName: re }] }).select('name need status').limit(LIMIT).lean() : [],
   ]);
 
   res.json({

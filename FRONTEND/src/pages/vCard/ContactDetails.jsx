@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa';
 import { MdEmail, MdOutlineLink } from 'react-icons/md';
 import { FiPlus, FiTrash2, FiEdit2, FiSave, FiMic, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import ScanCard from '../../components/ScanCard';
 import { useNavigate } from 'react-router-dom';
 import ActionPopup from '../../components/ActionPopup';
 import LocationInput from '../../components/LocationInput';
@@ -287,6 +288,7 @@ const ContactDetails = () => {
   return (
     <>
       <div className="max-w-5xl space-y-5">
+        <ScanCard compact />
         <GlassCard {...slowFadeUp(0)} className="relative overflow-hidden p-5 sm:p-6">
           <MeshBackground className="opacity-40" />
           <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">

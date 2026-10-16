@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// "Get my card" order: the owner pays for their card with a Razorpay Payment Link (valid 24h),
+// "Get my card" order: the owner pays for their card with a Cashfree payment link (valid 24h),
 // then the finished card (PDF + image) is delivered to their WhatsApp and email.
 const CardOrderSchema = new mongoose.Schema(
   {
@@ -18,11 +18,17 @@ const CardOrderSchema = new mongoose.Schema(
     phone: { type: String, default: '' },
     email: { type: String, default: '' },
 
-    paymentLinkId: { type: String, default: '', index: true },
+    paymentLinkId: { type: String, default: '', index: true }, // older orders (Cashfree / Razorpay links)
+    // Cashfree checkout order: the link we send opens aicardly.com/pay/card/<payToken>, which starts
+    // the Cashfree checkout (works without Cashfree's Payment Links product being switched on).
+    cfOrderId: { type: String, default: '', index: true },
+    paymentSessionId: { type: String, default: '' },
+    payToken: { type: String, default: '', index: true },
     paymentLinkUrl: { type: String, default: '' },
     expiresAt: { type: Date, required: true, index: true },
     paidAt: { type: Date, default: null },
-    razorpayPaymentId: { type: String, default: '' },
+    paymentId: { type: String, default: '' }, // Cashfree link payment
+    razorpayPaymentId: { type: String, default: '' }, // older orders paid before the move to Cashfree
     reminderSentAt: { type: Date, default: null },
     // Free order: paid with an admin-granted credit (users.freeCardCredits), no payment link.
     complimentary: { type: Boolean, default: false },

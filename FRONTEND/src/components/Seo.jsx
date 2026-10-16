@@ -48,12 +48,16 @@ export const setCardIndexing = (allowed) => setMeta('name', 'robots', allowed ? 
 
 // PublicVcard: the card owner's name as the page and link-preview title (same wording as the
 // backend's /api/og tags), in case og.php served the generic tags before its cache was warm.
-export const setCardMeta = (name, role) => {
+export const setCardMeta = (name) => {
   if (!name) return;
-  const title = `${name}${role ? ` – ${role}` : ''} | Aicardly`;
+  const title = `${name} Digital Business Card | Aicardly`;
+  const description = `View the ${name} digital business card on Aicardly. Save contact details, explore services and connect on WhatsApp or call in one tap.`;
   document.title = title;
+  setMeta('name', 'description', description);
   setMeta('property', 'og:title', title);
+  setMeta('property', 'og:description', description);
   setMeta('name', 'twitter:title', title);
+  setMeta('name', 'twitter:description', description);
 };
 
 // PublicVcard calls this when a username has no card, so the empty page isn't indexed.

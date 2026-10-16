@@ -27,7 +27,7 @@ const hint = {
 };
 
 export function AuthProvider({ children }) {
-  const [state, setState] = useState(() => ({ loading: hint.get(), admin: null, permissions: [] }));
+  const [state, setState] = useState(() => ({ loading: hint.get(), admin: null, permissions: [], session: null }));
 
   const load = useCallback(async () => {
     if (!hint.get()) {
@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
     try {
       await ensureCsrf();
       const me = await api('/auth/me');
-      setState({ loading: false, admin: me.admin, permissions: me.permissions });
+      setState({ loading: false, admin: me.admin, permissions: me.permissions, session: me.session || null });
     } catch {
       hint.set(false);
       setState({ loading: false, admin: null, permissions: [] });
@@ -60,7 +60,9 @@ export function AuthProvider({ children }) {
       can: (p) => state.permissions.includes(p),
       signedIn: (me) => {
         hint.set(true);
-        setState({ loading: false, admin: me.admin, permissions: me.permissions });
+        setState({ loading: false, admin: me.admin, permissions: me.permissions, session: null });
+        // When the session ends and the idle time come from /auth/me.
+        api('/auth/me').then((m) => setState((s) => ({ ...s, session: m.session || null }))).catch(() => {});
       },
       logout: async () => {
         await api('/auth/logout', { method: 'POST' }).catch(() => {});

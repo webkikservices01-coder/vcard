@@ -30,13 +30,14 @@ function weddingFacts(inv) {
     inv.date || whenText ? `Date: ${clip(inv.date, 60) || whenText}${whenText && inv.date ? ` (${whenText} IST)` : ''}` : 'Date: not given',
     o.rsvp ? (inv.venueName || inv.venueAddress ? `Venue: ${[clip(inv.venueName, 120), clip(inv.venueAddress, 300)].filter(Boolean).join(', ')}` : 'Venue: not given') : '',
     inv.mapUrl ? 'A Google Maps link for the venue is on the invite (the [[MAP]] button opens it).' : '',
+    inv.venueNote ? `Getting there / parking: ${clip(inv.venueNote, 200)}` : '',
     inv.hostPhone ? `Host contact number: ${clip(inv.hostPhone, 30)} (the [[CALL]] button calls it)` : 'Host contact number: not given',
     inv.tagline ? `Invitation line: ${clip(inv.tagline, 160)}` : '',
     inv.hashtag ? `Hashtag: ${clip(inv.hashtag, 60)}` : '',
   ].filter(Boolean);
   const events = (inv.ceremonies || []).filter((c) => c && c.name).slice(0, 12);
   const eventText = events.length
-    ? events.map((c, i) => `${i + 1}. ${clip(c.name, 60)}${c.hi ? ` (${clip(c.hi, 40)})` : ''}${c.date ? ` - ${clip(c.date, 60)}` : ''}${c.time ? `, ${clip(c.time, 40)}` : ''}${c.venue ? ` at ${clip(c.venue, 160)}` : ''}`).join('\n')
+    ? events.map((c, i) => `${i + 1}. ${clip(c.name, 60)}${c.hi ? ` (${clip(c.hi, 40)})` : ''}${c.date ? ` - ${clip(c.date, 60)}` : ''}${c.time ? `, ${clip(c.time, 40)}` : ''}${c.venue ? ` at ${clip(c.venue, 160)}` : ''}${c.dress ? `; dress code: ${clip(c.dress, 80)}` : ''}`).join('\n')
     : 'No separate programme listed.';
   const story = clip(inv.story, 1500);
   const timeline = (inv.timeline || []).filter((t) => t && t.h).slice(0, 6).map((t) => `- ${clip(t.y, 20)} ${clip(t.h, 60)}: ${clip(t.t, 200)}`).join('\n');

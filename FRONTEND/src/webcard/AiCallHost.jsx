@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
+import { http } from '../utils/http';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, SwitchCamera, X, MessageCircle, CalendarCheck, ExternalLink } from 'lucide-react';
+import { openCalendly, CALENDLY_BOOKED } from './CalendlyOverlay';
 
 /* =========================================================
    AiCallHost — live AI voice / video call from a public card.
@@ -81,10 +82,22 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
   const [camOn, setCamOn] = useState(true);
   const [facing, setFacing] = useState('user');
   const [meeting, setMeeting] = useState(null); // { name, preferredTime, meetingUrl }
+  // Booked on Calendly during the call: show it, and tell the AI so it can confirm aloud.
+  useEffect(() => {
+    const booked = () => {
+      setMeeting((m) => (m ? { ...m, calendlyBooked: true } : m));
+      if (dc.current?.readyState !== 'open') return;
+      dc.current.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: '(The caller has just confirmed the meeting on the Calendly calendar. Calendly emailed the invite to both. Confirm it in one short sentence.)' }] } }));
+      dc.current.send(JSON.stringify({ type: 'response.create' }));
+    };
+    window.addEventListener(CALENDLY_BOOKED, booked);
+    return () => window.removeEventListener(CALENDLY_BOOKED, booked);
+  }, []);
   const [waInfo, setWaInfo] = useState(null); // { sent, tapLink, topic } from send_whatsapp_info
 
   const pc = useRef(null);
   const dc = useRef(null);
+  const dropTimer = useRef(null);
   const mic = useRef(null);
   const cam = useRef(null);
   const audioEl = useRef(null);
@@ -144,6 +157,7 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
     (reason) => {
       if (ending.current) return;
       ending.current = true;
+      clearTimeout(dropTimer.current);
       const secs = startedAt.current ? Math.round((Date.now() - startedAt.current) / 1000) : 0;
       startedAt.current = 0;
       cleanup();
@@ -182,11 +196,11 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
     const ch = dc.current;
     if (!v || !ch || ch.readyState !== 'open' || !cam.current || stills.current >= MAX_STILLS || !v.videoWidth) return;
     const c = document.createElement('canvas');
-    const w = 480;
+    const w = 384; // small pictures keep replies quick and the data channel light
     c.width = w;
     c.height = Math.round((v.videoHeight / v.videoWidth) * w);
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    const url = c.toDataURL('image/jpeg', 0.6);
+    const url = c.toDataURL('image/jpeg', 0.55);
     stills.current++;
     lastStill.current = Date.now();
     ch.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_image', image_url: url }] } }));
@@ -236,6 +250,14 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
   };
 
   const start = async () => {
+    // Make the audio player and start it inside the tap itself: after the awaits below, iPhone and
+    // Safari won't let it play, and the caller would hear nothing (the call looked stuck).
+    if (!audioEl.current) {
+      audioEl.current = new Audio();
+      audioEl.current.autoplay = true;
+      audioEl.current.setAttribute('playsinline', '');
+    }
+    audioEl.current.play().catch(() => {});
     setErr('');
     setStage('connecting');
     ending.current = false;
@@ -259,15 +281,11 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
         if (selfVideo.current) selfVideo.current.srcObject = cam.current;
       }
 
-      const { data } = await axios.post(`${API}/api/ai-call/${slug}/start`, { mode, consent: true });
+      const { data } = await http.post(`${API}/api/ai-call/${slug}/start`, { mode, consent: true });
       callId.current = data.callId;
 
       const peer = new RTCPeerConnection();
       pc.current = peer;
-      if (!audioEl.current) {
-        audioEl.current = new Audio();
-        audioEl.current.autoplay = true;
-      }
       peer.ontrack = (e) => {
         audioEl.current.srcObject = e.streams[0];
         audioEl.current.play().catch(() => {});
@@ -299,15 +317,38 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
           } catch {
             /* empty */
           }
-          axios
+          http
             .post(`${API}/api/ai-call/${slug}/meeting`, { callId: callId.current, ...args })
             .then(({ data: m }) => {
               setMeeting(m);
+              // The owner uses Calendly: the calendar opens over the call with the details filled in.
+              if (m.calendly) {
+                openCalendly(m.meetingUrl);
+                return { ok: true, booked: false, calendly_calendar_opened_on_screen: true };
+              }
               return m.scheduled
-                ? { ok: true, booked: true, when: m.when, meeting_link_shown_on_screen: true, invite_emailed_to_caller: m.invited }
+                ? { ok: true, booked: true, when: m.when, meeting_link_shown_on_screen: true, invite_emailed_to_caller: m.invited, ...(m.calendlyBooked ? { booked_in_calendly: true, invite_emailed_by_calendly: true } : {}) }
                 : { ok: true, booked: false, link_shown_on_screen: true, booking_page: m.booking };
             })
             .catch((err) => ({ ok: false, error: err.response?.data?.msg || 'Could not save the meeting' }))
+            .then((output) => {
+              if (dc.current?.readyState !== 'open') return;
+              dc.current.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: ev.call_id, output: JSON.stringify(output) } }));
+              dc.current.send(JSON.stringify({ type: 'response.create' }));
+            });
+        }
+        // Calendly connected: the AI asks for free times, offers them, then books with save_meeting_request.
+        if (ev.type === 'response.function_call_arguments.done' && ev.name === 'find_meeting_times') {
+          let args = {};
+          try {
+            args = JSON.parse(ev.arguments || '{}');
+          } catch {
+            /* empty */
+          }
+          http
+            .post(`${API}/api/ai-call/${slug}/slots`, { callId: callId.current, ...args })
+            .then(({ data: r }) => (r.times?.length ? { ok: true, times: r.times } : { ok: true, times: [], note: 'No free times then. Ask for another day.' }))
+            .catch((err) => ({ ok: false, error: err.response?.data?.msg || 'Could not check the calendar' }))
             .then((output) => {
               if (dc.current?.readyState !== 'open') return;
               dc.current.send(JSON.stringify({ type: 'conversation.item.create', item: { type: 'function_call_output', call_id: ev.call_id, output: JSON.stringify(output) } }));
@@ -322,7 +363,7 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
           } catch {
             /* empty */
           }
-          axios
+          http
             .post(`${API}/api/ai-call/${slug}/whatsapp`, { callId: callId.current, ...args })
             .then(({ data: w }) => {
               setWaInfo(w);
@@ -347,7 +388,17 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
             setLeft(remaining);
             if (remaining <= 0) end('Time is up for this call. You can call again or continue in the chat.');
           }, 1000);
-        } else if ((s === 'failed' || s === 'disconnected') && !ending.current) end('The call dropped. Please try again.');
+        } else if (s === 'failed' && !ending.current) end('The call dropped. Please try again.');
+        else if (s === 'disconnected' && !ending.current) {
+          // Usually a short network blip that heals on its own: give it 8 seconds.
+          clearTimeout(dropTimer.current);
+          dropTimer.current = setTimeout(() => {
+            if (pc.current?.connectionState === 'disconnected' && !ending.current) end('The call dropped (weak network). Please try again.');
+          }, 8000);
+        } else if (s === 'connected') clearTimeout(dropTimer.current);
+      };
+      ch.onclose = () => {
+        if (!ending.current && pc.current?.connectionState !== 'closed') end('The call ended unexpectedly. Please try again.');
       };
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
@@ -491,15 +542,24 @@ export default function AiCallHost({ slug, ownerName, aiName, avatar, initials, 
         {meeting && (
           <div className="mt-4 w-full max-w-sm rounded-2xl bg-white/[.08] p-4 text-left ring-1 ring-emerald-400/40">
             <p className="flex items-center gap-2 text-sm font-bold text-emerald-300">
-              <CalendarCheck className="h-4 w-4" /> {meeting.scheduled ? `Meeting booked with ${ownerName.split(' ')[0]}` : `Meeting noted for ${ownerName.split(' ')[0]}`}
+              <CalendarCheck className="h-4 w-4" /> {meeting.scheduled || meeting.calendlyBooked ? `Meeting booked with ${ownerName.split(' ')[0]}` : meeting.calendly ? `Pick a time with ${ownerName.split(' ')[0]}` : `Meeting noted for ${ownerName.split(' ')[0]}`}
             </p>
-            {meeting.scheduled ? (
+            {meeting.calendlyBooked ? (
+              <p className="mt-1 text-xs text-white/85">Booked on Calendly · the invite is in your email</p>
+            ) : meeting.calendly ? (
+              <p className="mt-1 text-xs text-white/85">Tap a time on the calendar and confirm. Calendly sends the invite to you both.</p>
+            ) : meeting.scheduled ? (
               <p className="mt-1 text-xs text-white/85">{meeting.when}{meeting.invited ? ' · calendar invite sent to your email' : ''}</p>
             ) : (
               meeting.preferredTime && <p className="mt-1 text-xs text-white/75">Preferred time: {meeting.preferredTime} ({ownerName.split(' ')[0]} will confirm)</p>
             )}
             <div className="mt-3 flex flex-wrap gap-2">
-              {meeting.booking && (
+              {meeting.calendly && !meeting.calendlyBooked && (
+                <button type="button" onClick={() => openCalendly(meeting.meetingUrl)} className="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white">
+                  <CalendarCheck className="h-4 w-4" /> Open calendar
+                </button>
+              )}
+              {meeting.booking && !meeting.calendly && (
                 <a href={meeting.meetingUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white">
                   <CalendarCheck className="h-4 w-4" /> Pick a time
                 </a>

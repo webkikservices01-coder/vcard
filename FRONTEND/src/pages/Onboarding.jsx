@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import ScanCard from '../components/ScanCard';
 import toast from 'react-hot-toast';
 import { Camera, User, Briefcase, Phone, Link2, ArrowRight, ArrowLeft, Check, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import AuthBrandPanel from '../components/AuthBrandPanel';
@@ -71,6 +72,8 @@ const SelectedTemplate = ({ template }) => (
   </AnimatePresence>
 );
 
+const DRAFT_KEY = 'aicardly-onboarding-draft';
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -103,11 +106,21 @@ const Onboarding = () => {
           return;
         }
 
+        // A half-filled form from before (autosaved in this browser) comes back.
+        let draft = {};
+        try {
+          draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+        } catch {
+          /* no draft */
+        }
         setForm(f => ({
           ...f,
-          name: cardName || user?.name || '',
-          phone: user?.phone || '',
+          name: draft.name || cardName || user?.name || '',
+          designation: draft.designation || '',
+          phone: draft.phone || user?.phone || '',
+          slug: draft.slug || '',
         }));
+        if (draft.slug) setSlugTouched(true);
       } catch {
         /* proceed with empty form */
       } finally {
@@ -116,6 +129,31 @@ const Onboarding = () => {
     };
     fetchInitial();
   }, [navigate]);
+
+  // Autosave: what's typed is kept in this browser until the card is made.
+  useEffect(() => {
+    if (checking) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch {
+      /* storage blocked */
+    }
+  }, [form, checking]);
+
+  // A scanned visiting card fills the form (and has already saved the rest to the card).
+  const [scanned, setScanned] = useState(false);
+  const onScanned = (r) => {
+    setScanned(true);
+    const d = r.read || {};
+    setForm((f) => ({
+      ...f,
+      name: d.name || f.name,
+      designation: d.designation || f.designation,
+      phone: d.whatsapp || d.phones?.[0] || f.phone,
+      slug: r.username || f.slug,
+    }));
+    if (r.username) setSlugTouched(true);
+  };
 
   const handleNameChange = (e) => {
     const name = e.target.value;
@@ -155,13 +193,19 @@ const Onboarding = () => {
         headers: { ...headers(), 'Content-Type': 'multipart/form-data' },
       });
 
-      if (form.phone.trim()) {
+      // After a scan the card already has its contact links (phone included): keep them.
+      if (form.phone.trim() && !scanned) {
         await axios.post(`${API}/vcard`, {
           dynamicLinks: [{ fieldType: 'phone', title: 'Phone', url: form.phone.trim() }],
         }, { headers: headers() });
       }
 
       setSuccess(true);
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* storage blocked */
+      }
       // With pricing switched off, new users go straight to their dashboard.
       setTimeout(() => navigate(PRICING_ENABLED ? '/dashboard/plans' : '/dashboard', { replace: true, state: { justOnboarded: true } }), 1100);
     } catch (err) {
@@ -252,6 +296,7 @@ const Onboarding = () => {
                         transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                         className="space-y-4"
                       >
+                        <ScanCard compact onDone={onScanned} />
                         <motion.div
                           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
                           className="flex items-center gap-4"

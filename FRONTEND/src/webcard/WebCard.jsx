@@ -1,12 +1,28 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ReelViewer, PdfViewer, useReelCarousel, WcThemeCtx } from './dc-runtime.jsx';
 import './webcard.css';
-import { AuroraAI, MinimalPro, NeoBrutal } from './templates/Templates01to03.jsx';
-import { LuxeNoir, SplitHeroCorporate, SoftBentoWellness } from './templates/Templates04to06.jsx';
-import { CreatorReel } from './templates/CreatorReel.jsx';
-import { DevTerminal } from './templates/DevTerminal.jsx';
-import { EditorialArchitect } from './templates/EditorialArchitect.jsx';
-import { WebkikSignature } from './templates/WebkikSignature.jsx';
+// Each design is its own file, loaded only when a card uses it: a card page downloads one design
+// instead of all ten (~250 KB less on a phone). index.html starts that download as soon as the
+// card's data arrives (window.__tplChunks, vite.config.js).
+const designs = {
+  t01: () => import('./templates/Templates01to03.jsx'),
+  t04: () => import('./templates/Templates04to06.jsx'),
+  reel: () => import('./templates/CreatorReel.jsx'),
+  dev: () => import('./templates/DevTerminal.jsx'),
+  editorial: () => import('./templates/EditorialArchitect.jsx'),
+  signature: () => import('./templates/WebkikSignature.jsx'),
+};
+const design = (file, name) => lazy(() => designs[file]().then((m) => ({ default: m[name] })));
+const AuroraAI = design('t01', 'AuroraAI');
+const MinimalPro = design('t01', 'MinimalPro');
+const NeoBrutal = design('t01', 'NeoBrutal');
+const LuxeNoir = design('t04', 'LuxeNoir');
+const SplitHeroCorporate = design('t04', 'SplitHeroCorporate');
+const SoftBentoWellness = design('t04', 'SoftBentoWellness');
+const CreatorReel = design('reel', 'CreatorReel');
+const DevTerminal = design('dev', 'DevTerminal');
+const EditorialArchitect = design('editorial', 'EditorialArchitect');
+const WebkikSignature = design('signature', 'WebkikSignature');
 import { applyCard, buildCard, DEMO_PAYLOAD, shareCard } from './cardData.js';
 import { templateIdOf, DEFAULT_TEMPLATE_ID } from './templates/TemplatePicker.jsx';
 import { buildTheme, tokensFor, templateInfo } from './theme/themeTree.js';
@@ -26,7 +42,7 @@ export const TEMPLATES = [
   { id: 'creator-reel', name: 'Creator Reel', Component: CreatorReel },
   { id: 'dev-terminal', name: 'Dev Terminal', Component: DevTerminal, radius: 8 },
   { id: 'editorial-architect', name: 'Editorial Architect', Component: EditorialArchitect, radius: 2, lightCover: true, counterTop: 38 },
-  { id: 'webkik-signature', name: 'Webkik Signature', Component: WebkikSignature, radius: 14 },
+  { id: 'webkik-signature', name: 'Aicardly Signature', Component: WebkikSignature, radius: 14 },
 ].map((t) => ({ radius: 999, ...t, native: templateInfo(t.id)?.native || 'light' }));
 
 export const DEFAULT_TEMPLATE = DEFAULT_TEMPLATE_ID;
@@ -45,7 +61,9 @@ export function TemplateView({ template, palette = 0, mode }) {
   return (
     <WcThemeCtx.Provider value={theme}>
       <div className="wc-root">
-        <C key={t.id} __theme={theme} />
+        <Suspense fallback={null}>
+          <C key={t.id} __theme={theme} />
+        </Suspense>
       </div>
     </WcThemeCtx.Provider>
   );
@@ -57,7 +75,15 @@ export function TemplateView({ template, palette = 0, mode }) {
 // videoRoomUrl: adds a "Video call" suggestion in the chat.
 // palette (0–4), mode ('light' | 'dark') and counter default to the owner's saved theme options.
 // share: shows the Share button (top right, stays on screen while scrolling).
-export default function WebCard({ template, data, aiPersona, videoRoomUrl, palette, mode, counter, share = false, ...rest }) {
+// Calls onReady once the design is on screen (its file has loaded).
+function Ready({ onReady }) {
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+  return null;
+}
+
+export default function WebCard({ template, data, aiPersona, videoRoomUrl, palette, mode, counter, share = false, onReady, ...rest }) {
   const id = resolveTemplate(template);
   const t = TEMPLATES.find((x) => x.id === id);
   const payload = data || DEMO_PAYLOAD;
@@ -115,7 +141,11 @@ export default function WebCard({ template, data, aiPersona, videoRoomUrl, palet
             </div>
           </div>
         )}
-        <C key={t.id} __theme={theme} {...rest} />
+        {/* While the design's file loads: an empty page in the card's colours (the data is here already). */}
+        <Suspense fallback={<div style={{ minHeight: '100dvh' }} />}>
+          <C key={t.id} __theme={theme} {...rest} />
+          <Ready onReady={onReady} />
+        </Suspense>
         <ReelViewer />
         <PdfViewer />
         <SaveContactSheet

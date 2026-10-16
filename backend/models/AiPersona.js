@@ -34,8 +34,30 @@ const AiPersonaSchema = new mongoose.Schema({
   voiceGenderFor: { type: String, default: '' }, // the first name it was guessed for
   // The owner's booking page (Calendly / Google Calendar appointments): the AI gives it to visitors
   // who want a meeting (services/meetings.js).
-  bookingUrl: { type: String, default: '' }, // the AI's speaking voice on calls
+  bookingUrl: { type: String, default: '' },
+  // Calendly connected with the owner's access token: the AI books meetings itself (services/calendly.js).
+  calendly: {
+    tokenEnc: { type: String, default: '', select: false }, // encrypted; never sent to the browser
+    refreshEnc: { type: String, default: '', select: false }, // OAuth refresh token (single use, rotated)
+    expiresAt: { type: Date, default: null }, // OAuth access token expiry (2 hours)
+    via: { type: String, default: '' }, // 'oauth' (Connect with Calendly) or 'pat' (pasted token)
+    eventType: { type: String, default: '' },
+    eventName: { type: String, default: '' },
+    duration: { type: Number, default: 30 },
+    schedulingUrl: { type: String, default: '' },
+    locations: [{ kind: String, location: String, _id: false }],
+    questions: [{ name: String, type: { type: String }, position: Number, _id: false }], // 'type' needs the long form in Mongoose
+    owner: { type: String, default: '' },
+    canBook: { type: Boolean, default: true }, // paid Calendly: the AI books; free: it opens the time's confirm page
+    connectedAt: { type: Date, default: null },
+  },
   // Owner accepted the Data Processing Addendum for visitor data handled by the assistant.
+  // "Connect with Calendly" in progress: the OAuth state and the PKCE verifier (encrypted).
+  calendlyOauth: {
+    state: { type: String, default: '', index: true },
+    verifierEnc: { type: String, default: '', select: false },
+    at: { type: Date, default: null },
+  },
   dpaAcceptedAt: { type: Date, default: null },
   dpaVersion:    { type: String, default: '' },
 }, { timestamps: true });

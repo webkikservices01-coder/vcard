@@ -3,12 +3,12 @@
   "site": "https://aicardly.com",
   "pages": {
     "/": {
-      "title": "Aicardly – AI Digital Business Card & Metal NFC Cards in India",
-      "description": "Create an AI-powered digital business card with QR, NFC & WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds."
+      "title": "AI Digital Business Card & Metal NFC Cards | Aicardly",
+      "description": "Create an AI digital business card with QR, NFC & WhatsApp connect. Order metal NFC cards in India. Free to start, live in 60 seconds."
     },
     "/features": {
-      "title": "Features – AI Digital Business Card with QR, NFC & AI Chat | Aicardly",
-      "description": "Share by QR, NFC tap or link, save contacts in one tap, add an AI assistant, portfolio, reels and documents, and see leads and views. All Aicardly features.",
+      "title": "Digital Business Card Features: AI, QR & NFC | Aicardly",
+      "description": "Explore digital business card features: AI chat assistant, smart QR codes, WhatsApp connect, custom link and visit analytics. Try free for 24 hours.",
       "jsonld": [
         {
           "@context": "https://schema.org",
@@ -31,8 +31,8 @@
       ]
     },
     "/pricing": {
-      "title": "Pricing – Aicardly Digital Business Card Plans in India",
-      "description": "Aicardly plans in INR: Digital Card, Smart AI Card and AI Agent Pro. Try free for 24 hours, pay monthly or yearly, and compare every feature.",
+      "title": "Digital Business Card Pricing from ₹99/Month | Aicardly",
+      "description": "See digital business card pricing: plans from ₹99/month + GST with AI chatbot, QR code and analytics. Start your 24-hour free trial, no card needed.",
       "jsonld": [
         {
           "@context": "https://schema.org",
@@ -55,8 +55,8 @@
       ]
     },
     "/metal-nfc-card": {
-      "title": "Premium Metal NFC Business Card in India | Aicardly",
-      "description": "Stainless steel NFC business card with custom logo and name engraving. Tap any phone to share your AI digital business card, no app needed. Delivered across India in 5–7 days.",
+      "title": "Metal NFC Card India: Custom Engraved | Aicardly",
+      "description": "Order a premium metal NFC card with custom logo and name engraving. Tap to share your digital card, no app needed. Delivery across India in 5–7 days.",
       "jsonld": [
         {
           "@context": "https://schema.org",
@@ -79,48 +79,48 @@
       ]
     },
     "/about-us": {
-      "title": "About Us | Aicardly",
-      "description": "Aicardly is an AI digital business card platform by Webkik Services, Delhi. Learn why we build smarter cards for modern professionals."
+      "title": "About Aicardly: AI Digital Business Card Platform",
+      "description": "About Aicardly: an AI digital business card platform by Webkik Services, built in India to help professionals share contacts and capture leads easily."
     },
     "/contact-us": {
-      "title": "Contact Us | Aicardly",
-      "description": "Talk to the Aicardly team for help with your digital business card, metal NFC cards or partnerships. Call, WhatsApp or email us."
+      "title": "Contact Aicardly: AI Digital Business Card Support",
+      "description": "Contact Aicardly for help with your AI digital business card or metal NFC card. Call +91-9868698698 or email us. Based in Tagore Garden, Delhi."
     },
     "/faqs": {
-      "title": "FAQs – Digital Business Card Questions | Aicardly",
-      "description": "Answers to common questions about Aicardly digital business cards, QR and NFC sharing, the AI assistant, privacy and your card link."
+      "title": "Digital Business Card FAQs: NFC, Pricing & AI | Aicardly",
+      "description": "Digital business card FAQs: how NFC cards work, free trial, pricing, custom links and the AI chat widget. Get quick answers before you create your card."
     },
     "/privacy-policy": {
-      "title": "Privacy Policy | Aicardly",
-      "description": "How Aicardly collects, uses and protects personal data under India's Digital Personal Data Protection Act, 2023, and the rights you have."
+      "title": "Aicardly Privacy Policy: How We Protect Your Data",
+      "description": "Read the Aicardly privacy policy to learn how we collect, use and protect your personal data when you use our AI digital business card platform."
     },
     "/terms-conditions": {
-      "title": "Terms & Conditions | Aicardly",
-      "description": "The terms for using Aicardly digital business cards, the AI assistant and related services by Webkik Services."
+      "title": "Aicardly Terms and Conditions: Terms of Use",
+      "description": "Read the Aicardly terms and conditions covering account use, plans, payments and acceptable use of our AI digital business card and NFC card services."
     },
     "/refund-policy": {
-      "title": "Refund Policy | Aicardly",
-      "description": "Aicardly's refund policy for digital card plans and metal NFC card orders."
+      "title": "Aicardly Refund Policy: Plans & Metal NFC Cards",
+      "description": "Read the Aicardly refund policy for digital card plans and metal NFC card orders, including eligibility, timelines and how to request a refund."
     },
     "/shipping-policy": {
-      "title": "Shipping Policy | Aicardly",
-      "description": "Delivery areas, timelines, charges, tracking, damage and replacement terms for Aicardly metal NFC card orders."
+      "title": "Aicardly Shipping Policy: Metal NFC Card Delivery",
+      "description": "Read the Aicardly shipping policy for metal NFC cards: delivery across India in 5–7 working days, tracking, and free replacement for damaged cards."
     },
     "/cancellation-policy": {
-      "title": "Cancellation Policy | Aicardly",
-      "description": "How to cancel an Aicardly plan or NFC card order, and what happens after you cancel."
+      "title": "Aicardly Cancellation Policy: Plans & Orders",
+      "description": "Read the Aicardly cancellation policy to learn how to cancel your digital business card plan or metal NFC card order and what happens next."
     },
     "/data-processing-addendum": {
-      "title": "Data Processing Addendum | Aicardly",
-      "description": "The DPDP Act data processing terms between Aicardly (Webkik Services) and card owners for visitor enquiries and AI chats."
+      "title": "Data Processing Addendum (DPA) | Aicardly",
+      "description": "Read the Aicardly data processing addendum (DPA) explaining how we process personal data on your behalf when you use our digital business card platform."
     },
     "/ai-data-privacy": {
-      "title": "How Our AI Uses Data | Aicardly",
-      "description": "Which AI model powers Aicardly card assistants, what it sees, what we store (no chat text) and the guardrails that keep visitors safe."
+      "title": "AI Data Privacy: How Aicardly's AI Uses Your Data",
+      "description": "AI data privacy at Aicardly: learn how our AI assistant uses, stores and protects the information on your digital business card and visitor chats."
     },
     "/register": {
-      "title": "Create Your Free Digital Business Card | Aicardly",
-      "description": "Sign up free and make your AI digital business card with QR, NFC and WhatsApp sharing in 60 seconds."
+      "title": "Create Digital Business Card Free: Sign Up | Aicardly",
+      "description": "Create digital business card free in seconds: add your details, pick a theme and share by QR, NFC or link. No credit card needed, 24-hour free trial."
     },
     "/login": {
       "title": "Sign In | Aicardly",
@@ -163,8 +163,8 @@
       "noindex": true
     },
     "/invites": {
-      "title": "Free Digital Invites – Wedding, Birthday, Engagement, Diwali & Festival Wishes | Aicardly",
-      "description": "Create free digital invitations and festival greetings: weddings, engagements, birthdays, Diwali parties, Griha Pravesh, baby showers, Holi, Eid and New Year wishes. RSVP, venue map, AI host. Share one link on WhatsApp.",
+      "title": "Free Digital Invites: Wedding & Birthday | Aicardly",
+      "description": "Create free digital invites for weddings, birthdays, Diwali and more. Add RSVP, venue map and AI host, then share one link on WhatsApp in minutes.",
       "jsonld": [
         {
           "@context": "https://schema.org",
@@ -190,6 +190,7 @@
   "privatePrefixes": [
     "/dashboard",
     "/onboarding",
-    "/verify-email"
+    "/verify-email",
+    "/pay"
   ]
 }

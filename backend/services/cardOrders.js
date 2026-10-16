@@ -1,10 +1,18 @@
-// "Get my card" flow: order → Razorpay payment link (24h) → link by email + WhatsApp →
+// "Get my card" flow: order → Cashfree payment link (24h) → link by email + WhatsApp →
 // paid (webhook) → card PDF/image delivered by WhatsApp (3 tries) + email.
 const CardOrder = require('../models/CardOrder');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const vCard = require('../models/vCard');
-const { createPaymentLink, fetchPaymentLink, cancelPaymentLink, isRazorpayConfigured } = require('../utils/razorpay');
+const cashfree = require('./cashfree');
+
+// Payment is a Cashfree checkout order (the same as plan payments). The link we send by email and
+// WhatsApp opens our page aicardly.com/pay/card/<token>, which starts the Cashfree checkout. (Cashfree
+// Payment Links need a separate approval on the account; checkout orders don't.)
+const API_BASE = (process.env.PUBLIC_API_URL || 'https://backend-nine-omega-26.vercel.app').replace(/\/$/, '');
+const isPaymentsConfigured = () => cashfree.isCashfreeConfigured();
+const cancelPaymentLink = (id) => cashfree.cancelLink(id);
+const crypto = require('crypto');
 const { sendTemplate, isWhatsAppConfigured } = require('../utils/whatsapp');
 const { sendMail, emailHtml } = require('../utils/mailer');
 const { buildCardAssets } = require('../utils/cardAssets');
@@ -122,7 +130,7 @@ async function getOrCreateOrder(user, { forceNew = false } = {}) {
   const comp = await createComplimentaryOrder(user, card, latest);
   if (comp) return { order: comp, created: true };
 
-  if (!isRazorpayConfigured()) throw Object.assign(new Error('Payments are not set up yet. Please try again later.'), { status: 503 });
+  if (!isPaymentsConfigured()) throw Object.assign(new Error('Payments are not set up yet. Please try again later.'), { status: 503 });
   if (latest && latest.status === 'PENDING_PAYMENT' && !forceNew) return { order: latest, created: false };
 
   const now = new Date();
@@ -134,23 +142,26 @@ async function getOrCreateOrder(user, { forceNew = false } = {}) {
     email: user.email,
     expiresAt: new Date(now.getTime() + LINK_HOURS * 60 * 60 * 1000),
   });
-  if (latest && latest.status === 'PENDING_PAYMENT' && latest.paymentLinkId) {
-    await cancelPaymentLink(latest.paymentLinkId);
+  if (latest && latest.status === 'PENDING_PAYMENT') {
+    if (latest.paymentLinkId) await cancelPaymentLink(latest.paymentLinkId);
     latest.status = 'CANCELLED';
     await latest.save();
   }
   try {
-    const link = await createPaymentLink({
-      amount: order.amount,
-      referenceId: String(order._id),
-      description: `Aicardly digital card – ${card.personalInfo?.name || user.name}`.slice(0, 2048),
-      customer: { name: user.name, email: user.email, ...(user.phone ? { contact: user.phone } : {}) },
+    const payToken = crypto.randomBytes(16).toString('hex');
+    const cf = await cashfree.createOrder({
+      orderId: `card_${order._id}`,
+      amount: order.amount / 100,
+      user,
+      returnUrl: `${SITE}/pay/card/${payToken}?done=1`,
+      notifyUrl: `${API_BASE}/api/transactions/webhook`,
       expiresAt: order.expiresAt,
-      callbackUrl: `${SITE}/dashboard/get-card?order=${order._id}`,
-      notes: { order_id: String(order._id), user_id: String(user._id), card: card.username },
+      tags: { card_order: String(order._id), card: card.username },
     });
-    order.paymentLinkId = link.id;
-    order.paymentLinkUrl = link.url;
+    order.cfOrderId = cf.order_id;
+    order.paymentSessionId = cf.payment_session_id;
+    order.payToken = payToken;
+    order.paymentLinkUrl = `${SITE}/pay/card/${payToken}`;
     await order.save();
   } catch (err) {
     order.status = 'FAILED';
@@ -205,7 +216,7 @@ async function createComplimentaryOrder(user, card, latest) {
 async function markPaid(orderId, paymentId) {
   const order = await CardOrder.findOneAndUpdate(
     { _id: orderId, status: { $in: ['PENDING_PAYMENT', 'EXPIRED'] } },
-    { $set: { status: 'PAID', paidAt: new Date(), razorpayPaymentId: paymentId || '', 'delivery.status': 'PENDING' } },
+    { $set: { status: 'PAID', paidAt: new Date(), paymentId: paymentId || '', 'delivery.status': 'PENDING' } },
     { returnDocument: 'after' }
   );
   if (order) logEvent(null, 'card_order.paid', `Card order paid (₹${rupees(order.amount)})`, { userId: order.user, email: order.email, meta: { orderId: String(order._id), paymentId } });
@@ -263,17 +274,19 @@ async function deliverCard(orderId, { manual = false } = {}) {
     }
 
     // Email copy (always).
+    const t = await require('./emailTemplates').emailText('cardReady', { name: first(user) });
     await record(order, 'email', 'card_delivery', order.email, () =>
       sendMail({
         to: order.email,
-        subject: 'Your Aicardly card is here 🎉',
+        subject: t.subject,
         text: `Hi ${first(user)},\n\nThanks for your payment! Your card is attached (PDF). Download it any time: ${order.delivery.pdfUrl}\nYour live card: ${cardUrl}\n\n– Team Aicardly`,
         html: emailHtml({
-          heading: 'Your card is here 🎉',
+          heading: t.heading || 'Your card is here 🎉',
           paragraphs: [
+            t.intro,
             `Hi ${first(user)}, thanks for your payment! Your finished card is attached as a PDF${order.delivery.imageUrl ? ' and an image' : ''}.`,
             `Your live card: <a href="${cardUrl}">${cardUrl.replace(/^https?:\/\//, '')}</a>`,
-          ],
+          ].filter(Boolean),
           button: { label: 'Download my card (PDF)', url: order.delivery.pdfUrl },
         }),
         attachments: [
@@ -294,15 +307,24 @@ async function deliverCard(orderId, { manual = false } = {}) {
   return order;
 }
 
-// Asks Razorpay directly (after the payment page sends the user back, before the webhook lands).
-async function syncWithRazorpay(order) {
-  if (!order?.paymentLinkId || order.status === 'PAID') return order;
-  const link = await fetchPaymentLink(order.paymentLinkId);
-  if (link.status === 'paid') {
-    const paymentId = (link.payments || []).find((p) => p.status === 'captured')?.payment_id || '';
-    return (await markPaid(order._id, paymentId)) || (await CardOrder.findById(order._id));
+// Asks Cashfree directly (after the payment page sends the user back, before the webhook lands).
+async function syncPayment(order) {
+  if (!order || order.status === 'PAID') return order;
+  if (order.cfOrderId) {
+    const cf = await cashfree.getOrder(order.cfOrderId);
+    if (cf.order_status === 'PAID') return (await markPaid(order._id, order.cfOrderId)) || (await CardOrder.findById(order._id));
+    if (['EXPIRED', 'TERMINATED'].includes(cf.order_status) && order.status === 'PENDING_PAYMENT') {
+      order.status = 'EXPIRED';
+      await order.save();
+    }
+    return order;
   }
-  if ((link.status === 'expired' || link.status === 'cancelled') && order.status === 'PENDING_PAYMENT') {
+  if (!order.paymentLinkId) return order;
+  const link = await cashfree.getLink(order.paymentLinkId);
+  if (link.link_status === 'PAID') {
+    return (await markPaid(order._id, link.cf_link_id ? String(link.cf_link_id) : order.paymentLinkId)) || (await CardOrder.findById(order._id));
+  }
+  if (['EXPIRED', 'CANCELLED'].includes(link.link_status) && order.status === 'PENDING_PAYMENT') {
     order.status = 'EXPIRED';
     await order.save();
   }
@@ -338,4 +360,42 @@ async function runJobs() {
   return { expired: expired.modifiedCount || 0, reminders, deliveries };
 }
 
-module.exports = { publicOrder, createComplimentaryOrder, getOrCreateOrder, sendPaymentLink, expireIfDue, markPaid, deliverCard, syncWithRazorpay, runJobs, PRICE_INR };
+// A Cashfree payment link webhook for a card order (routes/transactions.js): mark it paid and deliver.
+async function settleCardLink(linkId) {
+  const order = await CardOrder.findOne({ paymentLinkId: linkId });
+  if (!order) return false;
+  const synced = await syncPayment(order);
+  if (synced?.status === 'PAID' && synced.delivery?.status === 'PENDING') background(deliverCard(synced._id));
+  return true;
+}
+
+// Cashfree webhook for a checkout order "card_<id>" (routes/transactions.js): mark paid and deliver.
+async function settleCardOrder(cfOrderId) {
+  const order = await CardOrder.findOne({ cfOrderId });
+  if (!order) return false;
+  const synced = await syncPayment(order);
+  if (synced?.status === 'PAID' && synced.delivery?.status === 'PENDING') background(deliverCard(synced._id));
+  return true;
+}
+
+// The public pay page (/pay/card/<token>): what it shows and the checkout session it opens.
+async function payInfo(token) {
+  if (!/^[a-f0-9]{32}$/.test(String(token || ''))) return null;
+  const order = await expireIfDue(await CardOrder.findOne({ payToken: token }));
+  if (!order) return null;
+  const card = await vCard.findById(order.card).select('username personalInfo.name').lean();
+  return {
+    order,
+    view: {
+      status: order.status,
+      amount: order.amount / 100,
+      name: card?.personalInfo?.name || '',
+      cardLink: card?.username ? `${SITE.replace(/^https?:\/\//, '')}/${card.username}` : '',
+      expiresAt: order.expiresAt,
+      paymentSessionId: order.status === 'PENDING_PAYMENT' ? order.paymentSessionId : '',
+      cfEnv: cashfree.CF_ENV,
+    },
+  };
+}
+
+module.exports = { settleCardOrder, payInfo, publicOrder, createComplimentaryOrder, getOrCreateOrder, sendPaymentLink, expireIfDue, markPaid, deliverCard, syncPayment, settleCardLink, runJobs, PRICE_INR, isPaymentsConfigured };

@@ -1,5 +1,5 @@
 import W from './webcard-shared.js';
-import { getImageUrl, coverImageUrl, avatarUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
+import { getImageUrl, coverImageUrl, avatarUrl, tileImageUrl, getYoutubeId, isDirectVideo, siteShot } from '../utils/media';
 
 // One live card model shared by every template. WebCard calls applyCard() before
 // rendering, and the templates read from CARD (they were designed with one card per page).
@@ -246,7 +246,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
       desc: p.description || '',
       price: p.price || '',
       // No picture? A screenshot of the service's page (as for projects).
-      image: getImageUrl(p.coverImage) || siteShot(webLink(p.link)),
+      image: tileImageUrl(p.coverImage) || siteShot(webLink(p.link)),
       link: webLink(p.link),
     }));
   const products = offerings
@@ -255,7 +255,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
       title: p.title || '',
       desc: p.description || '',
       price: p.price || '',
-      image: getImageUrl(p.coverImage),
+      image: tileImageUrl(p.coverImage),
       link: webLink(p.link),
     }));
   const projects = (payload.portfolio || []).map((p) => {
@@ -265,7 +265,7 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
       tag: pdf ? 'PDF' : '',
       result: p.description || '',
       // No cover uploaded? Use a screenshot of the project's website.
-      image: getImageUrl(p.coverImage) || siteShot(p.url),
+      image: tileImageUrl(p.coverImage) || siteShot(p.url),
       // An attached PDF opens first; otherwise the project link.
       url: pdf || p.url || '',
       link: p.url || '',
@@ -273,8 +273,20 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     };
   });
   const extras = card.extras || {};
+  const followers = (extras.followers || []).map((f) => {
+    const kind = detectPlatform({ fieldType: f.platform, url: f.url || '' });
+    // The count opens the profile: its own link, else the same platform's link in Contact Details.
+    const same = links.find((l) => detectPlatform(l) === kind);
+    return {
+      n: f.count,
+      l: f.platform,
+      kind,
+      href: f.url ? linkHref({ url: f.url }, 'website') : same ? linkHref(same, kind) : '',
+    };
+  });
   const gallery = payload.gallery || [];
-  const photos = gallery.filter((g) => g.type !== 'video').map((g) => ({ src: getImageUrl(g.url) }));
+  // thumb: the smaller file for the photo slides; src (full size) opens when tapped.
+  const photos = gallery.filter((g) => g.type !== 'video').map((g) => ({ src: getImageUrl(g.url), thumb: tileImageUrl(g.url) }));
   // Reels added on the Highlights page first, then videos from the gallery.
   const reels = [
     ...(extras.reels || []).map((r) => reelInfo(r.url, r.title)),
@@ -324,21 +336,12 @@ export function buildCard(payload = {}, { origin = window.location.origin, aiPer
     languages: extras.languages || [],
     // Social followers ("12K Instagram followers") show with the key numbers in every template;
     // Creator Reel has its own followers row and leaves these out (fo: true).
+    // A followers tile opens that profile (tap "291K Instagram followers" → Instagram).
     stats: [
-      ...(extras.followers || []).filter((f) => f.count).map((f) => ({ v: f.count, l: `${f.platform || 'Social'} followers`, fo: true })),
+      ...followers.filter((f) => f.n).map((f) => ({ v: f.n, l: `${f.l || 'Social'} followers`, fo: true, href: f.href })),
       ...(extras.stats || []).map((s) => ({ v: s.value, l: s.label })),
     ],
-    followers: (extras.followers || []).map((f) => {
-      const kind = detectPlatform({ fieldType: f.platform, url: f.url || '' });
-      // The count opens the profile: its own link, else the same platform's link in Contact Details.
-      const same = links.find((l) => detectPlatform(l) === kind);
-      return {
-        n: f.count,
-        l: f.platform,
-        kind,
-        href: f.url ? linkHref({ url: f.url }, 'website') : same ? linkHref(same, kind) : '',
-      };
-    }),
+    followers,
     brands: extras.brands || [],
     experience: (extras.experience || []).map((e) => ({ years: e.years, role: e.role, org: e.org })),
     timings: (extras.timings || []).map((t) => ({ d: t.day, h: t.hours })),
@@ -457,29 +460,41 @@ export function applyCard(model) {
   loadShareImage(model.slug);
 }
 
-// The profile photo as small base64 JPEG for the .vcf, fetched ahead of time so
-// Save Contact can download straight away (iOS drops downloads started after an await).
+// The profile photo as small base64 JPEG for the .vcf, ready before Save Contact is tapped (iOS
+// drops downloads started after an await). The picture downloads at once (the card shows it
+// anyway); turning it into a JPEG (~0.3 s of a phone's CPU) waits for a quiet moment after the
+// page has loaded, or happens on the spot if Save Contact is tapped first.
 let photoFor = '';
 let photoB64 = '';
+let photoImg = null;
+function encodeContactPhoto() {
+  const img = photoImg;
+  if (photoB64 || !img || !img.complete || !img.naturalWidth) return;
+  try {
+    const size = 400;
+    const s = Math.min(img.naturalWidth, img.naturalHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    canvas
+      .getContext('2d')
+      .drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+    photoB64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  } catch {
+    /* image host without CORS: contact saves without a photo */
+  }
+}
 function loadContactPhoto(src) {
   if (!src || src === photoFor) return;
   photoFor = src;
   photoB64 = '';
   const img = new Image();
   img.crossOrigin = 'anonymous';
+  photoImg = img;
   img.onload = () => {
-    try {
-      const size = 400;
-      const s = Math.min(img.naturalWidth, img.naturalHeight);
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = size;
-      canvas
-        .getContext('2d')
-        .drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
-      if (photoFor === src) photoB64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-    } catch {
-      /* image host without CORS: contact saves without a photo */
-    }
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
+    const later = () => idle(() => { if (photoImg === img) encodeContactPhoto(); }, { timeout: 4000 });
+    if (document.readyState === 'complete') setTimeout(later, 2000);
+    else window.addEventListener('load', () => setTimeout(later, 2000), { once: true });
   };
   img.src = src;
 }
@@ -524,7 +539,10 @@ export function contactDetails() {
   // Labelled entries (iOS shows X-ABLabel; others fall back to the plain value).
   const labelled = (prop, value, label) => (item) => [`item${item()}.${prop}:${value}`, `item${item.n}.X-ABLabel:${vEsc(label)}`];
 
-  if (c.avatar) add('photo', 'Profile photo', 'Your photo on their contact', () => (photoB64 && photoFor === c.avatar ? [`PHOTO;ENCODING=b;TYPE=JPEG:${photoB64}`] : []));
+  if (c.avatar) add('photo', 'Profile photo', 'Your photo on their contact', () => {
+    encodeContactPhoto();
+    return photoB64 && photoFor === c.avatar ? [`PHOTO;ENCODING=b;TYPE=JPEG:${photoB64}`] : [];
+  });
   add('name', 'Name', c.fullName, () => [], true);
   add('role', 'Role', c.role, () => [`TITLE:${vEsc(c.role)}`]);
   add('company', 'Company', c.company, () => [`ORG:${vEsc(c.company)}`]);

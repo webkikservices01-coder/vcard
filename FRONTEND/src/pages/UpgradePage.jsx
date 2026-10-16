@@ -65,6 +65,7 @@ export default function UpgradePage() {
   const [billing, setBilling] = useState('yearly');
   const [busy, setBusy] = useState('');
   const [paid, setPaid] = useState(false);
+  const [coupon, setCoupon] = useState(''); // checked by the server when the order is made
 
   useEffect(() => {
     if (token === 'paid') return;
@@ -93,7 +94,7 @@ export default function UpgradePage() {
     setBusy(planId);
     setError('');
     try {
-      const { data } = await axios.post(`${API}/${token}/order`, { planId, billing });
+      const { data } = await axios.post(`${API}/${token}/order`, { planId, billing, coupon: coupon.trim() });
       const cashfree = await getCashfree();
       const result = await cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
       if (result.error) setError('Payment was not completed.');
@@ -138,6 +139,11 @@ export default function UpgradePage() {
               </button>
             ))}
           </div>
+
+          <label className="mt-4 flex max-w-xs items-center gap-2 text-sm text-slate-600">
+            <span className="shrink-0">Coupon</span>
+            <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase().replace(/\s/g, ''))} maxLength={30} placeholder="Optional" className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm uppercase outline-none focus:border-[#E70C65]" />
+          </label>
 
           {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 

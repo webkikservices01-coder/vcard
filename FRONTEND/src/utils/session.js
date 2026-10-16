@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { clearThemeCache } from './themeStudioCache';
 
 // Signed-in sessions: the site token is a JWT valid for 7 days. Once it has expired (or the
@@ -47,6 +46,16 @@ let installed = false;
 export function installSessionGuard() {
   if (installed || typeof window === 'undefined') return;
   installed = true;
+  // axios is not in the app's main bundle (the homepage and card pages don't need it). Signed-in
+  // pages hook in at once; elsewhere it loads once the page has loaded, well before anyone signs in.
+  const hook = () => import('axios').then(({ default: axios }) => guard(axios));
+  if (/^\/(dashboard|onboarding|wedding-dashboard)(\/|$)/.test(window.location.pathname)) return void hook();
+  const later = () => setTimeout(() => (window.requestIdleCallback || ((cb) => cb()))(hook), 3000);
+  if (document.readyState === 'complete') later();
+  else window.addEventListener('load', later, { once: true });
+}
+
+function guard(axios) {
   axios.interceptors.response.use(
     (res) => res,
     (err) => {

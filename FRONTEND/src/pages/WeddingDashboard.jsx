@@ -8,6 +8,7 @@ import {
 import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
 import { TEMPLATES, getTemplate } from '../wedding/data/templates';
+import { designBySlug } from '../wedding/studio/designs';
 import { OCCASIONS, OCCASION_ORDER, occasionOf } from '../wedding/data/occasions';
 import { DesignThumb } from '../wedding/DesignThumb';
 
@@ -49,7 +50,7 @@ const emptyInvite = (slug) => {
   return {
     template: t.slug, link: '', coupleOne: '', coupleTwo: '', amp: occasionOf(t).couple ? '&' : '', script: t.script, tagline: '', date: '', eventDate: '',
     venueName: '', venueAddress: '', mapUrl: '', story: '', hashtag: '', ceremonies: [], timeline: [], image: '', photos: [], music: '', video: '',
-    hostPhone: '', published: true, rsvpOpen: true, showWishes: true, aiChat: true, opening: '', coupleArt: '',
+    hostPhone: '', published: true, rsvpOpen: true, showWishes: true, aiChat: true, opening: '', coupleArt: '', palette: 0, venueNote: '',
   };
 };
 
@@ -208,6 +209,19 @@ function InviteCard({ inv, onEdit, onGuests, onDeleted }) {
         <SmallBtn onClick={onEdit}><Pencil className="h-3.5 w-3.5" /> Edit</SmallBtn>
         {o.rsvp && <SmallBtn onClick={onGuests}><Users className="h-3.5 w-3.5" /> Guests & wishes</SmallBtn>}
         <SmallBtn onClick={() => navigator.clipboard.writeText(url).then(() => toast.success('Link copied'))}><Copy className="h-3.5 w-3.5" /> Copy link</SmallBtn>
+        {t?.studio && (
+          <SmallBtn
+            onClick={() => {
+              // A personal link: the invite opens with "Dear <name>" and fills their name in the RSVP.
+              const name = (window.prompt('Guest or family name (e.g. Sharma Family)') || '').trim().slice(0, 60);
+              if (!name) return;
+              const personal = `${url}?g=${encodeURIComponent(name)}`;
+              navigator.clipboard.writeText(personal).then(() => toast.success(`Personal link for ${name} copied`), () => window.prompt('Copy this link', personal));
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" /> Personal link
+          </SmallBtn>
+        )}
         <a href={`https://wa.me/?text=${encodeURIComponent(share)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white">
           Share on WhatsApp
         </a>
@@ -409,7 +423,21 @@ function Editor({ initial, onClose, onSaved }) {
                 })
               }
             />
-            {!SPECIAL_DESIGNS.includes(f.template) && (
+            {tpl?.studio && designBySlug(f.template) && (
+              <Field label="Colours" hint={`Opens with: ${designBySlug(f.template).gesture[1].toLowerCase()}. Guests can also tap the date, play the ${designBySlug(f.template).wowLabel.toLowerCase()} moment and ask the AI host.`}>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Colour palette">
+                  {designBySlug(f.template).pals.map((p, i) => (
+                    <button key={p.name} type="button" role="radio" aria-checked={Number(f.palette || 0) === i} onClick={() => setF((x) => ({ ...x, palette: i }))}
+                      className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${Number(f.palette || 0) === i ? 'border-[#E70C65] ring-2 ring-[#E70C65]/30' : ''}`}
+                      style={{ color: 'var(--surface-text)', borderColor: Number(f.palette || 0) === i ? undefined : 'var(--surface-border)' }}>
+                      <span className="flex overflow-hidden rounded-full" aria-hidden="true">{[p.a1, p.a2, p.metal, p.base].map((c) => <span key={c} className="block h-4 w-3" style={{ background: c }} />)}</span>
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
+            {!SPECIAL_DESIGNS.includes(f.template) && !tpl?.studio && (
               <div className="grid gap-3 pt-2 sm:grid-cols-2">
                 <Field label="How the invite opens" hint="Guests see this first on your link. Tap “Play opening” in the preview to try it.">
                   <select value={f.opening || ''} onChange={set('opening')} className={inputCls} style={inputStyle}>
@@ -454,6 +482,7 @@ function Editor({ initial, onClose, onSaved }) {
             </div>
             {o.rsvp && <Field label="Venue name"><input value={f.venueName} onChange={set('venueName')} maxLength={120} placeholder={tpl?.venue.name ? `e.g. ${tpl.venue.name}` : ''} className={inputCls} style={inputStyle} /></Field>}
             {o.rsvp && <Field label="Venue address"><input value={f.venueAddress} onChange={set('venueAddress')} maxLength={300} placeholder="Area, City" className={inputCls} style={inputStyle} /></Field>}
+            {o.rsvp && tpl?.studio && <Field label="Parking / getting there (optional)" hint="Shown under the venue; the AI host uses it too"><input value={f.venueNote || ''} onChange={set('venueNote')} maxLength={200} placeholder={tpl.venueNote ? `e.g. ${tpl.venueNote}` : 'e.g. Valet at the main gate'} className={inputCls} style={inputStyle} /></Field>}
             <div className="grid gap-3 sm:grid-cols-2">
               {o.rsvp && <Field label="Google Maps link (optional)" hint="Paste the venue's share link for exact directions"><input value={f.mapUrl} onChange={set('mapUrl')} maxLength={1000} placeholder="https://maps.app.goo.gl/…" className={inputCls} style={inputStyle} /></Field>}
               <Field label={o.rsvp ? (o.couple ? 'Family phone (optional)' : 'Host phone (optional)') : 'Your WhatsApp number (optional)'} hint={o.rsvp ? `Shows a "${o.couple ? 'Call the family' : 'Call the host'}" button` : 'Friends can send their wishes back to you on WhatsApp'}><input type="tel" value={f.hostPhone} onChange={set('hostPhone')} maxLength={30} placeholder="+91 98…" className={inputCls} style={inputStyle} /></Field>
@@ -472,6 +501,7 @@ function Editor({ initial, onClose, onSaved }) {
                 <input value={c.time} onChange={(e) => setCeremony(i, 'time', e.target.value)} maxLength={40} placeholder="Time, e.g. 7 PM onwards" className={inputCls} style={inputStyle} />
                 <div className="flex gap-2">
                   <input value={c.venue} onChange={(e) => setCeremony(i, 'venue', e.target.value)} maxLength={160} placeholder="Place" className={inputCls} style={inputStyle} />
+                  {tpl?.studio && <input value={c.dress || ''} onChange={(e) => setCeremony(i, 'dress', e.target.value)} maxLength={80} placeholder="Dress code" className={inputCls} style={inputStyle} aria-label="Dress code" />}
                   <button type="button" onClick={() => setF((x) => ({ ...x, ceremonies: x.ceremonies.filter((_, j) => j !== i) }))} className="shrink-0 rounded-lg px-2 text-red-500 hover:bg-red-500/10" aria-label="Remove function"><X className="h-4 w-4" /></button>
                 </div>
               </div>
@@ -600,7 +630,8 @@ function Guests({ invite, onBack }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const coming = (rows || []).filter((r) => r.attending === 'yes');
+  const replies = (rows || []).filter((r) => !r.wish);
+  const coming = replies.filter((r) => r.attending === 'yes');
   const toggle = async (r) => {
     await axios.patch(`${API}/${invite._id}/rsvps/${r._id}`, { hidden: !r.hidden }, { headers: headers() });
     load();
@@ -612,7 +643,7 @@ function Guests({ invite, onBack }) {
   };
   const exportCsv = () => {
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [['Name', 'Phone', 'Email', 'Attending', 'Guests', 'Message', 'Date'], ...(rows || []).map((r) => [r.name, r.phone, r.email, r.attending, r.guests, r.message, new Date(r.createdAt).toLocaleString('en-IN')])]
+    const csv = [['Name', 'Phone', 'Email', 'Attending', 'Guests', 'Functions', 'Meal', 'Message', 'Date'], ...(rows || []).map((r) => [r.name, r.phone, r.email, r.wish ? 'Wish only' : r.attending, r.wish ? '' : r.guests, (r.functions || []).join(', '), r.meal, r.message, new Date(r.createdAt).toLocaleString('en-IN')])]
       .map((r) => r.map(q).join(','))
       .join('\n');
     const a = document.createElement('a');
@@ -630,7 +661,7 @@ function Guests({ invite, onBack }) {
         <div>
           <h2 className="text-xl font-bold" style={{ color: 'var(--surface-text)' }}>Guests · {namesOf(invite)}</h2>
           <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>
-            {rows ? `${coming.length} coming · ${coming.reduce((a, r) => a + (r.guests || 1), 0)} guests in all · ${rows.length} replies` : 'Loading…'}
+            {rows ? `${coming.length} coming · ${coming.reduce((a, r) => a + (r.guests || 1), 0)} guests in all · ${replies.length} replies${rows.length > replies.length ? ` · ${rows.length - replies.length} wishes` : ''}` : 'Loading…'}
           </p>
         </div>
         {rows?.length > 0 && <SmallBtn onClick={exportCsv}><Download className="h-3.5 w-3.5" /> Download CSV</SmallBtn>}
@@ -647,14 +678,18 @@ function Guests({ invite, onBack }) {
               <div>
                 <p className="font-semibold" style={{ color: 'var(--surface-text)' }}>{r.name}</p>
                 <p className="text-xs" style={{ color: 'var(--surface-text-2)' }}>
-                  <span className={r.attending === 'yes' ? 'text-emerald-500' : r.attending === 'no' ? 'text-red-500' : 'text-amber-500'}>{label[r.attending]}</span>
-                  {` · ${r.guests} guest${r.guests > 1 ? 's' : ''}`}
+                  {r.wish ? <span className="text-pink-500">Wish</span> : <>
+                    <span className={r.attending === 'yes' ? 'text-emerald-500' : r.attending === 'no' ? 'text-red-500' : 'text-amber-500'}>{label[r.attending]}</span>
+                    {` · ${r.guests} guest${r.guests > 1 ? 's' : ''}`}
+                  </>}
+                  {r.meal && <> · {r.meal}</>}
                   {r.phone && <> · <a href={`tel:${r.phone}`} className="underline">{r.phone}</a></>}
                   {r.email && <> · {r.email}</>}
                 </p>
               </div>
               <span className="shrink-0 text-[11px]" style={{ color: 'var(--surface-text-2)' }}>{new Date(r.createdAt).toLocaleDateString('en-IN')}</span>
             </div>
+            {r.functions?.length > 0 && <p className="mt-1 text-xs" style={{ color: 'var(--surface-text-2)' }}>Attending: {r.functions.join(', ')}</p>}
             {r.message && <p className={`mt-2 text-sm italic ${r.hidden ? 'line-through opacity-50' : ''}`} style={{ color: 'var(--surface-text)' }}>“{r.message}”</p>}
             <div className="mt-3 flex gap-2">
               {r.message && <SmallBtn onClick={() => toggle(r)}>{r.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}{r.hidden ? 'Show on invite' : 'Hide from invite'}</SmallBtn>}

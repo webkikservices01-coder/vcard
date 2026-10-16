@@ -12,6 +12,10 @@ export default function Login() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // After a few failed sign-ins from this network the server asks for the letters in a picture.
+  const [captcha, setCaptcha] = useState(null); // { token, image }
+  const [letters, setLetters] = useState('');
+  const newPicture = () => api('/auth/captcha').then((r) => { setCaptcha(r.captcha); setLetters(''); }).catch(() => {});
 
   const submit = async (e) => {
     e.preventDefault();
@@ -19,7 +23,7 @@ export default function Login() {
     setError('');
     try {
       if (!challenge) {
-        const res = await api('/auth/login', { method: 'POST', body: { email, password } });
+        const res = await api('/auth/login', { method: 'POST', body: { email, password, ...(captcha ? { captchaToken: captcha.token, captcha: letters } : {}) } });
         if (res.twoFactorRequired) {
           setChallenge(res.challenge);
           setPassword('');
@@ -28,6 +32,10 @@ export default function Login() {
         signedIn(await api('/auth/login/2fa', { method: 'POST', body: { challenge, code } }));
       }
     } catch (err) {
+      if (err.code === 'ADMIN_CAPTCHA' && err.data?.captcha) {
+        setCaptcha(err.data.captcha);
+        setLetters('');
+      } else if (captcha && !challenge) newPicture();
       if (err.code === 'ADMIN_2FA_EXPIRED') {
         setChallenge('');
         setCode('');
@@ -60,6 +68,15 @@ export default function Login() {
               <Field label="Password">
                 <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </Field>
+              {captcha && (
+                <Field label="Type the letters in the picture" hint="Shown after several wrong sign-ins, to stop password-guessing robots.">
+                  <div className="mb-2 flex items-center gap-3">
+                    <img src={captcha.image} alt="Letters to type (ask a super admin if you can't read them)" width="180" height="60" className="rounded-lg border border-slate-200" />
+                    <button type="button" onClick={newPicture} className="text-xs font-medium text-brand-600 hover:underline">New picture</button>
+                  </div>
+                  <Input value={letters} onChange={(e) => setLetters(e.target.value.toUpperCase())} maxLength={8} autoComplete="off" autoCapitalize="characters" required className="tracking-[0.3em]" />
+                </Field>
+              )}
             </>
           ) : (
             <Field label="Authentication code">

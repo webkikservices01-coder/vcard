@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, enquire, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -444,28 +444,6 @@ export function LuxeNoir(props) {
             {CARD.roleLine}
           </p>
         ) : null}
-        {CARD.ai.enabled ? (
-          <span
-            style={{
-              marginTop: '4px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              height: '24px',
-              padding: '0 10px',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: '500',
-              letterSpacing: '.1em',
-              textTransform: 'uppercase',
-              border: '1px solid transparent',
-              background: 'linear-gradient(#0A0A0A,#0A0A0A) padding-box, linear-gradient(135deg,#C9A45C,#EDE6D6,#8C6B2F) border-box',
-            }}
-          >
-            <span dangerouslySetInnerHTML={V.sparkLx} style={{ display: 'flex' }}></span>
-            {'AI-enabled'}
-          </span>
-        ) : null}
         {CARD.bio ? (
           <p
             data-bio="1"
@@ -530,7 +508,7 @@ export function LuxeNoir(props) {
               className="dcp-b1"
             >
               <span dangerouslySetInnerHTML={V.sparkLx} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -694,7 +672,7 @@ export function LuxeNoir(props) {
                 >
                   {(V.stats || []).map((st, $index) => (
                     <React.Fragment key={$index}>
-                      <div style={{ padding: '14px 0', textAlign: 'center', borderLeft: st?.lxDiv }}>
+                      <div {...statLink(st)} style={{ padding: '14px 0', textAlign: 'center', borderLeft: st?.lxDiv }}>
                         <div
                           style={{
                             fontFamily: "'Cormorant Garamond',serif",
@@ -1652,27 +1630,6 @@ export function SplitHeroCorporate(props) {
               <span style={{ fontSize: '13.5px', fontWeight: '600' }}>{CARD.company}</span>
             </div>
           ) : null}
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                alignSelf: 'flex-start',
-                marginTop: '6px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 9px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                fontWeight: '600',
-                border: '1px solid transparent',
-                background: 'linear-gradient(#F6F8FB,#F6F8FB) padding-box, linear-gradient(135deg,#0E7C66,#5EC4A8) border-box',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.sparkCo} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
       </div>
       <div style={{ padding: '10px 16px 0' }}>
@@ -1731,7 +1688,7 @@ export function SplitHeroCorporate(props) {
               className="dcp-b12"
             >
               <span dangerouslySetInnerHTML={V.sparkCo} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -1749,7 +1706,7 @@ export function SplitHeroCorporate(props) {
         >
           {(V.stats || []).map((st, $index) => (
             <React.Fragment key={$index}>
-              <div style={{ padding: '10px 12px', borderLeft: st?.coDiv }}>
+              <div {...statLink(st)} style={{ padding: '10px 12px', borderLeft: st?.coDiv }}>
                 <div
                   style={{ fontFamily: "'Manrope',sans-serif", fontSize: '21px', fontWeight: '800', color: '#0B1B2B', lineHeight: '1.1' }}
                 >
@@ -2906,26 +2863,6 @@ export function SoftBentoWellness(props) {
           <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'flex', color: '#23775A' }}></span>
         </div>
         {CARD.roleLine ? <p style={{ margin: '0', fontSize: '14.5px', fontWeight: '500', color: '#5E5A57' }}>{CARD.roleLine}</p> : null}
-        {CARD.ai.enabled ? (
-          <span
-            style={{
-              marginTop: '2px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              height: '26px',
-              padding: '0 10px',
-              borderRadius: '999px',
-              fontSize: '12px',
-              fontWeight: '700',
-              border: '1px solid transparent',
-              background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#3AA17E,#9AA5F0) border-box',
-            }}
-          >
-            <span dangerouslySetInnerHTML={V.sparkW} style={{ display: 'flex' }}></span>
-            {'AI-enabled'}
-          </span>
-        ) : null}
         {CARD.bio ? (
           <p
             data-bio="1"
@@ -2981,7 +2918,7 @@ export function SoftBentoWellness(props) {
               className="dcp-b21"
             >
               <span dangerouslySetInnerHTML={V.sparkW} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -3163,7 +3100,7 @@ export function SoftBentoWellness(props) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px', marginTop: '14px' }}>
                     {(V.stats || []).map((st, $index) => (
                       <React.Fragment key={$index}>
-                        <div style={{ padding: '12px 10px', borderRadius: '18px', background: st?.w, textAlign: 'center' }}>
+                        <div {...statLink(st)} style={{ padding: '12px 10px', borderRadius: '18px', background: st?.w, textAlign: 'center' }}>
                           <div style={{ fontSize: '21px', fontWeight: '800' }}>{st?.v}</div>
                           <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#5E5A57' }}>{st?.l}</div>
                         </div>

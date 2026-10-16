@@ -18,6 +18,7 @@ import scenePastel from "../assets/scene-pastel.svg";
 import { scene, type SceneKind } from "./scenes";
 import type { OccasionId } from "./occasions";
 import type { ArtKind } from "../components/wedding/reveal/OccasionArt";
+import { DESIGNS as STUDIO_DESIGNS } from "../studio/designs";
 
 // How the invite opens on a shared link: the classic "Open Invitation" cover, a shutter the
 // guest pulls up, or a scratch card hiding the date.
@@ -53,6 +54,7 @@ export interface Template {
     time: string;
     venue: string;
     img?: string;
+    dress?: string; // dress code (Invite Studio designs)
   }[];
   story: string;
   features: string[];
@@ -63,6 +65,9 @@ export interface Template {
   opening?: Opening; // default "classic"
   coupleArt?: CoupleLook; // animated bride & groom illustration in the hero (none when unset)
   isNew?: boolean;
+  studio?: boolean; // an Invite Studio design (studio/StudioInvite.tsx draws it)
+  studioPalette?: number; // which of the studio design's three colour palettes
+  venueNote?: string; // parking / getting there, under the venue
   occasion?: OccasionId; // default "wedding"
   art?: ArtKind; // animated occasion illustration in the hero (birthday cake, diyas …)
 }
@@ -1064,6 +1069,42 @@ const OCCASION_TEMPLATES: Template[] = [
   },
 ];
 TEMPLATES.push(...OCCASION_TEMPLATES);
+
+// Invite Studio: eight wedding designs with their own renderer (studio/designs.ts holds the
+// fonts, palettes and sample couple of each one).
+const STUDIO_COUNTRY: Record<string, [Country, string]> = { W6: ["usa", "English Garden"] };
+TEMPLATES.unshift(
+  ...STUDIO_DESIGNS.map((d): Template => {
+    const [country, countryLabel] = STUDIO_COUNTRY[d.code] || ["india", d.sub];
+    return {
+      slug: d.slug,
+      name: d.name,
+      tagline: d.tagline,
+      country,
+      countryLabel,
+      tier: "platinum",
+      palette: `studio-${d.code}-0`,
+      hero: "",
+      monuments: [],
+      monumentNames: [],
+      motif: d.wowLabel,
+      script: d.top,
+      scriptFont: /[\u0900-\u097F]/.test(d.top) ? "devanagari" : /[\u0600-\u06FF]/.test(d.top) ? "arabic" : "serif",
+      couple: { one: d.n1, two: d.n2, amp: "&" },
+      date: d.dateLong,
+      eventDate: d.target,
+      venue: { name: d.venueName, address: d.venueAddr },
+      ceremonies: d.fns.map((f) => ({ icon: "", hi: "", name: f.name, date: f.day, time: f.time, venue: f.venue, dress: f.swLabel })),
+      story: "",
+      features: d.features,
+      hashtag: `#${d.n1}${d.n2}`,
+      isNew: true,
+      studio: true,
+      studioPalette: 0,
+      venueNote: d.park,
+    };
+  }),
+);
 
 // [data-palette] rules for the occasion designs (same variables as wedding-theme.css).
 if (typeof document !== "undefined" && !document.getElementById("occasion-palettes")) {

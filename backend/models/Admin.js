@@ -24,6 +24,9 @@ const AdminSchema = new mongoose.Schema(
     tokenVersion: { type: Number, default: 0 },
     passwordChangedAt: { type: Date, default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
+    // Custom permissions on top of the role (constants/adminPermissions.js), set by a super admin.
+    extraPermissions: { type: [String], default: [] },
+    removedPermissions: { type: [String], default: [] },
   },
   { timestamps: true }
 );
@@ -40,6 +43,8 @@ const toSafeAdmin = (a) =>
     lastLoginAt: a.lastLoginAt || null,
     locked: !!(a.lockUntil && new Date(a.lockUntil) > new Date()),
     createdAt: a.createdAt,
+    extraPermissions: a.extraPermissions || [],
+    removedPermissions: a.removedPermissions || [],
   };
 
 module.exports = mongoose.model('Admin', AdminSchema);

@@ -42,7 +42,7 @@ const customerOf = (user) => ({
   customer_phone: indianMobile(user.phone) || '9999999999',
 });
 
-const createOrder = ({ orderId, amount, user, returnUrl, tags }) =>
+const createOrder = ({ orderId, amount, user, returnUrl, tags, expiresAt, notifyUrl }) =>
   cf('/orders', {
     method: 'POST',
     body: {
@@ -50,7 +50,8 @@ const createOrder = ({ orderId, amount, user, returnUrl, tags }) =>
       order_amount: amount,
       order_currency: 'INR',
       customer_details: customerOf(user),
-      order_meta: { return_url: returnUrl },
+      order_meta: { return_url: returnUrl, ...(notifyUrl ? { notify_url: notifyUrl } : {}) },
+      ...(expiresAt ? { order_expiry_time: new Date(expiresAt).toISOString() } : {}),
       ...(tags ? { order_tags: tags } : {}),
     },
   });
@@ -79,6 +80,9 @@ const createLink = ({ linkId, amount, purpose, user, phone, sendSms, expiresAt, 
 
 const getLink = (linkId) => cf(`/links/${encodeURIComponent(linkId)}`);
 
+// Best-effort: an old link is cancelled when a new one replaces it.
+const cancelLink = (linkId) => cf(`/links/${encodeURIComponent(linkId)}/cancel`, { method: 'POST' }).then(() => true, () => false);
+
 // Refund (all or part) of a paid checkout order.
 const createRefund = ({ orderId, refundId, amount, note }) =>
   cf(`/orders/${encodeURIComponent(orderId)}/refunds`, {
@@ -86,4 +90,4 @@ const createRefund = ({ orderId, refundId, amount, note }) =>
     body: { refund_id: refundId, refund_amount: amount, refund_note: String(note || '').slice(0, 100) },
   });
 
-module.exports = { CF_ENV, CF_BASE_URL, cfHeaders, isCashfreeConfigured, indianMobile, createOrder, getOrder, createLink, getLink, createRefund };
+module.exports = { CF_ENV, CF_BASE_URL, cfHeaders, isCashfreeConfigured, indianMobile, createOrder, getOrder, createLink, getLink, cancelLink, createRefund };

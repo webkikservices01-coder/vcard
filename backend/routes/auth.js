@@ -1,4 +1,5 @@
 const express = require('express');
+const { emailText } = require('../services/emailTemplates');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -69,26 +70,76 @@ router.post('/register', authLimiter, async (req, res) => {
         }
 
         // Welcome email (best-effort; the account is already saved).
-        sendMail({
+        emailText('welcome', { name: nameParts[0], email }).then((t) => t.enabled && sendMail({
             to: email,
-            subject: 'Welcome to AiCardly 🎉',
+            subject: t.subject,
             text: `Hi ${nameParts[0]},\n\nYour AiCardly account is ready. Sign in any time at ${SITE}/login to build your AI digital business card.\n\n– Team AiCardly`,
             html: emailHtml({
-                heading: `Welcome, ${nameParts[0]}!`,
+                heading: t.heading,
                 paragraphs: [
-                    'Your AiCardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.',
+                    t.intro,
                     `You signed up with <b>${email}</b>.`,
                 ],
                 button: { label: 'Open my dashboard', url: `${SITE}/login` },
                 footer: "Didn't create this account? Just ignore this email.",
             }),
-        });
+        })).catch(() => {});
 
         res.status(201).json({ token: signToken(user), user: { name: user.name, email: user.email, plan: user.plan } });
     } catch (err) {
         if (err.code === 11000) return res.status(400).json({ msg: 'An account with this email already exists. Please sign in, or reset your password.', code: 'EMAIL_EXISTS' });
         logEvent(req, 'auth.register.error', err.message, { level: 'error', email });
         res.status(500).json({ msg: 'Could not create the account. Please try again.' });
+    }
+});
+
+// Sign in / sign up with Google (the "Continue with Google" button). The browser gets an ID token
+// from Google; we check it with Google (tokeninfo) and that it was made for our client id
+// (GOOGLE_CLIENT_ID). New people get an account with a random password (they can set one with
+// "Forgot password") and the email counts as verified, since Google checked it.
+router.post('/google', authLimiter, async (req, res) => {
+    try {
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        if (!clientId) return res.status(503).json({ msg: 'Google sign-in is not set up yet. Please use email and password.' });
+        const credential = String(req.body.credential || '');
+        if (credential.length < 100 || credential.length > 5000) return res.status(400).json({ msg: 'Google sign-in failed. Please try again.' });
+        const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+        const g = await r.json().catch(() => ({}));
+        const valid = r.ok && g.aud === clientId && ['accounts.google.com', 'https://accounts.google.com'].includes(g.iss) && Number(g.exp) * 1000 > Date.now() && String(g.email_verified) === 'true';
+        if (!valid) {
+            logEvent(req, 'auth.google.failed', 'Google token rejected', { level: 'warn' });
+            return res.status(401).json({ msg: 'Google sign-in failed. Please try again.' });
+        }
+        const email = normEmail(g.email);
+        let user = await findByEmail(email);
+        if (user?.deletedAt) return res.status(403).json({ msg: 'This account was removed. Please contact support.' });
+        if (user?.isBlocked) return res.status(403).json({ msg: 'Your account has been blocked. Please contact support.', code: 'ACCOUNT_BLOCKED' });
+        let created = false;
+        if (!user) {
+            // Signing up with Google means accepting the Terms (the button says so).
+            if (req.body.acceptTerms !== true) return res.status(400).json({ msg: 'Please accept the Terms & Conditions and Privacy Policy.', code: 'TERMS_REQUIRED' });
+            const name = String(g.name || email.split('@')[0]).trim().slice(0, 80);
+            user = await User.create({
+                name,
+                firstName: String(g.given_name || name.split(' ')[0] || ''),
+                lastName: String(g.family_name || name.split(' ').slice(1).join(' ') || ''),
+                email,
+                password: await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10),
+                consentAt: new Date(),
+                consentVersion: POLICY_VERSION,
+                emailVerified: true,
+            });
+            created = true;
+            logEvent(req, 'auth.register', `New account with Google: ${name}`, { userId: user._id, email });
+        } else if (user.emailVerified === false) {
+            user.emailVerified = true; // Google confirmed the address
+            await user.save();
+        }
+        logEvent(req, 'auth.login', 'Signed in with Google', { userId: user._id, email });
+        res.json({ token: signToken(user), created, user: { name: user.name, email: user.email, plan: user.plan } });
+    } catch (err) {
+        logEvent(req, 'auth.google.error', err.message, { level: 'error' });
+        res.status(500).json({ msg: 'Google sign-in failed. Please try again.' });
     }
 });
 
@@ -151,16 +202,16 @@ router.post('/verify-email', forgotLimiter, async (req, res) => {
 
         // Welcome email now that the address is confirmed (best-effort).
         const first = user.firstName || user.name;
-        sendMail({
+        emailText('welcome', { name: first, email: user.email }).then((t) => t.enabled && sendMail({
             to: user.email,
-            subject: 'Welcome to AiCardly 🎉',
+            subject: t.subject,
             text: `Hi ${first},\n\nYour email is verified and your AiCardly account is ready: ${SITE}/login\n\n– Team AiCardly`,
             html: emailHtml({
-                heading: `Welcome, ${first}!`,
-                paragraphs: ['Your email is verified and your AiCardly account is ready. Build your AI digital business card, share it with a QR code or NFC tap, and let your AI assistant answer visitors 24/7.'],
+                heading: t.heading,
+                paragraphs: [t.intro],
                 button: { label: 'Open my dashboard', url: `${SITE}/login` },
             }),
-        });
+        })).catch(() => {});
         res.json({ token: signToken(user) });
     } catch (err) {
         logEvent(req, 'auth.verify.error', err.message, { level: 'error', email });

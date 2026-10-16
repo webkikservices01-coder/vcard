@@ -26,6 +26,7 @@ export const plans = [
     id: 'digital-id',
     name: 'DIGITAL CARD',
     tagline: '1 card with a starter AI chatbot',
+    bestFor: 'For freelancers and professionals replacing paper cards',
     price: { monthly: 99, yearly: 999 },
     // What sets each plan apart, shown on every pricing card (keep in sync with PLAN_LIMITS in
     // BACKEND/constants/plans.js, which enforces the card and chat limits).
@@ -47,6 +48,7 @@ export const plans = [
     id: 'smart-ai-card',
     name: 'SMART AI CARD',
     tagline: '3 cards, AI chatbot + AI voice call',
+    bestFor: 'For consultants, clinics and small businesses that get enquiries',
     price: { monthly: 199, yearly: 1999 },
     highlights: ['3 digital cards', '3 card themes', 'AI chatbot: 25 chats a month', 'Live AI voice call on your card', 'AI books meetings & sends WhatsApp details', 'Hide Aicardly branding', 'Priority support'],
     icon: <Bot className="w-5 h-5" />,
@@ -66,6 +68,7 @@ export const plans = [
     id: 'ai-agent-pro',
     name: 'AI AGENT PRO',
     tagline: '7 cards + metal NFC card, unlimited AI, voice + video calls',
+    bestFor: 'For growing teams that want AI to answer and book every lead',
     highlights: ['7 digital cards', 'Premium metal NFC card included', 'All 10 card themes', 'Unlimited AI chats (renews monthly)', 'Live AI voice + AI video calls', 'AI books meetings & sends WhatsApp details', 'WhatsApp Business bot & AI lead scoring', '24/7 dedicated support'],
     // Keep in sync with BACKEND/constants/plans.js (the server charges from there).
     price: { monthly: 1999, yearly: 9999 },

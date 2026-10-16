@@ -71,7 +71,14 @@ const scrollToFirst = (ids: string[]) => {
   return false;
 };
 
-export function WeddingChat({ template, extras }: { template: Template; extras: InviteExtras }) {
+// launcher=false: the invite has its own button for the chat (Invite Studio's dock); it opens the
+// chat with the window event "wedding-chat:open".
+export function WeddingChat({ template, extras, launcher = true }: { template: Template; extras: InviteExtras; launcher?: boolean }) {
+  const [fabLabel, setFabLabel] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setFabLabel(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
   const key = `wedding-chat-${extras.link || "preview-" + template.slug}`;
   const hello = template.scriptFont === "devanagari" ? "Namaste! 🙏" : template.scriptFont === "arabic" ? "Assalamu alaikum! 🌙" : "Hello! 💐";
   const o = occasionOf(template);
@@ -114,6 +121,11 @@ export function WeddingChat({ template, extras }: { template: Template; extras: 
     if (open) end.current?.scrollIntoView({ block: "end" });
   }, [msgs, busy, open, pending]);
   useEffect(() => () => stopSpeaking(), []);
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener("wedding-chat:open", show);
+    return () => window.removeEventListener("wedding-chat:open", show);
+  }, []);
 
   const ask = useCallback(
     async (text: string, history: Msg[]) => {
@@ -210,15 +222,21 @@ export function WeddingChat({ template, extras }: { template: Template; extras: 
 
   return (
     <div data-palette={template.palette} className="wedding-chat" style={{ fontFamily: "Inter, system-ui, sans-serif" }}>
-      {!open && (
+      {!open && launcher && (
+        // A small round button in the corner (gold ring, like the invite's frames). Its name shows
+        // for a few seconds, then only the icon stays, so it never covers the couple's photos.
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label={`Chat with ${o.manager}`}
-          className="wt-fab-pop fixed bottom-[76px] right-4 z-[8000] flex items-center gap-2 rounded-full py-3 pl-3 pr-4 text-sm font-semibold text-white shadow-2xl"
-          style={{ background: "linear-gradient(135deg, var(--wt-accent), var(--wt-accent-deep))", boxShadow: "0 14px 40px rgba(0,0,0,.45)" }}
+          title={o.manager}
+          className="wt-fab-pop group fixed bottom-[76px] right-3 z-[8000] flex h-11 items-center gap-1.5 rounded-full pl-[5px] pr-[5px] text-[12px] font-semibold text-white sm:right-4"
+          style={{ background: "linear-gradient(135deg, var(--wt-accent), var(--wt-accent-deep))", boxShadow: "0 0 0 2px var(--wt-gold, #d4af37), 0 8px 22px rgba(0,0,0,.35)" }}
         >
-          <MessageCircleHeart className="h-5 w-5" /> {o.manager}
+          <span className="grid h-[34px] w-[34px] place-items-center rounded-full" style={{ background: "rgba(255,255,255,.14)" }}>
+            <MessageCircleHeart className="h-[18px] w-[18px]" aria-hidden="true" />
+          </span>
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-500 ${fabLabel ? "max-w-[160px] pr-2.5 opacity-100" : "max-w-0 opacity-0 group-hover:max-w-[160px] group-hover:pr-2.5 group-hover:opacity-100"}`}>{o.manager}</span>
         </button>
       )}
       {open && (

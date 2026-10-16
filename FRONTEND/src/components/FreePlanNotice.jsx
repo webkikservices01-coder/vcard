@@ -86,7 +86,7 @@ export default function FreePlanNotice({ show = ['ai'], className = '' }) {
       key: 'theme',
       icon: LayoutTemplate,
       tone: 'amber',
-      title: allowedCount <= 1 ? 'Your plan: 1 template (Webkik Signature)' : `Your plan: ${allowedCount} templates`,
+      title: allowedCount <= 1 ? 'Your plan: 1 template (Aicardly Signature)' : `Your plan: ${allowedCount} templates`,
       text:
         allowedCount <= 1
           ? 'You can preview every template. Smart AI Card unlocks 3 templates and AI Agent Pro all 10.'

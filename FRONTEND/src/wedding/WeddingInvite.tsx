@@ -3,6 +3,7 @@ import type { Template } from "./data/templates";
 import { RsvpProvider, useInvite, type InviteExtras } from "./rsvp";
 import { loadWeddingFonts } from "./fonts";
 import { WeddingChat } from "./WeddingChat";
+import { StudioInvite, studioChatPalette } from "./studio/StudioInvite";
 import { AnimatedInviteCard } from "./components/wedding/AnimatedInviteCard";
 import { ShivParwatiInvite } from "./components/wedding/templates/ShivParwatiInvite";
 import { LuxurySilverGold } from "./components/wedding/templates/LuxurySilverGold";
@@ -44,6 +45,17 @@ const SAVE_LINE: Record<string, string> = { wedding: "We are getting married", e
 
 export function WeddingInvite({ template, extras }: { template: Template; extras: InviteExtras }) {
   useEffect(loadWeddingFonts, []);
+  if (template.studio) {
+    // Invite Studio designs: their own page; the AI host opens from the page's dock.
+    return (
+      <RsvpProvider extras={extras}>
+        <StudioInvite
+          template={template}
+          chat={extras.aiChat !== false ? <WeddingChat template={{ ...template, palette: studioChatPalette(template) }} extras={extras} launcher={false} /> : null}
+        />
+      </RsvpProvider>
+    );
+  }
   return (
     <RsvpProvider extras={extras}>
       <div data-vertical="wedding">

@@ -9,6 +9,8 @@ export type RsvpReply = {
   guests?: number | string;
   attending?: "yes" | "no" | "maybe" | string;
   message?: string;
+  meal?: string; // Invite Studio designs
+  functions?: string[]; // which functions they will attend
 };
 
 export type InviteExtras = {
@@ -16,6 +18,7 @@ export type InviteExtras = {
   preview?: boolean; // showcase / dashboard preview: nothing is sent
   rsvpOpen?: boolean;
   wishes?: { n: string; w: string }[];
+  wishesOff?: boolean; // the couple switched the wishes wall off
   photos?: string[];
   timeline?: { y: string; h: string; t: string }[];
   mapUrl?: string;
@@ -46,6 +49,8 @@ export function RsvpProvider({ extras, children }: { extras: InviteExtras; child
         guests: Number(r.guests) || 1,
         attending: ["yes", "no", "maybe"].includes(String(r.attending)) ? r.attending : "yes",
         message: r.message || "",
+        meal: r.meal || "",
+        functions: (r.functions || []).slice(0, 12),
       }),
     });
     const body = await res.json().catch(() => ({}));

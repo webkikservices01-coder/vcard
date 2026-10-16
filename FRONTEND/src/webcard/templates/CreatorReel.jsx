@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD, socialIcon } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -257,25 +257,6 @@ export function CreatorReel(props) {
       <div style={{ padding: '8px 16px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           {CARD.roleLine ? <span style={{ fontSize: '14.5px', fontWeight: '500', color: '#C9C9C9' }}>{CARD.roleLine}</span> : null}
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 9px',
-                borderRadius: '999px',
-                fontSize: '11.5px',
-                fontWeight: '700',
-                border: '1px solid transparent',
-                background: 'linear-gradient(#0D0D0D,#0D0D0D) padding-box, linear-gradient(90deg,#FF3D77,#FF9A3D) border-box',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {V.bio2 ? (
           <p
@@ -346,7 +327,7 @@ export function CreatorReel(props) {
               className="dcp-c0"
             >
               <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -606,7 +587,7 @@ export function CreatorReel(props) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px', marginTop: '14px' }}>
                     {(V.stats || []).map((st, $index) => (
                       <React.Fragment key={$index}>
-                        <div style={{ padding: '10px 12px', borderRadius: '14px', background: '#0D0D0D' }}>
+                        <div {...statLink(st)} style={{ padding: '10px 12px', borderRadius: '14px', background: '#0D0D0D' }}>
                           <div
                             style={{
                               fontFamily: "'Sora',sans-serif",

@@ -1,4 +1,4 @@
-// Phone numbers in E.164 (+<country><number>, e.g. +919812345678), as WhatsApp and Razorpay expect.
+// Phone numbers in E.164 (+<country><number>, e.g. +919812345678), as WhatsApp and Cashfree expect.
 // Indian numbers typed without a country code (98123 45678, 09812345678, 919812345678) become +91….
 const E164_RE = /^\+[1-9]\d{7,14}$/;
 

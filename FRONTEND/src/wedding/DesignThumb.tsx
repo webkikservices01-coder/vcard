@@ -4,11 +4,13 @@ import { loadWeddingFonts } from "./fonts";
 import { OccasionArt } from "./components/wedding/reveal/OccasionArt";
 import { occasionOf } from "./data/occasions";
 import "./wedding-theme.css";
+import { StudioThumb } from "./studio/StudioThumb";
 
 // The picture of a design in the /invites showcase and the dashboard picker: wedding designs
 // have their photo; occasion designs are drawn (backdrop + animated art + greeting line).
 export function DesignThumb({ template: t, className = "", animate = true, labels = true }: { template: Template; className?: string; animate?: boolean; labels?: boolean }) {
   useEffect(loadWeddingFonts, []);
+  if (t.studio) return <StudioThumb template={t} className={className} labels={labels} />;
   if (!t.art) return <img src={t.hero} alt={`${t.name} invitation design`} loading="lazy" className={`h-full w-full object-cover ${className}`} />;
   const o = occasionOf(t);
   return (

@@ -7,7 +7,15 @@
          of script used to freeze phones for over a second. The site's dataLayer.push (page views)
          is forwarded to the worker. -->
     <script>partytown = { lib: '/~partytown/', forward: ['dataLayer.push'] };</script>
-    <script src="/~partytown/partytown.js" async></script>
+    <!-- Partytown (and so GTM + Analytics, ~300 KB) starts 3.5 s after the page has loaded, or at
+         the visitor's first tap / scroll / key if sooner, so it never competes with the page.
+         Page views pushed before that are sent on once it is ready. -->
+    <script>(function(){var done=0;function go(){if(done)return;done=1;
+      var q=(window.dataLayer||[]).slice();var s=document.createElement('script');s.src='/~partytown/partytown.js';
+      s.onload=function(){if(window.dataLayer&&q.length){window.dataLayer.length=0;q.forEach(function(i){window.dataLayer.push(i);});}};
+      document.head.appendChild(s);}
+      addEventListener('load',function(){setTimeout(go,3500);},{once:true});
+      ['pointerdown','keydown','scroll','touchstart'].forEach(function(e){addEventListener(e,go,{once:true,passive:true});});})();</script>
     <script type="text/partytown">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -28,7 +36,10 @@
       pre.data.then(function(d){var pi=(d&&d.card&&d.card.personalInfo)||{};[pi.bannerImage,pi.profilePic].forEach(function(u,i){
         if(!u||u.indexOf('https://')!==0)return;
         u=u.replace(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(v\d+\/)/,i?'$1f_auto,q_auto,c_limit,w_480/$2':'$1e_trim:10/f_auto,q_auto,c_limit,w_1200/$2');
-        var l=document.createElement('link');l.rel='preload';l.as='image';l.href=u;l.fetchPriority='high';document.head.appendChild(l);});}).catch(function(){});
+        var l=document.createElement('link');l.rel='preload';l.as='image';l.href=u;l.fetchPriority='high';document.head.appendChild(l);});
+        // The card's design file (each design is its own file; vite.config.js lists them).
+        var c=window.__tplChunks,t=d&&d.card&&d.card.theme;var tf=c&&(c[t]||c['webkik-signature']);
+        if(tf)tf.forEach(function(h){var m=document.createElement('link');m.rel='modulepreload';m.crossOrigin='';m.href=h;document.head.appendChild(m);});}).catch(function(){});
     }catch(e){}})();</script>
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/png" href="/favicon.png?v=2" />
@@ -37,14 +48,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="KiT9AMaR55SBycVplfrP5bVNXUegyOcAuNxq8yhv6tY" />
     <!-- seo:start (public/og.php swaps this block for a card's own tags when a link-preview bot asks) -->
-    <title>Aicardly – AI Digital Business Card &amp; Metal NFC Cards in India</title>
-    <meta name="description" content="Create an AI-powered digital business card with QR, NFC &amp; WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds." />
+    <title>AI Digital Business Card &amp; Metal NFC Cards | Aicardly</title>
+    <meta name="description" content="Create an AI digital business card with QR, NFC &amp; WhatsApp connect. Order metal NFC cards in India. Free to start, live in 60 seconds." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Aicardly" />
     <meta property="og:locale" content="en_IN" />
     <meta property="og:url" content="https://aicardly.com/" />
-    <meta property="og:title" content="Aicardly – AI Digital Business Card &amp; Metal NFC Cards in India" />
-    <meta property="og:description" content="Create an AI-powered digital business card with QR, NFC &amp; WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds." />
+    <meta property="og:title" content="AI Digital Business Card &amp; Metal NFC Cards | Aicardly" />
+    <meta property="og:description" content="Create an AI digital business card with QR, NFC &amp; WhatsApp connect. Order metal NFC cards in India. Free to start, live in 60 seconds." />
     <meta property="og:image" content="https://aicardly.com/og-image.jpg" />
     <meta property="og:image:secure_url" content="https://aicardly.com/og-image.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
@@ -52,8 +63,8 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Aicardly – AI digital business card for modern professionals" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Aicardly – AI Digital Business Card &amp; Metal NFC Cards in India" />
-    <meta name="twitter:description" content="Create an AI-powered digital business card with QR, NFC &amp; WhatsApp connect. Order premium metal NFC cards. Free to start, live in 60 seconds." />
+    <meta name="twitter:title" content="AI Digital Business Card &amp; Metal NFC Cards | Aicardly" />
+    <meta name="twitter:description" content="Create an AI digital business card with QR, NFC &amp; WhatsApp connect. Order metal NFC cards in India. Free to start, live in 60 seconds." />
     <meta name="twitter:image" content="https://aicardly.com/og-image.jpg" />
     <meta name="twitter:image:alt" content="Aicardly – AI digital business card for modern professionals" />
     <!-- seo:end -->
@@ -71,8 +82,10 @@
     />
     <script>
       (function () {
-        var t = localStorage.getItem('theme') || 'light';
-        if (t === 'dark') document.documentElement.classList.add('dark');
+        // Light (white) unless the visitor chose dark with the theme button (ThemeContext.jsx).
+        var t = 'light';
+        try { t = localStorage.getItem('aicardly-theme-choice') === 'dark' ? 'dark' : 'light'; } catch (e) {}
+        document.documentElement.classList.add(t);
       })();
     </script>
   </head>

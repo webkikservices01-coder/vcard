@@ -61,9 +61,54 @@ function preloadPageChunks() {
         }
         const home = filesFor(/src[\/]pages[\/]LandingPage\.jsx$/)
         const card = filesFor(/src[\/]pages[\/]PublicVcard\.jsx$/)
+        // The app bundle itself is started by this script (Vite's own <script type="module"> and
+        // its modulepreload links are taken out below). On the homepage, which arrives already
+        // drawn (scripts/prerender.mjs), it starts right after the first paint: the ~150 KB of
+        // JavaScript only makes the page interactive, so on a phone connection the fonts and
+        // images go first and the page shows sooner. Every other page starts it at once.
+        const entryDeps = (entry?.imports || []).map((f) => '/' + f)
+        // Card designs are separate files (src/webcard/WebCard.jsx). Which file each design is in,
+        // so index.html's card prefetch can start it as soon as it knows the card's design.
+        const cardFiles = new Set(card.map((f) => f.slice(1)))
+        const designFile = (re) => {
+          const c = chunks.find((x) => x.facadeModuleId && re.test(x.facadeModuleId))
+          return c ? ['/' + c.fileName, ...c.imports.filter((i) => !cardFiles.has(i) && !skip.has(i)).map((i) => '/' + i)] : []
+        }
+        const D = {
+          t01: designFile(/templates[\/]Templates01to03\.jsx$/),
+          t04: designFile(/templates[\/]Templates04to06\.jsx$/),
+          reel: designFile(/templates[\/]CreatorReel\.jsx$/),
+          dev: designFile(/templates[\/]DevTerminal\.jsx$/),
+          editorial: designFile(/templates[\/]EditorialArchitect\.jsx$/),
+          signature: designFile(/templates[\/]WebkikSignature\.jsx$/),
+        }
+        if (Object.values(D).some((v) => !v.length)) throw new Error('aicardly-preload-pages: a card design chunk was not found')
+        const tplChunks = {
+          'aurora-ai': D.t01, 'minimal-pro': D.t01, 'neo-brutal': D.t01,
+          'luxe-noir': D.t04, 'split-hero-corporate': D.t04, 'soft-bento-wellness': D.t04,
+          'creator-reel': D.reel, 'dev-terminal': D.dev, 'editorial-architect': D.editorial, 'webkik-signature': D.signature,
+        }
+        // The card stylesheet, for public/og.php: it links it when it puts a server-drawn card on the page.
+        const cardChunk = chunks.find((c) => c.facadeModuleId && /webcard[\/]WebCard\.jsx$/.test(c.facadeModuleId))
+        const cardCss = [...(cardChunk?.viteMetadata?.importedCss || [])][0]
+        if (!cardCss) throw new Error('aicardly-preload-pages: the card stylesheet was not found')
         const script =
-          `<script>(function(){var f=location.pathname==='/'?${JSON.stringify(home)}:window.__cardPrefetch?${JSON.stringify(card)}:null;` +
-          `if(f)f.forEach(function(h){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=h;document.head.appendChild(l);});})();</script>`
+          `<!-- card-css:/${cardCss} -->` +
+          `<script>window.__tplChunks=${JSON.stringify(tplChunks)};</script>` +
+          // (Dark-theme visitors get an empty page instead of the pre-drawn light one: load at once.)
+          `<script>(function(){var dark;try{dark=localStorage.getItem('aicardly-theme-choice')==='dark'}catch(e){}` +
+          `var home=location.pathname==='/'&&!dark&&!!document.querySelector('link[data-app-css]');` +
+          `var f=${JSON.stringify(entryDeps)}.concat(location.pathname==='/'?${JSON.stringify(home)}:window.__cardPrefetch?${JSON.stringify(card)}:[]);` +
+          `function pre(h){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href=h;document.head.appendChild(l);}` +
+          `function run(){f.forEach(pre);var s=document.createElement('script');s.type='module';s.crossOrigin='';s.src=${JSON.stringify('/' + entry.fileName)};document.head.appendChild(s);}` +
+          `if(!home){run();return;}` +
+          // After the first paint, and only once the whole page has been parsed (React takes over all of it).
+          `var done=0;function go(){if(done)return;done=1;if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();}` +
+          `try{var po=new PerformanceObserver(function(l){if(l.getEntriesByName('first-contentful-paint').length){po.disconnect();setTimeout(go,0);}});po.observe({type:'paint',buffered:true});}catch(e){go();}` +
+          `setTimeout(go,2000);})();</script>`
+        html = html
+          .replace(/\s*<script type="module" crossorigin src="[^"]+"><\/script>/, '')
+          .replace(/\s*<link rel="modulepreload" crossorigin href="[^"]+">/g, '')
         // The two self-hosted latin font files (src/index.css) start downloading with the HTML
         // instead of after the CSS has been parsed.
         const fonts = Object.values(ctx.bundle)
@@ -95,9 +140,11 @@ export default defineConfig(({ command }) => ({
         // Without these groups every icon became its own tiny file, so a page needed ~50 requests;
         // on a phone each one costs a round trip before the page can show.
         codeSplitting: {
+          // includeDependenciesRecursively: false keeps React itself out of these groups (it was
+          // pulled into the motion chunk, so every page, the homepage too, loaded framer-motion).
           groups: [
-            { name: 'icons', test: /node_modules[\\/](lucide-react|react-icons)[\\/]/ },
-            { name: 'motion', test: /node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/ },
+            { name: 'icons', test: /node_modules[\\/](lucide-react|react-icons)[\\/]/, includeDependenciesRecursively: false },
+            { name: 'motion', test: /node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/, includeDependenciesRecursively: false },
           ],
         },
       },

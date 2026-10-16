@@ -111,6 +111,32 @@ router.post('/bulk', validate({
   res.json({ done, failed, msg: `${done} user${done === 1 ? '' : 's'} ${verb}${failed.length ? `, ${failed.length} failed` : ''}.` });
 });
 
+// GET /:id/export?reason=… → everything we hold about one user, as a JSON file (a data request
+// under DPDP). Passwords, tokens and secrets are left out. Saved in the audit log with the reason.
+router.get('/:id/export', requirePermission('export.csv'), exportReason, validate({ params: idParams }), async (req, res) => {
+  const M = (n) => require(`../../models/${n}`);
+  const User = M('User');
+  const user = await User.findById(req.v.params.id).select('-password -verifyTokenHash -resetTokenHash -upgradeTokenHash').lean();
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  const cards = await M('vCard').find({ userId: user._id }).lean();
+  const cardIds = cards.map((c) => c._id);
+  const byCard = { vcardId: { $in: cardIds } };
+  const [settings, personas, products, portfolio, testimonials, gallery, sections, enquiries, transactions, plans, invites, tickets, cardOrders, nfcOrders] = await Promise.all([
+    M('VcardSettings').find(byCard).lean(), M('AiPersona').find(byCard).lean(), M('Product').find(byCard).lean(), M('Portfolio').find(byCard).lean(),
+    M('Testimonial').find(byCard).lean(), M('Gallery').find(byCard).lean(), M('CustomSection').find(byCard).lean(), M('Enquiry').find(byCard).lean(),
+    M('Transaction').find({ userId: user._id }).select('-paymentSessionId').lean(), M('UserPlan').find({ user: user._id }).lean().catch(() => []),
+    M('WeddingInvite').find({ userId: user._id }).lean(), M('SupportTicket').find({ userId: user._id }).lean().catch(() => []),
+    M('CardOrder').find({ user: user._id }).lean(), M('NfcOrder').find({ user: user._id }).lean(),
+  ]);
+  const rsvps = invites.length ? await M('WeddingRsvp').find({ inviteId: { $in: invites.map((i) => i._id) } }).lean() : [];
+  for (const k of Object.keys(user)) if (/token|secret|hash/i.test(k)) delete user[k];
+  await audit(req, 'export.user', { targetType: 'user', targetId: user._id, summary: `Exported all data of ${user.email}` });
+  const file = { exportedAt: new Date().toISOString(), exportedBy: req.admin.email, account: user, cards, cardSettings: settings, aiAssistant: personas, products, portfolio, reviews: testimonials, gallery, customSections: sections, enquiriesReceived: enquiries, payments: transactions, planHistory: plans, digitalInvites: invites, inviteReplies: rsvps, supportTickets: tickets, cardOrders, metalCardOrders: nfcOrders };
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="aicardly-data-${String(user.email || user._id).replace(/[^\w.-]+/g, '_')}.json"`);
+  res.send(JSON.stringify(file, null, 2));
+});
+
 router.get('/:id', requirePermission('users.view'), validate({ params: idParams }), async (req, res) => {
   const detail = await svc.userDetail(req.v.params.id);
   if (!detail) return res.status(404).json({ msg: 'User not found.' });
@@ -238,6 +264,25 @@ router.post('/:id/upgrade-link', ...act('users.plan', z.object({}).passthrough()
   await audit(req, 'user.upgrade_link', { targetType: 'user', targetId: user._id, summary: `Sent upgrade link to ${user.email}: email ${out.email}, SMS ${out.sms}`, meta: out });
   const smsNote = out.sms === 'sent' ? 'SMS sent' : out.sms === 'skipped' ? `no SMS (${out.error})` : `SMS failed (${out.error})`;
   res.json({ msg: `Upgrade link: email ${out.email}, ${smsNote}.`, ...out });
+}));
+
+// Card payment link (the card delivered on WhatsApp + email once paid): makes the order for the
+// user's card if there is none and sends its link by email + WhatsApp. A still-valid link is sent
+// again; a paid card is not charged twice; free card credits deliver the card with no link.
+router.post('/:id/card-payment-link', ...act('payments.resend', z.object({}).passthrough(), async (req, res) => {
+  const User = require('../../models/User');
+  const cardOrders = require('../../services/cardOrders');
+  const user = await User.findById(req.v.params.id);
+  if (!user) return res.status(404).json({ msg: 'User not found.' });
+  if (user.isBlocked || user.deletedAt) return res.status(400).json({ msg: 'This user is blocked or removed.' });
+  const { order, created } = await cardOrders.getOrCreateOrder(user);
+  if (order.status === 'PAID' && !created) return res.status(400).json({ msg: 'This card is already paid; nothing to send.' });
+  // A new order sends its link by itself; an open one is sent again here.
+  const sent = created ? [] : await cardOrders.sendPaymentLink(order, user);
+  const what = order.status === 'PAID' ? `Card delivered free (card credit)` : `Payment link ₹${order.amount / 100} ${created ? 'created and sent' : 'sent again'}`;
+  await audit(req, 'payment.link.send', { targetType: 'user', targetId: user._id, summary: `${what} to ${user.email}`, meta: { orderId: String(order._id), created, results: sent.map((n) => ({ channel: n.channel, status: n.status })) } });
+  const wa = !user.phone ? 'no WhatsApp number' : require('../../utils/whatsapp').isWhatsAppConfigured() ? 'WhatsApp' : 'WhatsApp not set up, email only';
+  res.json({ msg: `${what} (email; ${wa}).`, link: order.paymentLinkUrl || '' });
 }));
 
 // End the 24-hour trial now: the card pauses and the upgrade link goes out (unless already sent).

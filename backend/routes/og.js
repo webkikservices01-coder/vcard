@@ -58,7 +58,33 @@ router.get('/_sitemap', async (req, res) => {
   }
 });
 
-// ─── GET /api/og/:username → { head } (meta tags for that card) ─────────────
+// The card drawn on the server (ssr/card.mjs, built from the frontend's card code by
+// FRONTEND/scripts/build-card-ssr.mjs). Loaded once per server instance.
+let renderer = null;
+const cardRenderer = () => {
+  renderer ||= import('../ssr/card.mjs').catch((err) => {
+    renderer = null;
+    throw err;
+  });
+  return renderer;
+};
+
+// The card's HTML as the app draws it, or '' (og.php puts it on the page so the card shows before
+// the app's JavaScript has loaded). Never fails the request.
+async function cardBody(username) {
+  try {
+    const [pc, ai] = await Promise.all([require('./vcard').publicCard(username), require('./ai').publicPersona(username)]);
+    if (pc.status !== 200) return '';
+    const { renderCard } = await cardRenderer();
+    // The same JSON the browser gets from /api/vcard/public/:username.
+    return await renderCard(JSON.parse(JSON.stringify(pc.body)), ai);
+  } catch (err) {
+    console.error('Card render error:', err.message);
+    return '';
+  }
+}
+
+// ─── GET /api/og/:username → { head } (meta tags for that card); ?body=1 adds { body } ──────
 router.get('/:username', async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
@@ -72,10 +98,9 @@ router.get('/:username', async (req, res) => {
     const name = oneLine(p.name, 60) || card.username;
     const role = oneLine([p.designation, p.company].filter(Boolean).join(' · '), 70);
     const url = `${SITE}/${card.username}`;
-    const title = `${name}${role ? ` – ${role}` : ''} | Aicardly`;
-    const description =
-      oneLine(p.bio, 180) ||
-      `Connect with ${name}${role ? `, ${role}` : ''}. Save the contact, see their work and chat with their AI assistant.`;
+    // Same wording on every card (aicardly_meta_tags.xlsx, Oct 2026).
+    const title = `${name} Digital Business Card | Aicardly`;
+    const description = `View the ${name} digital business card on Aicardly. Save contact details, explore services and connect on WhatsApp or call in one tap.`;
     const generated = cardImage({ photo: p.profilePic, name, role, link: url.replace(/^https?:\/\//, '') });
     const image = generated || DEFAULT_IMAGE;
     const alt = `${name}'s digital business card on Aicardly`;
@@ -105,7 +130,8 @@ router.get('/:username', async (req, res) => {
     ];
     // Crawlers re-check often; a short shared cache keeps previews fresh after profile edits.
     res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
-    res.json({ head: tags.join('\n    '), title, description, image, url });
+    const body = req.query.body ? await cardBody(username) : undefined;
+    res.json({ head: tags.join('\n    '), title, description, image, url, ...(body !== undefined ? { body } : {}) });
   } catch (err) {
     console.error('OG error:', err.message);
     res.status(500).json({ msg: 'Could not build preview' });

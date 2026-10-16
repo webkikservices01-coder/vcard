@@ -271,6 +271,83 @@ Tone: ${toneDesc[persona.tone] || 'warm and friendly'}
 ${safetyBlock(guard)}`;
 };
 
+// ─── POST /api/ai/scan-card  { image: dataURL, overwrite? } → fills the card from a photo ───────
+// The owner's old paper visiting card: the AI reads it and services/cardScan.js puts the details
+// on their Aicardly card (and saves). The photo is only sent to the AI for this one reading; it is
+// never written to disk, Cloudinary or the database.
+const scanLimiter = require('express-rate-limit')({
+  windowMs: 10 * 60 * 1000,
+  limit: 10,
+  keyGenerator: (req) => `user:${req.user.userId}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many scans. Please wait a few minutes.' },
+});
+router.post('/scan-card', auth, scanLimiter, async (req, res) => {
+  try {
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'Card scanning is not set up yet. Please fill your details by hand.' });
+    const scan = require('../services/cardScan');
+    // One to three photos of the same card (front and back).
+    const { images, error } = scan.readImages(req.body);
+    if (error) return res.status(400).json({ msg: error });
+    const r = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 1500, messages: [{ role: 'user', content: scan.content(images) }] });
+    logUsage({ route: 'scan-card', userId: req.user.userId, model: CLAUDE_MODEL, usage: r.usage });
+    let d;
+    try {
+      d = scan.parse(r.content.filter((b) => b.type === 'text').map((b) => b.text).join(''));
+    } catch {
+      return res.status(422).json({ msg: "Couldn't read this card. Please take a sharper, straight photo in good light." });
+    }
+    if (!d.isBusinessCard) return res.status(422).json({ msg: "This doesn't look like a visiting card. Please take a photo of your card." });
+    if (!d.name && !d.company && !d.phones.length && !d.emails.length) return res.status(422).json({ msg: "Couldn't read any details. Please take a sharper photo, close to the card." });
+    const { card, filled, kept } = await scan.applyScan(req.user.userId, d, { overwrite: req.body?.overwrite === true });
+    logEvent(req, 'card.scan', `Filled the card from a scanned visiting card: ${filled.join(', ') || 'nothing new'}`, { userId: req.user.userId });
+    res.json({ msg: filled.length ? `Filled from your card: ${filled.join(', ')}.` : 'Your card already has these details.', filled, kept, read: d, username: card.username });
+  } catch (err) {
+    logEvent(req, 'card.scan.error', err.message, { level: 'error', userId: req.user?.userId });
+    res.status(500).json({ msg: 'Could not scan the card. Please try again.' });
+  }
+});
+
+// ─── POST /api/ai/scan-card/public/:username  { image } → { name, mobile, email, … } ─────────
+// A visitor on someone's card scans THEIR OWN visiting card to fill the "Send message" form.
+// Nothing is saved: the details go back to the visitor's form and they choose whether to send.
+const publicScanLimiter = require('express-rate-limit')({
+  windowMs: 15 * 60 * 1000,
+  limit: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { msg: 'Too many scans from this device. Please type your details instead.' },
+});
+router.post('/scan-card/public/:username', publicScanLimiter, async (req, res) => {
+  try {
+    const anthropic = getAnthropic();
+    if (!anthropic) return res.status(503).json({ msg: 'Scanning is not available right now. Please type your details.' });
+    const card = await vCard.findOne({ username: String(req.params.username || '').toLowerCase() }).select('_id userId adminHidden').lean();
+    if (!card || card.adminHidden) return res.status(404).json({ msg: 'Card not found' });
+    const scan = require('../services/cardScan');
+    // The full model: on real photos (sideways, dark, two-sided) the small one misread numbers.
+    const { images, error } = scan.readImages(req.body);
+    if (error) return res.status(400).json({ msg: error });
+    const r = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 1500, messages: [{ role: 'user', content: scan.content(images) }] });
+    logUsage({ route: 'scan-card-visitor', vcardId: card._id, userId: card.userId, model: CLAUDE_MODEL, usage: r.usage });
+    let d;
+    try {
+      d = scan.parse(r.content.filter((b) => b.type === 'text').map((b) => b.text).join(''));
+    } catch {
+      return res.status(422).json({ msg: "Couldn't read this card. Please try a sharper photo, or type your details." });
+    }
+    if (!d.isBusinessCard || (!d.name && !d.phones.length && !d.emails.length)) return res.status(422).json({ msg: "Couldn't read a visiting card in this photo. Please try again, or type your details." });
+    const { toE164 } = require('../utils/phone');
+    const phone = d.whatsapp || d.phones.find((x) => /^\+?91[\s-]*[6-9]/.test(x.number))?.number || d.phones[0]?.number || '';
+    res.json({ name: d.name, kind: d.kind, mobile: phone ? toE164(phone) || phone : '', email: d.emails[0] || '', company: d.company, designation: d.designation, website: d.website });
+  } catch (err) {
+    logEvent(req, 'card.scan.visitor.error', err.message, { level: 'error' });
+    res.status(500).json({ msg: 'Could not scan the card. Please type your details.' });
+  }
+});
+
 // ─── GET /api/ai/persona ──────────────────────────────────────────────────────
 // ─── POST /api/ai/bio  { name, designation, notes } → { bio } ─────────────────
 // "Generate bio with AI" on the Profile page: a short card bio (max 50 words) written only from
@@ -339,6 +416,88 @@ router.get('/persona', auth, async (req, res) => {
     const persona = await AiPersona.findOne({ vcardId }) || {};
     res.json(persona);
   } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// ─── POST /api/ai/calendly { token } / DELETE /api/ai/calendly ──────────────────────────────
+// Connect the owner's Calendly (a Personal Access Token from Calendly → Integrations → API &
+// Webhooks) so the card's AI books meetings into it by itself. The token is stored encrypted and
+// never sent back to the browser.
+router.post('/calendly', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!hasCardAi(user)) return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use AI features.' });
+    const vcardId = await getCardId(req.user.userId);
+    if (!vcardId) return res.status(404).json({ msg: 'Create your card first.' });
+    const token = String(req.body.token || '').trim();
+    if (token.length < 20 || token.length > 4000 || /\s/.test(token)) return res.status(400).json({ msg: 'Paste the whole Calendly access token (a long code with no spaces).' });
+    const persona = await AiPersona.findOne({ vcardId }).select('bookingUrl').lean();
+    let cfg;
+    try {
+      cfg = await require('../services/calendly').connect(token, persona?.bookingUrl);
+    } catch (err) {
+      const msg = err.status === 401 ? 'Calendly did not accept this token. Create a new one in Calendly → Integrations → API & Webhooks and paste it again.' : err.message;
+      return res.status(400).json({ msg });
+    }
+    // The booking link follows the connected event type, so visitors without the AI see it too.
+    await AiPersona.findOneAndUpdate({ vcardId }, { $set: { calendly: cfg, ...(persona?.bookingUrl ? {} : { bookingUrl: cfg.schedulingUrl }) } }, { upsert: true });
+    logEvent(req, 'ai.calendly.connected', `Calendly connected: ${cfg.eventName}`, { userId: req.user.userId });
+    res.json({
+      msg: cfg.canBook ? `Calendly connected. The AI will book "${cfg.eventName}" meetings for you.` : `Calendly connected (free plan). The AI finds your free times and opens the confirmation; the visitor taps "Schedule Event".`,
+      calendly: { eventName: cfg.eventName, duration: cfg.duration, schedulingUrl: cfg.schedulingUrl, owner: cfg.owner, canBook: cfg.canBook, connectedAt: cfg.connectedAt },
+    });
+  } catch (err) {
+    logEvent(req, 'ai.calendly.error', err.message, { level: 'error', userId: req.user.userId });
+    res.status(500).json({ msg: 'Could not connect Calendly. Please try again.' });
+  }
+});
+
+// GET /calendly/config → can customers use "Connect with Calendly" (Aicardly's OAuth app is set up)?
+router.get('/calendly/config', (req, res) => res.json({ oauth: require('../services/calendly').oauthReady() }));
+
+// POST /calendly/oauth → { url } to send the owner to Calendly's "Allow access" page.
+router.post('/calendly/oauth', auth, async (req, res) => {
+  try {
+    const cal = require('../services/calendly');
+    if (!cal.oauthReady()) return res.status(503).json({ msg: 'Connect with Calendly is not set up yet. Paste an access token instead.' });
+    const user = await User.findById(req.user.userId);
+    if (!hasCardAi(user)) return res.status(403).json({ msg: 'Upgrade to Smart AI Card or AI Agent Pro to use AI features.' });
+    const vcardId = await getCardId(req.user.userId);
+    if (!vcardId) return res.status(404).json({ msg: 'Create your card first.' });
+    const { state, verifierEnc, url } = cal.oauthStart();
+    await AiPersona.findOneAndUpdate({ vcardId }, { $set: { calendlyOauth: { state, verifierEnc, at: new Date() } } }, { upsert: true });
+    res.json({ url });
+  } catch (err) {
+    logEvent(req, 'ai.calendly.oauth.error', err.message, { level: 'error', userId: req.user.userId });
+    res.status(500).json({ msg: 'Could not start Connect with Calendly. Please try again.' });
+  }
+});
+
+// GET /calendly/oauth/callback?code&state → Calendly sends the owner back here after "Allow".
+router.get('/calendly/oauth/callback', async (req, res) => {
+  const SITE = (process.env.SITE_URL || 'https://aicardly.com').replace(/\/$/, '');
+  const back = (q) => res.redirect(`${SITE}/dashboard/vcard/ai-persona?${new URLSearchParams(q)}`);
+  try {
+    const state = String(req.query.state || '');
+    if (req.query.error) return back({ calendly: 'error', msg: String(req.query.error_description || 'Calendly access was not allowed.').slice(0, 150) });
+    if (!/^[a-f0-9]{48}$/.test(state) || !req.query.code) return back({ calendly: 'error', msg: 'The Calendly sign-in link was not valid. Please try again.' });
+    const persona = await AiPersona.findOne({ 'calendlyOauth.state': state }).select('+calendlyOauth.verifierEnc').lean();
+    if (!persona || Date.now() - new Date(persona.calendlyOauth.at).getTime() > 15 * 60 * 1000) return back({ calendly: 'error', msg: 'This Calendly sign-in has expired. Please tap Connect with Calendly again.' });
+    const cal = require('../services/calendly');
+    const t = await cal.exchangeCode(String(req.query.code), persona.calendlyOauth.verifierEnc);
+    const cfg = await cal.connect(t.access_token, persona.bookingUrl, t);
+    await AiPersona.updateOne({ _id: persona._id }, { $set: { calendly: cfg, calendlyOauth: { state: '', verifierEnc: '', at: null }, ...(persona.bookingUrl ? {} : { bookingUrl: cfg.schedulingUrl }) } });
+    logEvent(req, 'ai.calendly.connected', `Calendly connected (one click): ${cfg.eventName}`, { meta: { vcardId: String(persona.vcardId) } });
+    back({ calendly: 'connected' });
+  } catch (err) {
+    logEvent(req, 'ai.calendly.oauth.error', err.message, { level: 'warn' });
+    back({ calendly: 'error', msg: String(err.message || 'Could not connect Calendly.').slice(0, 150) });
+  }
+});
+
+router.delete('/calendly', auth, async (req, res) => {
+  const vcardId = await getCardId(req.user.userId);
+  if (vcardId) await AiPersona.updateOne({ vcardId }, { $set: { calendly: { tokenEnc: '', refreshEnc: '', expiresAt: null, via: '', eventType: '', eventName: '', schedulingUrl: '', locations: [], questions: [], owner: '', connectedAt: null } } });
+  res.json({ msg: 'Calendly disconnected. The AI goes back to sending your booking link.' });
 });
 
 // ─── POST /api/ai/persona ─────────────────────────────────────────────────────
@@ -486,32 +645,53 @@ router.post('/chat/:username', cardChatLimiter, async (req, res) => {
 
     const ownerName = card.personalInfo?.name || card.title || 'the owner';
     const booking = !!meetingsSvc.cleanBookingUrl(persona.bookingUrl);
+    const calendly = !!meetingsSvc.calendlyOf(persona);
+    // Calendly connected (AI settings): the AI finds free times and books them itself.
+    const auto = !!(await meetingsSvc.calendlyAuto(card, persona));
     const systemPrompt = `${buildSystemPrompt(persona, card, products, portfolio, testimonials, gallery, customSections)}
 
 === MEETINGS ===
-${meetingsSvc.meetingRules(ownerName, { booking, spoken: false })}
+${meetingsSvc.meetingRules(ownerName, { booking, spoken: false, calendly, auto })}
 ${waInfo.whatsappRules(ownerName, { spoken: false })}`;
-    const tools = [meetingsSvc.MEETING_TOOL, waInfo.WHATSAPP_TOOL].map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
+    const calendlySvc = require('../services/calendly');
+    const tools = [meetingsSvc.MEETING_TOOL, waInfo.WHATSAPP_TOOL, ...(auto ? [calendlySvc.SLOTS_TOOL] : [])].map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
 
     // The AI may call one tool (book a meeting / send on WhatsApp); we run it and let it answer.
     let convo = messages;
     let completion;
     let meeting = null;
     let whatsapp = null;
-    for (let round = 0; round < 2; round++) {
+    for (let round = 0; round < 3; round++) {
       completion = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 350, system: systemPrompt, messages: convo, tools });
       logUsage({ route: 'chat', vcardId: card._id, userId: owner._id, model: CLAUDE_MODEL, usage: completion.usage });
       const use = completion.content.find(b => b.type === 'tool_use');
-      if (completion.stop_reason !== 'tool_use' || !use || round > 0) break;
+      if (completion.stop_reason !== 'tool_use' || !use || round > 1) break;
       let result;
-      const parsed = use.name === 'send_whatsapp_info' ? waInfo.parseRequest(use.input || {}) : meetingsSvc.parseMeeting(use.input || {});
+      const parsed = use.name === 'find_meeting_times' ? { r: use.input || {} } : use.name === 'send_whatsapp_info' ? waInfo.parseRequest(use.input || {}) : meetingsSvc.parseMeeting(use.input || {});
       if (parsed.error) result = { ok: false, error: parsed.error };
-      else if (use.name === 'send_whatsapp_info') {
+      else if (use.name === 'find_meeting_times') {
+        try {
+          const cfg = await meetingsSvc.calendlyAuto(card, persona);
+          const slots = cfg ? await calendlySvc.freeSlots(cfg, { date: String(parsed.r.date || ''), partOfDay: String(parsed.r.part_of_day || '') }) : [];
+          result = slots.length ? { ok: true, times: slots } : { ok: true, times: [], note: 'No free times then. Ask for another day.' };
+        } catch (err) {
+          result = { ok: false, error: `Calendly could not be reached (${err.message.slice(0, 120)}). Offer to share the details with the owner instead.` };
+        }
+      } else if (use.name === 'send_whatsapp_info') {
         whatsapp = await waInfo.sendInfo({ req, card, r: parsed.r, source: 'chat', cohort });
         result = { ok: true, sent: whatsapp.sent, owner_told: true, open_whatsapp_button_added_below: !whatsapp.sent && !!whatsapp.tapLink };
       } else {
-        meeting = await meetingsSvc.recordMeeting({ req, card, persona, m: parsed.m, source: 'chat', cohort });
-        result = meeting.scheduled
+        try {
+          meeting = await meetingsSvc.recordMeeting({ req, card, persona, m: parsed.m, source: 'chat', cohort });
+        } catch (err) {
+          if (err.status !== 400) throw err;
+          result = { ok: false, error: err.message };
+        }
+        if (meeting) result = meeting.calendlyBooked
+          ? { ok: true, booked: true, booked_in_calendly: true, when: meeting.when, link: meeting.meetingUrl, invite_emailed_by_calendly: true }
+          : meeting.calendly
+          ? { ok: true, booked: false, calendly_calendar_opened_on_screen: true, link: meeting.meetingUrl }
+          : meeting.scheduled
           ? { ok: true, booked: true, when: meeting.when, link: meeting.meetingUrl, invite_emailed_to_visitor: meeting.invited }
           : { ok: true, booked: false, link: meeting.meetingUrl, booking_page: meeting.booking };
       }
@@ -523,7 +703,7 @@ ${waInfo.whatsappRules(ownerName, { spoken: false })}`;
     if (whatsapp?.tapLink && !whatsapp.sent) reply = `${reply.replace(/\[([^\]]*)\]\(https:\/\/wa\.me\/[^)]*\)/g, '').replace(/https:\/\/wa\.me\/\S+/g, '').trim()}\n\n[Open WhatsApp](${whatsapp.tapLink})`.trim();
     if (meeting && !reply.includes(meeting.meetingUrl)) reply = `${reply}
 
-[${meeting.scheduled ? 'Join the meeting' : meeting.booking ? 'Pick a time' : 'Meeting link'}](${meeting.meetingUrl})`.trim();
+[${meeting.calendlyBooked && /calendly\.com/.test(meeting.meetingUrl) ? 'Meeting details' : meeting.scheduled ? 'Join the meeting' : meeting.booking ? 'Pick a time' : 'Meeting link'}](${meeting.meetingUrl})`.trim();
     const bad = checkOutput(reply, guard);
     if (bad) reply = bad.reply;
     const { text, cards } = bad ? { text: reply, cards: [] } : cardsFor(reply, { products, portfolio });
@@ -870,39 +1050,44 @@ router.post('/jarvis', auth, async (req, res) => {
   }
 });
 
+// What a card's public page gets about its AI (also used by the card server render, routes/og.js).
+async function publicPersona(username) {
+  const card = await vCard.findOne({ username });
+  if (!card) return { enabled: false };
+
+  const owner = await User.findById(card.userId);
+  if (!owner || owner.deletedAt || !hasCardAi(owner)) return { enabled: false };
+
+  const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
+  if (!persona.enabled) return { enabled: false };
+  // Free trial used up: the card hides its chatbot until the owner upgrades.
+  const quota = await monthlyChats(owner);
+  if (quota ? quota.over : trialOver(owner, card)) return { enabled: false, trialOver: true, limitReached: !!quota };
+
+  const niche = nicheOf(persona.niche);
+  return {
+    enabled: true,
+    aiName: persona.aiName,
+    greeting: persona.greeting,
+    niche: NICHES[persona.niche] ? persona.niche : 'general',
+    sensitive: niche.sensitive,
+    disclaimer: niche.disclaimer,
+    chips: niche.chips,
+    offer: offerOf(persona),
+    npsEnabled: persona.npsEnabled !== false,
+    consentVersion: CHAT_CONSENT_VERSION,
+    // Live AI calls this card offers (plan + owner's switches).
+    calls: {
+      voice: !!process.env.OPENAI_API_KEY && callFeatures(owner).voice && persona.voiceCall !== false,
+      video: !!process.env.OPENAI_API_KEY && callFeatures(owner).video && persona.videoCall !== false,
+    },
+  };
+}
+
 // ─── GET /api/ai/public/:username ─────────────────────────────────────────────
 router.get('/public/:username', async (req, res) => {
   try {
-    const card = await vCard.findOne({ username: req.params.username });
-    if (!card) return res.json({ enabled: false });
-
-    const owner = await User.findById(card.userId);
-    if (!owner || owner.deletedAt || !hasCardAi(owner)) return res.json({ enabled: false });
-
-    const persona = (await AiPersona.findOne({ vcardId: card._id })) || DEFAULT_PERSONA;
-    if (!persona.enabled) return res.json({ enabled: false });
-    // Free trial used up: the card hides its chatbot until the owner upgrades.
-    const quota = await monthlyChats(owner);
-    if (quota ? quota.over : trialOver(owner, card)) return res.json({ enabled: false, trialOver: true, limitReached: !!quota });
-
-    const niche = nicheOf(persona.niche);
-    res.json({
-      enabled: true,
-      aiName: persona.aiName,
-      greeting: persona.greeting,
-      niche: NICHES[persona.niche] ? persona.niche : 'general',
-      sensitive: niche.sensitive,
-      disclaimer: niche.disclaimer,
-      chips: niche.chips,
-      offer: offerOf(persona),
-      npsEnabled: persona.npsEnabled !== false,
-      consentVersion: CHAT_CONSENT_VERSION,
-      // Live AI calls this card offers (plan + owner's switches).
-      calls: {
-        voice: !!process.env.OPENAI_API_KEY && callFeatures(owner).voice && persona.voiceCall !== false,
-        video: !!process.env.OPENAI_API_KEY && callFeatures(owner).video && persona.videoCall !== false,
-      },
-    });
+    res.json(await publicPersona(req.params.username));
   } catch {
     res.json({ enabled: false });
   }
@@ -1085,16 +1270,36 @@ router.post('/theme', auth, themeLimiter, async (req, res) => {
 
 // ─── Cardy: public platform assistant for the marketing site ─────────────────
 // Persona, knowledge and rules all live in constants/chatbotKnowledge.js (built once at startup).
-const CARDY_SYSTEM_PROMPT = buildCardySystemPrompt();
+// The admin panel's "Website chatbot" settings: extra knowledge and the booking link. The prompt
+// is rebuilt only when those change.
+const { getSettings } = require('../services/siteSettings');
+const DEFAULT_BOOKING = COMPANY.bookingUrl;
+let cardyPrompt = { key: null, text: '' };
+async function cardySetup() {
+  const s = await getSettings('cardy');
+  const booking = s.bookingUrl === 'off' ? '' : s.bookingUrl || DEFAULT_BOOKING;
+  const key = JSON.stringify([booking, s.extraKnowledge]);
+  if (cardyPrompt.key !== key) {
+    COMPANY.bookingUrl = booking;
+    const extra = String(s.extraKnowledge || '').trim();
+    cardyPrompt = { key, text: `${buildCardySystemPrompt()}${extra ? `\n\n=== LATEST NOTES FROM THE AICARDLY TEAM (facts you can use) ===\n${extra}` : ''}` };
+  }
+  return { enabled: s.enabled !== false, prompt: cardyPrompt.text };
+}
 
 // "Talk to a human", "call me back", "baat karni hai", "demo" … in English, Hinglish or Hindi.
 const WANTS_HUMAN = /\b(human|real person|executive|representative|sales ?team|your team|call ?back|call me|contact me|reach me|talk to|speak to|speak with|talk with|demo|baat kar|baat karni|call kar|phone kar|sampark)\b|बात कर|कॉल|संपर्क/i;
+
+// "Book a demo", "schedule a meeting", "meeting chahiye", "slot" … : open the booking calendar.
+const WANTS_BOOKING = /\b(demo|meeting|appointment|calendly|schedule (a |the )?(call|demo|meeting)|book (a |my |the )?(call|demo|meeting|slot|appointment))\b|meeting (chahiye|karni|book)|मीटिंग|डेमो/i;
 
 // ─── POST /api/ai/platform-chat ────────────────────────────────────────────────
 router.post('/platform-chat', platformChatLimiter, async (req, res) => {
   try {
     const anthropic = getAnthropic();
     if (!anthropic) return res.status(503).json({ msg: 'AI service not configured yet.' });
+    const cardy = await cardySetup();
+    if (!cardy.enabled) return res.status(503).json({ msg: 'Our chat assistant is off right now. Please reach us on WhatsApp or email.' });
 
     const { messages } = req.body;
     const recentMessages = Array.isArray(messages) ? messages.slice(-12) : [];
@@ -1111,16 +1316,20 @@ router.post('/platform-chat', platformChatLimiter, async (req, res) => {
     const completion = await anthropic.messages.create({
       model: PLATFORM_CHAT_MODEL,
       max_tokens: 500,
-      system: CARDY_SYSTEM_PROMPT,
+      system: cardy.prompt,
       messages: recentMessages.map(m => ({ role: m.role, content: m.content })),
     });
 
     logUsage({ route: 'platform-chat', model: PLATFORM_CHAT_MODEL, usage: completion.usage });
 
-    const reply = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
-    // Wants a person / a call back: the widget shows the name + phone form, saved as a lead.
+    const raw = completion.content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+    // [[BOOK_CALL]]: the widget opens the booking calendar (Calendly) inside the chat.
     const lastUser = [...recentMessages].reverse().find(m => m.role === 'user')?.content || '';
-    res.json({ reply, showLeadForm: WANTS_HUMAN.test(lastUser) });
+    const bookCall = !!COMPANY.bookingUrl && (/\[\[\s*BOOK_CALL\s*\]\]/i.test(raw) || WANTS_BOOKING.test(lastUser));
+    const reply = raw.replace(/\[\[\s*BOOK_CALL\s*\]\]/gi, '').replace(/\[\[[^\]]*\]?\]?\s*$/, '').trim()
+      || 'Opening the booking calendar for you, pick a time that suits you 📅';
+    // Wants a person / a call back: the widget shows the name + phone form, saved as a lead.
+    res.json({ reply, bookCall, showLeadForm: !bookCall && WANTS_HUMAN.test(lastUser) });
   } catch (err) {
     console.error('Platform chat error:', err.message);
     res.status(500).json({ msg: 'Cardy is having trouble responding right now. Please try WhatsApp or email instead.' });
@@ -1167,6 +1376,8 @@ router.post('/platform-lead', platformLeadLimiter, async (req, res) => {
       // Where the lead came from: Cardy (default) or the metal card order form.
       source: ['chatbot', 'metal-card', 'contact'].includes(source) ? source : 'chatbot',
     });
+    // A metal card order also opens an order in the admin panel (NFC orders).
+    if (lead.source === 'metal-card') await require('../services/nfcOrders').orderFromLead(lead);
 
     sendMail({
       // Alerts go to the team inbox that is read today; the public support address is COMPANY.email.
@@ -1187,3 +1398,4 @@ module.exports.cardsFor = cardsFor;
 module.exports.buildSystemPrompt = buildSystemPrompt;
 module.exports.DEFAULT_PERSONA = DEFAULT_PERSONA;
 module.exports.monthlyChats = monthlyChats;
+module.exports.publicPersona = publicPersona;

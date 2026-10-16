@@ -126,7 +126,7 @@ const orderView = (o) => ({
   email: o.email,
   paymentLinkUrl: o.paymentLinkUrl,
   paymentLinkId: o.paymentLinkId,
-  razorpayPaymentId: o.razorpayPaymentId,
+  razorpayPaymentId: o.paymentId || o.razorpayPaymentId, // shown as the payment id (Cashfree; older orders Razorpay)
   linkSentAt: o.createdAt,
   expiresAt: o.expiresAt,
   paidAt: o.paidAt,

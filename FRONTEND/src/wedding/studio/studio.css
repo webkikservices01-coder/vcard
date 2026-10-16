@@ -1,0 +1,71 @@
+/* Invite Studio: motion for the eight wedding designs (StudioInvite.tsx). Colours come from
+   inline styles (each design + palette); this file only has keyframes and a few shared rules. */
+
+.st-root { -webkit-font-smoothing: antialiased; }
+.st-root * { box-sizing: border-box; }
+.st-root button { font: inherit; color: inherit; cursor: pointer; }
+.st-root input, .st-root textarea { font: inherit; color: inherit; }
+.st-root a { color: inherit; text-decoration: none; }
+
+@keyframes st-fall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 0; }
+  10% { opacity: .9; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+}
+@keyframes st-glint {
+  0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+@keyframes st-sway {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes st-ring {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(16deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+}
+@keyframes st-burst {
+  0% { transform: translate(0, 0) scale(.4); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; }
+}
+@keyframes st-pop {
+  0% { transform: scale(.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes st-catch {
+  0% { transform: translateY(-20px) rotate(-12deg); }
+  50% { transform: translateY(150px) rotate(10deg); }
+  100% { transform: translateY(330px) rotate(-6deg); opacity: .2; }
+}
+@keyframes st-rise {
+  from { transform: translateY(18px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes st-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes st-flame {
+  0%, 100% { transform: scaleY(1) translateY(0); }
+  50% { transform: scaleY(1.12) translateY(-1px); }
+}
+@keyframes st-hint {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes st-wave {
+  0%, 100% { transform: scaleY(.3); }
+  50% { transform: scaleY(1); }
+}
+
+.st-rise { animation: st-rise .8s cubic-bezier(.22, 1, .36, 1) both; }
+.st-hint { animation: st-hint 2.2s ease-in-out infinite; }
+.st-flame { animation: st-flame 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .st-root *, .st-root *::before, .st-root *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Webhook events already handled (Razorpay x-razorpay-event-id, WhatsApp status ids), so a
+// Webhook events already handled (WhatsApp status ids; older Razorpay event ids), so a
 // provider's retries or duplicates never run twice. Kept 30 days.
 const WebhookEventSchema = new mongoose.Schema({
   provider: { type: String, required: true },

@@ -8,7 +8,8 @@
     "build": "partytown copylib public/~partytown && vite build && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "zip": "python scripts/make-zip.py"
+    "zip": "python scripts/make-zip.py",
+    "build:card-ssr": "node scripts/build-card-ssr.mjs"
   },
   "dependencies": {
     "@cashfreepayments/cashfree-js": "^1.0.7",
@@ -35,6 +36,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "beasties": "^0.3.5",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

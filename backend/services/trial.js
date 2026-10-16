@@ -146,14 +146,15 @@ async function sendUpgradeLink(user, { force = false, reason = 'trial', sentBefo
   let email = 'skipped';
   if (isMailConfigured() && user.email) {
     try {
+      const t = await require('./emailTemplates').emailText('trialEnded', { name: firstName(user), hours: TRIAL_HOURS });
       await sendMail({
         to: user.email,
-        subject: `Please upgrade your card, ${firstName(user)}: your Aicardly free trial has ended`,
+        subject: t.subject,
         text: `Hi ${firstName(user)},\n\nYour ${TRIAL_HOURS}-hour free trial is over, so your Aicardly card is paused. Choose a plan and pay here to switch it back on right away:\n${upgradeUrl}\n${sms.link ? `\nWe've also sent a payment link to your phone for Smart AI Card (₹${smsPrice.amount} for a month incl. GST).\n` : ''}\n– Team Aicardly`,
         html: emailHtml({
-          heading: 'Please upgrade your card',
+          heading: t.heading,
           paragraphs: [
-            `Hi ${firstName(user)}, your ${TRIAL_HOURS}-hour free trial is over, so your Aicardly card is <b>paused</b> for now. Anyone opening your link sees that it's paused.`,
+            t.intro,
             'Pick a plan and pay in one step. No login needed, and your card is live again the moment the payment goes through.',
             sms.link ? `We've also sent a payment link by SMS to your phone for <b>Smart AI Card</b> (₹${smsPrice.amount} for a month, incl. GST).` : '',
           ].filter(Boolean),

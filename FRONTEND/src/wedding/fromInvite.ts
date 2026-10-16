@@ -35,6 +35,8 @@ export type InviteDoc = {
   aiChat?: boolean;
   opening?: string; // "" = the design's own opening
   coupleArt?: string; // "" = the design's own, "none" = hide
+  palette?: number; // Invite Studio designs: which colour palette (0-2)
+  venueNote?: string; // parking / getting there
   wishes?: { n: string; w: string }[];
 };
 
@@ -74,6 +76,8 @@ export function inviteToTemplate(doc: InviteDoc, preview = false): { template: T
     monuments: doc.photos?.length ? doc.photos.map((p) => media(p) as string) : base.monuments,
     monumentNames: doc.photos?.length ? doc.photos.map(() => "") : base.monumentNames,
     opening: OPENINGS.includes(doc.opening as Opening) ? (doc.opening as Opening) : base.opening,
+    studioPalette: Math.min(2, Math.max(0, Number(doc.palette) || 0)),
+    venueNote: (doc.venueNote || "").trim(),
     coupleArt: doc.coupleArt === "none" ? undefined : LOOKS.includes(doc.coupleArt as CoupleLook) ? (doc.coupleArt as CoupleLook) : base.coupleArt,
   };
   return {
@@ -83,6 +87,7 @@ export function inviteToTemplate(doc: InviteDoc, preview = false): { template: T
       preview,
       rsvpOpen: doc.rsvpOpen !== false,
       wishes: doc.showWishes === false ? [] : doc.wishes || [],
+      wishesOff: doc.showWishes === false,
       photos: doc.photos || [],
       timeline: (doc.timeline || []).filter((t) => t && t.h),
       mapUrl: doc.mapUrl || "",

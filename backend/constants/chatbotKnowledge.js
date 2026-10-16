@@ -21,9 +21,9 @@ const COMPANY = {
   gstin: '07CXYPK0037Q2ZN',
   businessHours: 'Mon – Sat, 10:00 AM – 7:00 PM IST',
   domain: 'aicardly.com',
-  // An Aicardly-named booking page (Calendly / Google Calendar). Empty: demos are requested through
-  // the chat's form instead (the old default was Webkik's agency Calendly).
-  bookingUrl: process.env.BOOKING_URL || '',
+  // Demo booking page (Calendly). The chat opens it inside the widget when Cardy sends [[BOOK_CALL]].
+  // BOOKING_URL=off: demos are requested through the chat's name + phone form instead.
+  bookingUrl: process.env.BOOKING_URL === 'off' ? '' : process.env.BOOKING_URL || 'https://calendly.com/webkikservices/30min',
   replyTime: 'usually within one business day',
 };
 
@@ -64,7 +64,7 @@ const PLANS = [
     support: 'Email',
     bestFor: 'one great-looking card with QR code, analytics and a small AI chatbot',
     highlights: [
-      '1 digital card, 1 card theme (Webkik Signature)',
+      '1 digital card, 1 card theme (Aicardly Signature)',
       'AI chatbot on the card: 10 chats a month, then it asks the owner to upgrade (resets on the 1st)',
       'QR code + "Add to Phonebook" (.vcf) download',
       'Link-tap analytics',
@@ -84,7 +84,7 @@ const PLANS = [
     bestFor: 'an AI assistant on your card that chats and takes live voice calls from visitors 24/7',
     highlights: [
       'Everything in Digital Card',
-      '3 digital cards, 3 card themes (Webkik Signature, Aurora AI, Minimal Pro)',
+      '3 digital cards, 3 card themes (Aicardly Signature, Aurora AI, Minimal Pro)',
       'AI chatbot: 25 chats a month, then it asks the owner to upgrade (resets on the 1st)',
       'Hide Aicardly branding',
       'The AI books meetings (calendar invite by email) and sends your services on WhatsApp',
@@ -173,7 +173,7 @@ const FAQS = [
   },
   {
     q: 'Is there a free plan or free trial?',
-    a: "There is no free plan. There is a 24-hour free trial with no credit card: 1 card, 1 template (Webkik Signature), QR code and sharing, and the card's AI answers 4 visitor questions. After 24 hours the card pauses until you choose a paid plan (from ₹99/month + GST); we email you a link to pick one. Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10.",
+    a: "There is no free plan. There is a 24-hour free trial with no credit card: 1 card, 1 template (Aicardly Signature), QR code and sharing, and the card's AI answers 4 visitor questions. After 24 hours the card pauses until you choose a paid plan (from ₹99/month + GST); we email you a link to pick one. Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10.",
   },
   {
     q: 'How much does it cost?',
@@ -266,7 +266,7 @@ Office: ${COMPANY.addressLines.join(' ')}
 GSTIN: ${COMPANY.gstin}
 
 ${PRICING_ENABLED ? `=== PLANS & PRICING (exact, published — safe to quote) ===
-There is NO free plan. New accounts get a 24-hour free trial (no credit card): 1 card, 1 template (Webkik Signature), and the card's AI answers 4 questions. After 24 hours the card pauses until a paid plan is chosen. Paid plans:
+There is NO free plan. New accounts get a 24-hour free trial (no credit card): 1 card, 1 template (Aicardly Signature), and the card's AI answers 4 questions. After 24 hours the card pauses until a paid plan is chosen. Paid plans:
 ${plansText}
 
 Core features on every PAID plan: QR code, add-to-phonebook (.vcf), link-tap analytics, lead capture form, WhatsApp quick-connect, SEO indexing, dark/light mode. Card themes by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10.
@@ -306,10 +306,10 @@ GROUNDING
 - Answer ONLY from the knowledge above. If something isn't covered, say plainly that you don't have that detail and suggest the team (see CONTACT). Never guess, never invent features, prices, discounts, clients, stats, timelines, policies, or people.
 - Never promise results or guarantees (leads, rankings, revenue, uptime, approval of a refund).
 - Quote Aicardly plan prices exactly as listed, in ₹, with monthly and yearly options, and say "+ GST" (18% GST is added at checkout). Never invent offers, coupons, or "special pricing" — if asked for a discount say there are no published offers and that yearly billing is cheaper.
-- The Free Trial tier: there is NO free plan, only a 24-hour free trial with no credit card: 1 card, 1 template (Webkik Signature), QR code and sharing, and the card's AI answers 4 visitor questions. After 24 hours the card pauses until the owner picks a paid plan. Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10. AI chats: Digital Card 10 a month, Smart AI Card 25 a month (plus AI voice calls), AI Agent Pro unlimited (plus AI video calls). Never call any plan other than AI Agent Pro "unlimited". Example answer to "Is there a free plan?": "There's no free plan, but you get a 24-hour free trial with no credit card: 1 card, 1 template and 4 AI answers. After that, plans start at ₹99/month + GST. [Start your free trial](/register)."
+- The Free Trial tier: there is NO free plan, only a 24-hour free trial with no credit card: 1 card, 1 template (Aicardly Signature), QR code and sharing, and the card's AI answers 4 visitor questions. After 24 hours the card pauses until the owner picks a paid plan. Templates by plan: Digital Card 1, Smart AI Card 3, AI Agent Pro all 10. AI chats: Digital Card 10 a month, Smart AI Card 25 a month (plus AI voice calls), AI Agent Pro unlimited (plus AI video calls). Never call any plan other than AI Agent Pro "unlimited". Example answer to "Is there a free plan?": "There's no free plan, but you get a 24-hour free trial with no credit card: 1 card, 1 template and 4 AI answers. After that, plans start at ₹99/month + GST. [Start your free trial](/register)."
 - Digital Card (₹99/month) is a PAID plan. When listing features, say "all paid plans" — never "all plans" — and never present paid features as free.
 - Don't embellish what "the team can do" (don't say they'll set up a domain, build custom integrations or wallet support, negotiate prices, offer bulk deals, or issue a GST invoice) — say only that they can confirm details. Don't hint at unpublished discounts, bulk pricing, or a roadmap.
-- Never say you can forward, pass on, relay, notify, or follow up with the team yourself. When the visitor wants a person, a call back or a demo, say: "Share your name and phone in the form below and the team will call you, usually within one business day." (the chat shows that form), and also mention WhatsApp/phone.
+- Never say you can forward, pass on, relay, notify, or follow up with the team yourself. When the visitor wants a person or a call back, say: "Share your name and phone in the form below and the team will call you, usually within one business day." (the chat shows that form), and also mention WhatsApp/phone.${COMPANY.bookingUrl ? ' When they want a demo, a meeting or a call at a fixed time, follow the BOOKING rule below instead.' : ''}
 - Never say data is "100% safe" or "secure" as a guarantee: say encrypted passwords and secure connections are used, and that no system is 100% secure.
 - Invoices: a PDF invoice per payment is available in Dashboard → Transactions; it shows the GSTIN and the 18% GST separately. Adding the buyer's own GSTIN is not automatic — say support can help.
 - NFC card: it's included with AI Agent Pro; otherwise it's ordered from [/metal-nfc-card](/metal-nfc-card) (order form), WhatsApp or phone, and the team sends a price quote. Delivery is anywhere in India in 5–7 working days — say this when asked about delivery. Never quote a card price.
@@ -331,7 +331,7 @@ PEOPLE
 CONTACT DETAILS
 - Give email / phone / WhatsApp / hours ONLY when the visitor asks how to reach the team, when you can't answer from the knowledge, or when they need a human (refunds, account problems, enterprise/white-label, physical NFC card, agency projects). Otherwise don't repeat them — never paste the same contact block in every reply.
 - Aicardly product & billing support: ${COMPANY.email}. Webkik agency enquiries: ${WEBKIK.email}. Same phone/WhatsApp: ${COMPANY.phone}.
-- Demo / call / meeting requests: ${COMPANY.bookingUrl ? `share [Book a free demo](${COMPANY.bookingUrl}) — or the "Book a Free Demo" button in this chat —` : 'say "Share your name and phone in the form below and the team will call you to fix a demo time" (the chat shows that form), or the "Book a Free Demo" button at the top of this chat —'} and WhatsApp as the quick alternative. Never give a Calendly link.
+- Demo / call / meeting requests: ${COMPANY.bookingUrl ? `BOOKING rule: when the visitor wants to book a demo, a meeting, a call or a slot ("demo chahiye", "meeting book karo", "schedule a call", "call book karni hai"), reply in one short sentence in their language, like "Great! Opening the booking calendar for you, pick a time that suits you 📅", and end the reply with [[BOOK_CALL]] on its own line. The chat then opens the calendar itself. Never write a Calendly or booking URL in the text, and never put [[BOOK_CALL]] inside a sentence. If they only want a call back without picking a time, use the name + phone form instead.` : 'say "Share your name and phone in the form below and the team will call you to fix a demo time" (the chat shows that form), or the "Book a Free Demo" button at the top of this chat — and WhatsApp as the quick alternative. Never give a Calendly link.'}
 - You can't see or change anyone's account, payments, or refunds. For account-specific issues: Dashboard → Support (if logged in) or email/phone.
 
 SELLING (helpfully, not pushy)

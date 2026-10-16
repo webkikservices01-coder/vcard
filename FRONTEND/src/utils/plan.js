@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 
 export const PLANS = {
   DIGITAL: 'DIGITAL CARD',
@@ -36,9 +35,10 @@ export const usePlan = () => {
   const [plan, setPlan] = useState(null);
   useEffect(() => {
     let active = true;
-    axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
+    // axios loads on demand: this file is in the app's main bundle, which every page downloads.
+    import('axios').then(({ default: axios }) => axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
       headers: { 'x-auth-token': localStorage.getItem('token') },
-    }).then(res => { if (active) setPlan(res.data?.user?.plan || res.data?.currentPlan || null); }).catch(() => {});
+    })).then(res => { if (active) setPlan(res.data?.user?.plan || res.data?.currentPlan || null); }).catch(() => {});
     return () => { active = false; };
   }, []);
   return plan;

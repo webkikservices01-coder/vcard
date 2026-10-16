@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, KeyRound, Unlock } from 'lucide-react';
+import { Plus, KeyRound, Unlock, SlidersHorizontal } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
@@ -84,12 +84,64 @@ function ResetPassword({ admin, onClose }) {
   );
 }
 
+// Custom permissions for one admin: their role's set, plus anything ticked on, minus anything
+// ticked off. Changes take effect on their next click (the server reads them every request).
+function Permissions({ admin, catalog, roleDefaults, onClose, onSaved }) {
+  const toast = useToast();
+  const base = new Set(roleDefaults[admin.role] || []);
+  const [on, setOn] = useState(() => {
+    const s = new Set(base);
+    (admin.extraPermissions || []).forEach((p) => s.add(p));
+    (admin.removedPermissions || []).forEach((p) => s.delete(p));
+    return s;
+  });
+  const [busy, setBusy] = useState(false);
+  const flip = (p) => setOn((s) => { const n = new Set(s); if (n.has(p)) n.delete(p); else n.add(p); return n; });
+  const extra = [...on].filter((p) => !base.has(p));
+  const removed = [...base].filter((p) => !on.has(p));
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api(`/admins/${admin.id}/permissions`, { method: 'PUT', body: { extra, removed } });
+      toast('Permissions saved.');
+      onSaved();
+      onClose();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open wide onClose={onClose} title={`Permissions — ${admin.name}`} footer={<><Button variant="ghost" onClick={() => setOn(new Set(base))}>Back to the role's default</Button><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save} loading={busy}>Save</Button></>}>
+      <p className="text-sm text-slate-600">Starts from the <b>{ROLE_LABEL[admin.role]}</b> role. Tick on what this person also needs, untick what they shouldn't do. {extra.length + removed.length ? <span className="text-brand-600">{extra.length} added, {removed.length} taken away.</span> : 'Same as the role now.'}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {catalog.map(([group, items]) => (
+          <fieldset key={group} className="rounded-2xl border border-slate-200 p-3">
+            <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{group}</legend>
+            <div className="space-y-1.5">
+              {items.map(([p, label]) => (
+                <label key={p} className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" checked={on.has(p)} onChange={() => flip(p)} className="h-4 w-4 accent-brand-600" disabled={admin.role === 'super_admin' && p === 'admins.manage'} />
+                  <span>{label}</span>
+                  {on.has(p) !== base.has(p) && <Badge color={on.has(p) ? 'green' : 'red'}>{on.has(p) ? 'added' : 'removed'}</Badge>}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
 export default function Admins() {
   const { admin: me } = useAuth();
   const toast = useToast();
   const { data, loading, error, reload } = useApi('/admins');
   const [creating, setCreating] = useState(false);
   const [resetting, setResetting] = useState(null);
+  const [perms, setPerms] = useState(null);
 
   const patch = async (a, body, msg) => {
     try {
@@ -132,7 +184,7 @@ export default function Admins() {
                   </Select>
                 ),
             },
-            { key: 'status', label: 'Status', render: (a) => <div className="flex flex-wrap gap-1"><Badge color={a.isActive ? 'green' : 'slate'}>{a.isActive ? 'active' : 'deactivated'}</Badge>{a.totpEnabled && <Badge color="blue">2FA</Badge>}{a.locked && <Badge color="red">locked</Badge>}</div> },
+            { key: 'status', label: 'Status', render: (a) => <div className="flex flex-wrap gap-1"><Badge color={a.isActive ? 'green' : 'slate'}>{a.isActive ? 'Active' : 'Deactivated'}</Badge>{a.totpEnabled && <Badge color="blue">2FA</Badge>}{a.locked && <Badge color="red">Locked</Badge>}{(a.extraPermissions?.length > 0 || a.removedPermissions?.length > 0) && <Badge color="pink">Custom permissions</Badge>}</div> },
             { key: 'lastLoginAt', label: 'Last sign-in', render: (a) => dateTime(a.lastLoginAt) },
             {
               key: 'actions',
@@ -141,6 +193,7 @@ export default function Admins() {
                 a.id !== me.id && (
                   <div className="flex flex-wrap justify-end gap-1">
                     {a.locked && <Button size="sm" variant="secondary" onClick={() => unlock(a)}><Unlock className="h-3.5 w-3.5" /> Unlock</Button>}
+                    <Button size="sm" variant="secondary" onClick={() => setPerms(a)}><SlidersHorizontal className="h-3.5 w-3.5" /> Permissions</Button>
                     <Button size="sm" variant="secondary" onClick={() => setResetting(a)}><KeyRound className="h-3.5 w-3.5" /> Reset password</Button>
                     <Button size="sm" variant={a.isActive ? 'danger' : 'secondary'} onClick={() => window.confirm(`${a.isActive ? 'Deactivate' : 'Reactivate'} ${a.email}?`) && patch(a, { isActive: !a.isActive }, a.isActive ? 'Deactivated and signed out.' : 'Reactivated.')}>
                       {a.isActive ? 'Deactivate' : 'Reactivate'}
@@ -161,6 +214,7 @@ export default function Admins() {
       </div>
       {creating && <NewAdmin roles={data?.roles || []} onClose={() => setCreating(false)} onSaved={reload} />}
       {resetting && <ResetPassword admin={resetting} onClose={() => setResetting(null)} />}
+      {perms && <Permissions admin={perms} catalog={data?.catalog || []} roleDefaults={data?.roleDefaults || {}} onClose={() => setPerms(null)} onSaved={reload} />}
     </>
   );
 }

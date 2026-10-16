@@ -108,7 +108,7 @@ export default function Payments() {
     <>
       <PageHeader
         title="Payments"
-        subtitle="Plan purchases (Cashfree) and card payment links (Razorpay, valid 24 hours)."
+        subtitle="Plan purchases and card payment links (both Cashfree; card links are valid 24 hours)."
         actions={can('export.csv') && <ExportButton path={cards ? '/payments/card-orders/export' : '/payments/transactions/export'} params={{ ...listParams, limit: undefined }} what={cards ? 'card payments' : 'plan purchases'} />}
       />
       <Tabs

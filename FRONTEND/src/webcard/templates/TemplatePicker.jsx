@@ -318,9 +318,9 @@ const RAW = [
     orbRight: '0',
   },
   {
-    name: 'Webkik Signature',
+    name: 'Aicardly Signature',
     mood: 'Confident, modern, brand-forward',
-    for: 'Default template for Webkik teams and general business owners.',
+    for: 'The default Aicardly template, for teams and business owners.',
     tags: ['Light', 'Dark', 'Bold'],
     badge: 'Popular',
     bg: '#FFFFFF',

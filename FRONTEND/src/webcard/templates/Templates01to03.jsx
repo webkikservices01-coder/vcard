@@ -1,7 +1,7 @@
 import React from 'react';
 import '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -431,25 +431,6 @@ export function AuroraAI(props) {
             {CARD.fullName}
           </h1>
           <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'flex', color: '#67E8F9' }}></span>
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 9px',
-                borderRadius: '999px',
-                fontSize: '11.5px',
-                fontWeight: '600',
-                border: '1px solid transparent',
-                background: 'linear-gradient(#15152A,#15152A) padding-box, linear-gradient(135deg,#7C5CFF,#22D3EE) border-box',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.sparkA} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {CARD.roleLine ? <p style={{ margin: '0', fontSize: '14.5px', fontWeight: '500', color: '#A6A6BD' }}>{CARD.roleLine}</p> : null}
         {CARD.bio ? (
@@ -507,7 +488,7 @@ export function AuroraAI(props) {
               className="dcp-a1"
             >
               <span dangerouslySetInnerHTML={V.sparkA} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -678,7 +659,7 @@ export function AuroraAI(props) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px', marginTop: '14px' }}>
                     {(V.stats || []).map((st, $index) => (
                       <React.Fragment key={$index}>
-                        <div
+                        <div {...statLink(st)}
                           style={{
                             padding: '10px 12px',
                             borderRadius: '14px',
@@ -1236,12 +1217,13 @@ export function AuroraAI(props) {
               </>
             ) : null}
             <div
+              className="wc-orb-pulse"
               style={{
+                '--wc-pulse': '#7C5CFF',
                 position: 'relative',
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                animation: 'a_orbPulse 2.4s ease-out infinite',
                 boxShadow: '0 0 30px rgba(124,92,255,.5)',
               }}
             >
@@ -1654,25 +1636,6 @@ export function MinimalPro(props) {
             {CARD.fullName}
           </h1>
           <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'flex', color: '#2563EB' }}></span>
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 9px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                fontWeight: '600',
-                border: '1px solid transparent',
-                background: 'linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#2563EB,#7C3AED) border-box',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.sparkM} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {CARD.roleLine ? <p style={{ margin: '0', fontSize: '14.5px', fontWeight: '500', color: '#64748B' }}>{CARD.roleLine}</p> : null}
         {CARD.bio ? (
@@ -1730,7 +1693,7 @@ export function MinimalPro(props) {
               className="dcp-a13"
             >
               <span dangerouslySetInnerHTML={V.sparkM} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -1890,7 +1853,7 @@ export function MinimalPro(props) {
                 >
                   {(V.stats || []).map((st, $index) => (
                     <React.Fragment key={$index}>
-                      <div style={{ padding: '14px 0 14px 12px', borderLeft: st?.mDiv }}>
+                      <div {...statLink(st)} style={{ padding: '14px 0 14px 12px', borderLeft: st?.mDiv }}>
                         <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-0.03em' }}>{st?.v}</div>
                         <div style={{ fontSize: '12.5px', color: '#64748B' }}>{st?.l}</div>
                       </div>
@@ -2854,24 +2817,6 @@ export function NeoBrutal(props) {
             <span dangerouslySetInnerHTML={V.ic?.badgeS} style={{ display: 'flex' }}></span>
             {'Verified'}
           </span>
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 8px',
-                fontSize: '11.5px',
-                fontWeight: '700',
-                background: 'linear-gradient(90deg,#FFD23F,#3DDC97)',
-                border: '2px solid #111',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.sparkB} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {CARD.bio ? (
           <p
@@ -2929,7 +2874,7 @@ export function NeoBrutal(props) {
               className="dcp-a26"
             >
               <span dangerouslySetInnerHTML={V.sparkB} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -3118,7 +3063,7 @@ export function NeoBrutal(props) {
                   >
                     {(V.stats || []).map((st, $index) => (
                       <React.Fragment key={$index}>
-                        <div
+                        <div {...statLink(st)}
                           style={{
                             padding: '10px 8px',
                             textAlign: 'center',

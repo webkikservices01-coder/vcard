@@ -71,7 +71,7 @@ export default function VisitorCounter({ stats, light, tokens, top = 12 }) {
     border: `1px solid ${light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.14)'}`,
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', font: "600 12px/1 'Inter',sans-serif", cursor: 'pointer', whiteSpace: 'nowrap',
   };
-  const dot = <span className="wc-pulse" style={{ width: 8, height: 8, borderRadius: 99, background: light ? '#15803D' : '#22C55E', flex: '0 0 auto' }} />;
+  const dot = <span className="wc-pulse" style={{ width: 8, height: 8, borderRadius: 99, background: light ? '#15803D' : '#22C55E', '--wc-pulse': light ? '#15803D' : '#22C55E', flex: '0 0 auto' }} />;
   const T = tokens;
   return (
     <>

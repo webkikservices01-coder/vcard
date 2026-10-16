@@ -173,12 +173,19 @@
 @keyframes wcRoll{from{transform:translateY(90%);opacity:0}to{transform:none;opacity:1}}
 @keyframes wcUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 @keyframes wcToast{from{transform:translate(-50%,12px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
-.wc-pulse{animation:wcPulse 2s ease-out infinite}
+/* Pulsing dot / AI button: an expanding ring drawn by a pseudo-element that only scales and
+   fades (the GPU does it). Animating box-shadow made the phone repaint on the main thread every
+   frame, forever (~1 s of CPU every 5 s on a card page). */
+.wc-pulse{position:relative}
+.wc-pulse::after{content:'';position:absolute;inset:0;border-radius:inherit;background:var(--wc-pulse,rgba(34,197,94,1));animation:wcRing 2s ease-out infinite;pointer-events:none}
+@keyframes wcRing{0%{transform:scale(1);opacity:.55}70%{transform:scale(2.5);opacity:0}100%{transform:scale(2.5);opacity:0}}
+.wc-orb-pulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--wc-pulse,#7C5CFF);z-index:-1;animation:wcOrbRing 2.4s ease-out infinite;pointer-events:none}
+@keyframes wcOrbRing{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.5);opacity:0}}
 .wc-roll{animation:wcRoll .3s ease-out}
 .wc-sheet{animation:wcUp .22s ease-out}
 .wc-toast{animation:wcToast .22s ease-out}
 .wc-press:active{transform:scale(.97)}
-@media (prefers-reduced-motion: reduce){.wc-pulse,.wc-roll,.wc-sheet,.wc-toast{animation:none!important}}
+@media (prefers-reduced-motion: reduce){.wc-pulse,.wc-roll,.wc-sheet,.wc-toast,.wc-pulse::after,.wc-orb-pulse::after{animation:none!important}}
 
 /* Owner buttons on their own live card (Templates / Theme) */
 .wc-ownerbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 48px);right:calc(max(0px,(100vw - 480px)/2) + 12px);z-index:50;display:flex;gap:6px}
@@ -221,3 +228,7 @@
 
 /* Chat suggestion chips wrap onto more lines instead of scrolling sideways, so every one shows. */
 .wc-root [data-wc-chips] > * { max-width: 100%; height: auto !important; min-height: 36px; padding-top: 6px !important; padding-bottom: 6px !important; white-space: normal; line-height: 1.3; flex-shrink: 1 !important; }
+
+/* Followers tiles that open the profile. */
+.wc-stat-link{cursor:pointer;transition:transform .15s ease,opacity .15s ease}
+.wc-stat-link:active{transform:scale(.97);opacity:.85}

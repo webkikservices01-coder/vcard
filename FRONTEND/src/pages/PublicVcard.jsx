@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { http } from '../utils/http';
 import WebCard, { nativeModeOf } from '../webcard/WebCard';
 import { getVideoRoomUrl } from '../utils/videoRoom';
 import { markNotFound, setCardIndexing, setCardMeta } from '../components/Seo';
 import { faviconHref, setPageFavicon } from '../utils/favicon';
 import { getImageUrl } from '../utils/media';
 import AiCallHost from '../webcard/AiCallHost';
+import CalendlyOverlay from '../webcard/CalendlyOverlay';
 
 const API = import.meta.env.VITE_API_URL;
 // Branded 404 (site header + footer), loaded only when a card link is wrong.
@@ -21,6 +22,24 @@ const whatsappOf = (card) => {
   return n ? `https://wa.me/${n.length === 10 ? '91' + n : n}` : '';
 };
 const _viewedSlugs = new Set();
+
+// The card drawn on the server (public/og.php puts it over the empty app so it shows at once).
+// It goes once this page has drawn the same card itself, or if the card can't be shown.
+const ssrCard = () => (typeof document !== 'undefined' ? document.getElementById('ssr-card') : null);
+const dropSsrCard = () => {
+  const ssr = ssrCard();
+  if (!ssr) return;
+  ssr.remove();
+  // A button tapped on that copy before this one was ready (public/og.php remembers where in the
+  // card it was): tap the same button here.
+  const path = window.__ssrTap;
+  window.__ssrTap = null;
+  if (!Array.isArray(path)) return;
+  // The path starts at the card itself (.wc-root), which both copies have in the same place.
+  let n = document.querySelector('#root .wc-root');
+  for (const i of path) n = n?.children?.[i];
+  if (n && typeof n.click === 'function') n.click();
+};
 
 // First load of a card uses the request index.html already started (window.__cardPrefetch),
 // so the data arrives while the app code is still loading. Later loads go to the API as usual.
@@ -44,13 +63,16 @@ const PublicVcard = () => {
   // The owner's free trial is over and not paid: the card is paused (402 from the API).
   const [paused, setPaused] = useState(null);
   const [aiPersona, setAiPersona] = useState(null);
+  const [aiDone, setAiDone] = useState(false);
+  const [designReady, setDesignReady] = useState(false);
+  const onDesignReady = useCallback(() => setDesignReady(true), []);
   // Owner viewing their own card: it refreshes so dashboard edits show up here.
   const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    axios
+    http
       .get(`${API}/api/vcard/me`, { headers: { 'x-auth-token': token } })
       .then((r) => setIsOwner((r.data?.username || '').toLowerCase() === slug))
       .catch(() => {});
@@ -60,7 +82,7 @@ const PublicVcard = () => {
   const lastJson = useRef('');
   const load = useCallback(async () => {
     try {
-      const res = await (takePrefetch(slug, 'data') || axios.get(`${API}/api/vcard/public/${slug}`));
+      const res = await (takePrefetch(slug, 'data') || http.get(`${API}/api/vcard/public/${slug}`));
       const json = JSON.stringify(res.data);
       if (json !== lastJson.current) {
         lastJson.current = json;
@@ -84,9 +106,10 @@ const PublicVcard = () => {
     // load() is async: its setState calls run after the request, not during the effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-    (takePrefetch(slug, 'ai') || axios.get(`${API}/api/ai/public/${slug}`))
+    (takePrefetch(slug, 'ai') || http.get(`${API}/api/ai/public/${slug}`))
       .then((res) => setAiPersona(res.data))
-      .catch(() => setAiPersona(null));
+      .catch(() => setAiPersona(null))
+      .finally(() => setAiDone(true));
   }, [slug, load]);
 
   // Only the owner's own view refreshes, so edits made in the dashboard show up here.
@@ -105,7 +128,7 @@ const PublicVcard = () => {
   useEffect(() => {
     if (!slug || _viewedSlugs.has(slug)) return;
     _viewedSlugs.add(slug);
-    axios.post(`${API}/api/vcard/public/${slug}/view`).catch(() => {});
+    http.post(`${API}/api/vcard/public/${slug}/view`).catch(() => {});
   }, [slug]);
 
   const name = data?.card?.personalInfo?.name;
@@ -122,6 +145,18 @@ const PublicVcard = () => {
     return () => setPageFavicon(null);
   }, [favicon]);
 
+  // Swap the server-drawn copy for this one once both the design and the AI buttons are here
+  // (they look the same, so nothing moves), or straight away if there's no card to show.
+  // A safety net removes it after 10 s whatever happens.
+  useEffect(() => {
+    if ((designReady && aiDone) || (!loading && (notFound || paused || !data))) dropSsrCard();
+  }, [designReady, aiDone, loading, notFound, paused, data]);
+  useEffect(() => {
+    const t = setTimeout(dropSsrCard, 10000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (loading && ssrCard()) return null;
   if (loading)
     return (
       <div className="min-h-dvh flex items-center justify-center bg-[#faf8f9] font-['Inter']">
@@ -184,7 +219,10 @@ const PublicVcard = () => {
         aiPersona={aiPersona}
         videoRoomUrl={getVideoRoomUrl(data.card._id)}
         share
+        onReady={onDesignReady}
       />
+      {/* The owner's Calendly, opened when the card's AI (chat or call) sets up a meeting */}
+      {aiPersona?.enabled && <CalendlyOverlay />}
       {aiPersona?.enabled && (aiPersona.calls?.voice || aiPersona.calls?.video) && (
         <>
           <AiCallHost

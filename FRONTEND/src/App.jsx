@@ -5,7 +5,9 @@ import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
 import ScrollToTop from './components/ScrollToTop';
+import SiteAnnouncement from './components/SiteAnnouncement';
 import Seo from './components/Seo';
+import { ALLOWED_PATHS } from './components/platformChat/config';
 const PlatformChatWidget = lazy(() => import('./components/platformChat/PlatformChatWidget'));
 
 // Auth
@@ -57,6 +59,7 @@ const AiInsights = lazy(() => import('./pages/vCard/AiInsights'));
 // Public
 const PublicVcard = lazy(() => import('./pages/PublicVcard'));
 const UpgradePage = lazy(() => import('./pages/UpgradePage'));
+const PayCardPage = lazy(() => import('./pages/PayCardPage'));
 
 // Legal / info pages
 const AboutUs = lazy(() => import('./pages/legal/AboutUs'));
@@ -72,7 +75,10 @@ const AiDataPrivacy = lazy(() => import('./pages/legal/AiDataPrivacy'));
 
 // Cardy's chat bubble is mounted a moment after the page has loaded, so its code doesn't
 // compete with the page itself for the first paint.
+// Only on the pages where it shows (ALLOWED_PATHS): card pages and the dashboard never load it.
 function DeferredChatWidget() {
+  const { pathname } = useLocation();
+  const allowed = ALLOWED_PATHS.includes(pathname);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let timer;
@@ -84,7 +90,7 @@ function DeferredChatWidget() {
       window.removeEventListener('load', go);
     };
   }, []);
-  return ready ? (
+  return ready && allowed ? (
     <Suspense fallback={null}>
       <PlatformChatWidget />
     </Suspense>
@@ -94,6 +100,18 @@ function DeferredChatWidget() {
 // "Skip to content" for keyboard users: the first Tab stop on every page. Jumps to the page's
 // <main> (or its first heading).
 function SkipLink() {
+  const { pathname } = useLocation();
+  // The link's target (#main): the page's <main>, or its first heading, gets that id.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (document.getElementById('main')) return;
+      const target = document.querySelector('main') || document.querySelector('h1');
+      if (!target) return;
+      target.id = 'main';
+      if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    }, 600);
+    return () => clearTimeout(t);
+  }, [pathname]);
   const skip = (e) => {
     const target = document.querySelector('main') || document.querySelector('h1');
     if (!target) return;
@@ -180,6 +198,7 @@ export function AppRoutes() {
       <ScrollToTop />
       <Seo />
       <SkipLink />
+      <SiteAnnouncement />
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' } }} />
       {hasImpersonation() ? (
         <Suspense fallback={null}>
@@ -204,6 +223,7 @@ export function AppRoutes() {
         <Route path="/invite/:link" element={page(<InvitePage />)} />
         {/* No-login upgrade link sent when the 24-hour trial ends */}
         <Route path="/upgrade/:token" element={page(<UpgradePage />)} />
+        <Route path="/pay/card/:token" element={page(<PayCardPage />)} />
 
         <Route path="/metal-nfc-card" element={page(<MetalNfcCard />)} />
         <Route path="/features" element={page(<FeaturesPage />)} />

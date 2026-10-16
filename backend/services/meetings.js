@@ -30,13 +30,26 @@ const cleanBookingUrl = (v) => {
   return BOOKING_HOSTS.test(u) ? u : '';
 };
 
-// The visitor's own link: Calendly pre-fills their name and email.
+// The owner's Calendly page, when their booking link is one: meetings are then booked through it.
+const calendlyOf = (persona) => {
+  const u = cleanBookingUrl(persona?.bookingUrl);
+  return /^https:\/\/([a-z0-9-]+\.)*calendly\.com\//i.test(u) ? u : '';
+};
+
+// The visitor's own link: Calendly pre-fills their name, email and what it is about, and opens on
+// the day they asked for.
 function bookingLinkFor(bookingUrl, m) {
   if (!bookingUrl) return '';
   if (!/calendly\.com/i.test(bookingUrl)) return bookingUrl;
   const u = new URL(bookingUrl);
   if (m.name) u.searchParams.set('name', m.name);
   if (m.email) u.searchParams.set('email', m.email);
+  if (m.purpose) u.searchParams.set('a1', m.purpose);
+  if (m.startsAt) {
+    const day = m.startsAt.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // 2026-10-12
+    u.searchParams.set('month', day.slice(0, 7));
+    u.searchParams.set('date', day);
+  }
   return u.toString();
 }
 
@@ -106,11 +119,77 @@ function parseMeeting(body) {
 
 // Saves the lead, picks the link and sends the emails (in the background).
 // source: 'voice call' | 'video call' | 'chat'
-async function recordMeeting({ req, card, persona, m, source, cohort }) {
-  const scheduled = !!m.startsAt;
-  // A fixed time gets a meeting room; otherwise the owner's booking page, if any.
-  m.bookingUrl = scheduled ? '' : bookingLinkFor(cleanBookingUrl(persona?.bookingUrl), m);
-  m.meetingUrl = m.bookingUrl || `https://meet.jit.si/Aicardly-${card.username}-${crypto.randomBytes(5).toString('hex')}`;
+// The owner's Calendly the AI books into, else null:
+//  1. connected in AI settings (Connect with Calendly / token): free times + booking by itself;
+//  2. otherwise just their Calendly link (AI settings booking link, or any link on the card): free
+//     times from the public page, and the visitor confirms the chosen time on Calendly.
+// It is always the card owner's own Calendly, never Aicardly's.
+async function calendlyAuto(card, persona) {
+  const AiPersona = require('../models/AiPersona');
+  const full = await AiPersona.findOne({ vcardId: card._id }).select('+calendly.tokenEnc +calendly.refreshEnc').lean();
+  if (full?.calendly?.tokenEnc && full.calendly.eventType) return { ...full.calendly, vcardId: card._id };
+  const cal = require('./calendly');
+  let link = calendlyOf(full || persona);
+  if (!link) {
+    const links = card.dynamicLinks || (await require('../models/vCard').findById(card._id).select('dynamicLinks').lean())?.dynamicLinks || [];
+    link = links.map((l) => String(l?.url || '').trim()).find((u) => cal.parseLink(u)) || '';
+  }
+  return link ? cal.publicConfig(link) : null;
+}
+
+async function recordMeeting(args) {
+  return finishMeeting(args);
+}
+
+async function finishMeeting({ req, card, persona, m, source, cohort, slotUrl }) {
+  if (slotUrl) {
+    // The confirmation page of the chosen time (free Calendly plan): shown like a booking link.
+    m.meetingUrl = slotUrl;
+    return saveAndEmail({ req, card, persona, m, source, cohort, calendly: slotUrl, scheduled: false });
+  }
+  // Calendly connected: book the agreed time in it first; Calendly emails both sides the invite.
+  const auto = await calendlyAuto(card, persona);
+  if (auto) {
+    if (!m.startsAt) throw Object.assign(new Error('Pick one of the free times from find_meeting_times first, then call save_meeting_request with that start_time.'), { status: 400 });
+    if (!m.email) throw Object.assign(new Error("Calendly needs the visitor's email for the invite. Ask for it, then try again."), { status: 400 });
+    let booked;
+    const cal = require('./calendly');
+    try {
+      // Free Calendly plan: no booking API. Open the confirmation page of the chosen time instead.
+      if (auto.canBook === false) throw Object.assign(new Error('free plan'), { freePlan: true });
+      booked = await cal.book(auto, { ...m, whatsappE164: waDigits(m.whatsapp) ? `+${waDigits(m.whatsapp)}` : '' });
+    } catch (err) {
+      if (err.freePlan || err.status === 403 || /upgrade|plan|permission|forbidden/i.test(err.message)) {
+        m.calendlySlot = true;
+        m.bookingUrl = cal.slotLink(auto, m);
+        m.preferredTime = cal.label(m.startsAt);
+        m.startsAt = null; // not booked yet: the visitor confirms on Calendly
+        return finishMeeting({ req, card, persona: { ...persona, bookingUrl: '' }, m, source, cohort, slotUrl: m.bookingUrl });
+      }
+      logEvent(req, 'ai.meeting.calendly_failed', `Calendly booking failed on /${card.username}: ${err.message}`, { level: 'warn', userId: card.userId });
+      const taken = /no longer available|not available|unavailable|taken|conflict|invalid.*start/i.test(err.message);
+      throw Object.assign(new Error(taken ? 'That time was just taken. Call find_meeting_times again and offer other times.' : `Calendly could not book it (${err.message.slice(0, 160)}). Tell the visitor and offer to share the details with the owner instead.`), { status: 400 });
+    }
+    m.calendlyBooked = true;
+    m.preferredTime = booked.when;
+    m.bookingUrl = '';
+    m.meetingUrl = booked.joinUrl || booked.rescheduleUrl || auto.schedulingUrl;
+    m.calendly = booked;
+  }
+  // The owner uses Calendly: the visitor books the slot there (the calendar opens on their screen
+  // with their details filled in) and Calendly sends the invite to both. Otherwise a fixed time
+  // gets a meeting room, and no time the owner's booking page, if any.
+  const calendly = m.calendlyBooked ? '' : calendlyOf(persona);
+  const scheduled = m.calendlyBooked || (!!m.startsAt && !calendly);
+  if (!m.calendlyBooked) {
+    m.bookingUrl = calendly ? bookingLinkFor(calendly, m) : scheduled ? '' : bookingLinkFor(cleanBookingUrl(persona?.bookingUrl), m);
+    m.meetingUrl = m.bookingUrl || `https://meet.jit.si/Aicardly-${card.username}-${crypto.randomBytes(5).toString('hex')}`;
+  }
+  return saveAndEmail({ req, card, persona, m, source, cohort, calendly, scheduled });
+}
+
+// Saves the lead and sends the emails (in the background). Returns what the chat / call shows.
+async function saveAndEmail({ req, card, persona, m, source, cohort, calendly, scheduled }) {
   const linkWord = m.bookingUrl ? 'Booking link (pick a time)' : 'Meeting link';
 
   const ownerName = card.personalInfo?.name || card.title || 'the card owner';
@@ -152,7 +231,7 @@ async function recordMeeting({ req, card, persona, m, source, cohort }) {
     // The calendar invite for a fixed time: sent to everyone, so it lands in their calendars.
     let invite = null;
     let gcal = '';
-    if (scheduled) {
+    if (scheduled && !m.calendlyBooked) {
       const summary = `Meeting: ${m.name} & ${ownerName}`;
       const description = `${m.purpose ? `About: ${m.purpose}\n` : ''}Join the video meeting: ${m.meetingUrl}\n\nWhatsApp: ${m.whatsapp}${m.email ? `\nEmail: ${m.email}` : ''}\nSet up by ${ownerName}'s AI assistant on aicardly.com/${card.username}`;
       const attendees = [...ownerTo.map((e) => ({ name: ownerName, email: e })), ...(m.email ? [{ name: m.name, email: m.email }] : [])];
@@ -185,13 +264,14 @@ async function recordMeeting({ req, card, persona, m, source, cohort }) {
       ...(invite ? { icalEvent: invite } : {}),
     };
     if (ownerTo.length) mails.push({ to: ownerTo.join(', '), ...ownerMail });
-    const copy = String(COPY_TO || '').trim().toLowerCase();
+    const siteCopy = (await require('./siteSettings').getSettings('site')).meetingCopyEmail;
+    const copy = String(siteCopy || COPY_TO || '').trim().toLowerCase();
     if (EMAIL_RE.test(copy) && !ownerTo.includes(copy)) {
       mails.push({ to: copy, ...ownerMail, subject: `[Copy] ${ownerMail.subject} on /${card.username}` });
     }
 
-    // 2. The visitor, when they gave an email.
-    if (m.email) {
+    // 2. The visitor, when they gave an email (Calendly already emailed its own invite).
+    if (m.email && !m.calendlyBooked) {
       mails.push({
         to: m.email,
         replyTo: ownerTo[0],
@@ -213,7 +293,7 @@ async function recordMeeting({ req, card, persona, m, source, cohort }) {
     for (const mail of mails) await sendMail(mail);
   })());
 
-  return { meetingUrl: m.meetingUrl, booking: !!m.bookingUrl, scheduled, startsAt: m.startsAt || null, when: scheduled ? m.preferredTime : '', invited: scheduled && !!m.email, name: m.name, preferredTime: m.preferredTime };
+  return { meetingUrl: m.meetingUrl, booking: !!m.bookingUrl, calendly: !!calendly, calendlyBooked: !!m.calendlyBooked, rescheduleUrl: m.calendly?.rescheduleUrl || '', scheduled, startsAt: m.startsAt || null, when: scheduled ? m.preferredTime : '', invited: scheduled && !!m.email, name: m.name, preferredTime: m.preferredTime };
 }
 
 // The tool the AI calls (OpenAI Realtime format; the chat converts it for Claude).
@@ -237,8 +317,17 @@ const MEETING_TOOL = {
   },
 };
 
-const meetingRules = (ownerName, { booking, spoken }) => {
+const meetingRules = (ownerName, { booking, spoken, calendly, auto }) => {
   const who = spoken ? 'caller' : 'visitor';
+  if (auto) {
+    return `- MEETINGS (you book them straight into ${ownerName}'s Calendly): ${nowContext()} If the ${who} wants a meeting, demo, appointment or a call with ${ownerName} ("meeting arrange kar do", "book a meeting"), book it yourself. Ask one at a time for their name, their email (Calendly sends the invite there; required), their WhatsApp number and what it is about. ${spoken ? 'Read the email and number back once to confirm. ' : ''}Then ask which day suits them, and call find_meeting_times with that day (YYYY-MM-DD, and part_of_day if they said morning / afternoon / evening). Offer 2 or 3 of the returned times in their words (for example "Tuesday 14 October at 4 PM or 5:30 PM"). Never offer a time that find_meeting_times did not return. If none fit, look up another day.
+- When they pick a time, say it back in full and ask "Shall I book it?". Only after a yes, call save_meeting_request with start_time exactly as returned by find_meeting_times (and short notes). When it succeeds the meeting is booked in Calendly: ${spoken ? 'say "Done! Your meeting with ' + ownerName + ' is booked for <day, date and time>. Calendly has emailed you the invite with the meeting link."' : 'confirm the day, date and time, give the link as [Join the meeting](link) if one came back, and say Calendly has emailed them the invite (they can reschedule from that email).'} If it returns an error, follow what it says. Never say a meeting is booked before the tool succeeds.
+- If save_meeting_request answers with calendly_calendar_opened_on_screen instead of booked, the time is held for them on Calendly's confirmation page, now open on their screen with their details filled in: ${spoken ? 'say "I have opened the confirmation for <day and time> on your screen. Just tap Schedule Event, and Calendly will email you the invite."' : 'say the confirmation for that day and time is open on their screen with their details filled in, they only need to tap "Schedule Event", and Calendly then emails the invite; also give the link as [Confirm the meeting](link) in case it did not open.'} Do not say it is booked yet.`;
+  }
+  if (calendly) {
+    return `- MEETINGS (booked on ${ownerName}'s Calendly): ${nowContext()} If the ${who} wants a meeting, demo, appointment or a call with ${ownerName} ("meeting arrange kar do", "book a meeting"), set it up yourself: ask one at a time for their name, their WhatsApp number, their email (Calendly sends the invite there) and what it is about, and ask which day suits them. ${spoken ? 'Read the number and the email back once to confirm. ' : ''}Then ask "Shall I open ${ownerName}'s calendar and share these details with ${ownerName}?" and only after a yes call save_meeting_request (put start_time in ISO 8601 with +05:30 if they named a day and time, so the calendar opens on that day; otherwise preferred_time with what they said).
+- When it succeeds, ${ownerName}'s Calendly calendar opens on their screen with their name and email already filled in: ${spoken ? 'say "I have opened the calendar on your screen. Tap the time that suits you and confirm, and Calendly will send the invite to you both."' : 'say the calendar has opened on their screen with their details filled in, and they just tap a time and confirm; Calendly then emails the invite to both of them. Also give the link as [Pick a time](link) in case it did not open.'} Only say the meeting is booked after they tell you they confirmed it on the calendar (or you are told it was booked). If the tool returns an error, sort it out with the ${who} and try again.`;
+  }
   const done = spoken
     ? `say "Done! Your meeting with ${ownerName} is booked for <day, date and time>. The meeting link is on your screen and the calendar invite is in your email." (mention the email only if they gave one)`
     : 'confirm the day, date and time, give the link as a markdown link [Join the meeting](link) and say the calendar invite is in their email (only if they gave one)';
@@ -249,4 +338,4 @@ const meetingRules = (ownerName, { booking, spoken }) => {
 - When it succeeds the meeting is booked: ${done}.${fallback} Never say a meeting is booked before the tool succeeds.`;
 };
 
-module.exports = { nowContext, buildIcs, parseMeeting, recordMeeting, cleanBookingUrl, bookingLinkFor, waDigits, MEETING_TOOL, meetingRules };
+module.exports = { nowContext, buildIcs, parseMeeting, recordMeeting, calendlyAuto, cleanBookingUrl, calendlyOf, bookingLinkFor, waDigits, MEETING_TOOL, meetingRules };

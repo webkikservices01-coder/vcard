@@ -19,9 +19,10 @@ export const GREETING_SESSION_KEY = 'webcard_platform_chat_greeting_shown';
 export const WELCOME_TEXT = "Hi, I'm Cardy from Aicardly 👋 We help you build a digital business card with AI chat, voice, and WhatsApp features built in. How can I help you today?";
 
 export const WHATSAPP_HREF = `https://wa.me/${COMPANY.whatsapp}?text=${encodeURIComponent("Hi Aicardly team, I'd like to know more about Aicardly.")}`;
-// Booking page for demo calls (an Aicardly-named Calendly / Google Calendar link) via VITE_BOOKING_URL.
-// Without one, "Book a Free Demo" opens the demo request form in the chat (saved as a lead).
-export const BOOKING_HREF = import.meta.env.VITE_BOOKING_URL || '';
+// Booking page for demo calls (Calendly), opened inside the chat. VITE_BOOKING_URL overrides it;
+// set it to "off" to use the demo request form (name + phone, saved as a lead) instead.
+const BOOKING_ENV = import.meta.env.VITE_BOOKING_URL || 'https://calendly.com/webkikservices/30min';
+export const BOOKING_HREF = BOOKING_ENV === 'off' ? '' : BOOKING_ENV;
 export const PRICING_HREF = '/#pricing';
 
 // Hidden from the chat while pricing is switched off.

@@ -1,4 +1,4 @@
-// /api/card-orders — "Get my card": pay with a Razorpay link, receive the card on WhatsApp + email.
+// /api/card-orders — "Get my card": pay with a Cashfree link, receive the card on WhatsApp + email.
 const express = require('express');
 const auth = require('../middleware/auth');
 const { cardOrderLimiter } = require('../middleware/rateLimiter');
@@ -6,7 +6,6 @@ const CardOrder = require('../models/CardOrder');
 const User = require('../models/User');
 const vCard = require('../models/vCard');
 const { toE164 } = require('../utils/phone');
-const { isRazorpayConfigured } = require('../utils/razorpay');
 const { isWhatsAppConfigured } = require('../utils/whatsapp');
 const svc = require('../services/cardOrders');
 const background = require('../utils/background');
@@ -23,7 +22,7 @@ const ownOrder = async (req) => {
 
 // GET /config → price and what is switched on.
 router.get('/config', (req, res) => {
-  res.json({ priceInr: svc.PRICE_INR(), payments: isRazorpayConfigured(), whatsapp: isWhatsAppConfigured(), linkHours: 24 });
+  res.json({ priceInr: svc.PRICE_INR(), payments: svc.isPaymentsConfigured(), whatsapp: isWhatsAppConfigured(), linkHours: 24 });
 });
 
 // GET /me → the latest order for my card (expired ones are marked on the way).
@@ -84,10 +83,10 @@ router.post('/:id/resend-link', auth, cardOrderLimiter, async (req, res) => {
   }
 });
 
-// POST /:id/check → ask Razorpay now (the payment page sends users back here) and deliver if paid.
+// POST /:id/check → ask Cashfree now (the payment page sends users back here) and deliver if paid.
 router.post('/:id/check', auth, async (req, res) => {
   try {
-    const order = await svc.syncWithRazorpay(await ownOrder(req));
+    const order = await svc.syncPayment(await ownOrder(req));
     // Sending takes a few seconds: it runs after this reply; the dashboard polls for the result.
     if (order.status === 'PAID' && order.delivery?.status === 'PENDING') background(svc.deliverCard(order._id));
     res.json({ order: svc.publicOrder(order) });
@@ -106,6 +105,29 @@ router.post('/:id/resend-card', auth, cardOrderLimiter, async (req, res) => {
     res.json({ order: svc.publicOrder(done) });
   } catch (err) {
     fail(res, err, 'Could not resend the card.');
+  }
+});
+
+// ── The pay page (no login: the link is the key) ──────────────────────────────────────────────
+// GET /pay/:token → what to pay; POST /pay/:token/check → after Cashfree sends the buyer back.
+router.get('/pay/:token', async (req, res) => {
+  try {
+    const p = await svc.payInfo(req.params.token);
+    if (!p) return res.status(404).json({ msg: 'This payment link is not valid.' });
+    res.json(p.view);
+  } catch (err) {
+    fail(res, err, 'Could not open the payment.');
+  }
+});
+router.post('/pay/:token/check', cardOrderLimiter, async (req, res) => {
+  try {
+    const p = await svc.payInfo(req.params.token);
+    if (!p) return res.status(404).json({ msg: 'This payment link is not valid.' });
+    const order = await svc.syncPayment(p.order);
+    if (order.status === 'PAID' && order.delivery?.status === 'PENDING') background(svc.deliverCard(order._id));
+    res.json({ status: order.status });
+  } catch (err) {
+    fail(res, err, 'Could not check the payment.');
   }
 });
 

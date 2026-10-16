@@ -38,13 +38,22 @@ async function requireAdmin(req, res, next) {
   if (!admin || !admin.isActive || (admin.tokenVersion || 0) !== (payload.ver || 0)) {
     return res.status(401).json({ msg: 'Please sign in again.', code: 'ADMIN_AUTH_REQUIRED' });
   }
-  req.admin = { id: String(admin._id), name: admin.name, email: admin.email, role: admin.role, totpEnabled: !!admin.totpEnabled };
+  req.admin = { id: String(admin._id), name: admin.name, email: admin.email, role: admin.role, totpEnabled: !!admin.totpEnabled, extraPermissions: admin.extraPermissions || [], removedPermissions: admin.removedPermissions || [] };
   next();
+}
+
+// Settings → "Every admin must use 2FA": until they switch it on, only their account page works.
+async function require2faSetup(req, res, next) {
+  if (req.admin?.totpEnabled) return next();
+  const { getSettings } = require('../../services/siteSettings');
+  const security = await getSettings('security');
+  if (!security.require2fa) return next();
+  return res.status(403).json({ msg: 'Please switch on two-step sign-in (2FA) on your account page first.', code: 'ADMIN_2FA_REQUIRED' });
 }
 
 // Use after requireAdmin.
 const requirePermission = (permission) => (req, res, next) => {
-  if (!req.admin || !can(req.admin.role, permission)) {
+  if (!req.admin || !can(req.admin, permission)) {
     return res.status(403).json({ msg: "Your role can't do this.", code: 'ADMIN_FORBIDDEN' });
   }
   next();
@@ -58,4 +67,4 @@ function exportReason(req, res, next) {
   next();
 }
 
-module.exports = { requireAdmin, requirePermission, signAccessToken, verifyAccessToken, AUDIENCE, ISSUER , exportReason };
+module.exports = { requireAdmin, require2faSetup, requirePermission, signAccessToken, verifyAccessToken, AUDIENCE, ISSUER , exportReason };

@@ -15,6 +15,13 @@ const stats = [
   { value: '2015', label: 'Webkik team building since' },
 ];
 
+// Same people and titles as Cardy's knowledge (BACKEND/constants/chatbotKnowledge.js TEAM).
+const TEAM = [
+  { name: 'Shubham Khurana', role: 'CEO & Founder' },
+  { name: 'Harsh Gupta', role: 'Full Stack Developer' },
+  { name: 'Gulshan Sagar', role: 'SEO Specialist' },
+];
+
 const values = [
   { icon: Sparkles, title: 'Craft over clutter', desc: 'Every theme, animation, and interaction is designed to feel premium — never generic.' },
   { icon: Target, title: 'Built for real use', desc: 'From freelancers to agencies, we design for people who actually hand out their card every day.' },
@@ -88,6 +95,25 @@ const AboutUs = () => (
               </div>
               <h3 className="font-bold mb-1.5" style={{ color: 'var(--surface-text)' }}>{v.title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--surface-text-2)' }}>{v.desc}</p>
+            </GlassCard>
+          </FadeIn>
+        ))}
+      </div>
+    </section>
+
+    <section className="relative z-10 mx-auto max-w-5xl px-6 pb-24" aria-labelledby="team">
+      <SectionHeading eyebrow="The team" title="The people behind Aicardly" subtitle="A small team in Delhi that builds, supports and improves the product." />
+      <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        {TEAM.map((m, i) => (
+          <FadeIn key={m.name} delay={i * 0.08}>
+            <GlassCard hover className="flex h-full items-center gap-4 p-5">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#E70C65] to-[#9F1C44] text-sm font-bold text-white" aria-hidden="true">
+                {m.name.split(' ').map((w) => w[0]).join('')}
+              </span>
+              <span>
+                <span className="block font-bold" style={{ color: 'var(--surface-text)' }}>{m.name}</span>
+                <span className="block text-sm" style={{ color: 'var(--surface-text-2)' }}>{m.role}</span>
+              </span>
             </GlassCard>
           </FadeIn>
         ))}

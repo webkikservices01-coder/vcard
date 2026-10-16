@@ -34,6 +34,7 @@ router.post('/:token/order', async (req, res) => {
       billing: req.body.billing,
       returnPath: `/upgrade/${encodeURIComponent(req.params.token)}`,
       source: 'upgrade-page',
+      coupon: req.body.coupon,
     });
     res.status(out.status).json(out.body);
   } catch (err) {

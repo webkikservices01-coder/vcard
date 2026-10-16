@@ -2005,7 +2005,7 @@ export default [
  },
  {
   "id": "webkik-signature",
-  "name": "Webkik Signature",
+  "name": "Aicardly Signature",
   "native": "light",
   "palettes": [
    {

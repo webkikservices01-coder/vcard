@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, Fill, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -269,25 +269,6 @@ export function WebkikSignature(props) {
             {CARD.fullName}
           </h1>
           <span dangerouslySetInnerHTML={V.ic?.badge} style={{ display: 'flex', color: '#ED2460' }}></span>
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 9px',
-                borderRadius: '999px',
-                fontSize: '11.5px',
-                fontWeight: '700',
-                border: '1px solid transparent',
-                background: `linear-gradient(${f?.t?.bg},${f?.t?.bg}) padding-box, linear-gradient(135deg,#ED2460,#FF8FB1) border-box`,
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {CARD.roleLine ? <p style={{ margin: '0', fontSize: '14.5px', fontWeight: '500', color: f?.t?.muted }}>{CARD.roleLine}</p> : null}
         {V.bio2 ? (
@@ -341,7 +322,7 @@ export function WebkikSignature(props) {
               className="dcp-g1"
             >
               <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -492,7 +473,7 @@ export function WebkikSignature(props) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px', marginTop: '14px' }}>
                     {(V.stats || []).map((st, $index) => (
                       <React.Fragment key={$index}>
-                        <div style={{ padding: '10px 12px', borderRadius: '14px', background: f?.t?.bg }}>
+                        <div {...statLink(st)} style={{ padding: '10px 12px', borderRadius: '14px', background: f?.t?.bg }}>
                           <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: '21px', fontWeight: '700', color: f?.t?.pinkT }}>
                             {st?.v}
                           </div>
@@ -1038,7 +1019,9 @@ export function WebkikSignature(props) {
               </>
             ) : null}
             <div
+              className="wc-orb-pulse"
               style={{
+                '--wc-pulse': '#ED2460',
                 position: 'relative',
                 width: '56px',
                 height: '56px',
@@ -1048,7 +1031,6 @@ export function WebkikSignature(props) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                animation: 'g_orbPulse 2.4s ease-out infinite',
                 boxShadow: '0 10px 24px rgba(237,36,96,.4)',
               }}
             >

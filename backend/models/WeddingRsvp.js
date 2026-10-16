@@ -10,6 +10,9 @@ const weddingRsvpSchema = new mongoose.Schema({
   guests: { type: Number, default: 1, min: 1, max: 20 },
   attending: { type: String, enum: ['yes', 'no', 'maybe'], default: 'yes' },
   message: { type: String, default: '' },
+  meal: { type: String, default: '' }, // meal preference (Invite Studio designs)
+  functions: { type: [String], default: [] }, // which functions they will attend
+  wish: { type: Boolean, default: false }, // a blessing from the wishes wall, not an RSVP
   hidden: { type: Boolean, default: false }, // the couple took the wish off the wall
 }, { timestamps: true });
 

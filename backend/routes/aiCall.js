@@ -20,7 +20,8 @@ const { logEvent } = require('../utils/logger');
 const { buildSystemPrompt, DEFAULT_PERSONA } = require('./ai');
 const { voiceFor } = require('../services/voiceGender');
 const background = require('../utils/background');
-const { parseMeeting, recordMeeting, cleanBookingUrl, MEETING_TOOL, meetingRules } = require('../services/meetings');
+const { parseMeeting, recordMeeting, calendlyAuto, cleanBookingUrl, calendlyOf, MEETING_TOOL, meetingRules } = require('../services/meetings');
+const calendlySvc = require('../services/calendly');
 const { parseRequest, sendInfo, WHATSAPP_TOOL, whatsappRules } = require('../services/whatsappInfo');
 
 // The one tool the call AI has: write down a meeting the caller wants with the card owner. The
@@ -67,7 +68,7 @@ async function usedToday(vcardId) {
   return calls.reduce((s, c) => s + (c.seconds ?? c.maxSeconds), 0);
 }
 
-function callInstructions(base, { mode, ownerName, greeting, aiName, booking, gender }) {
+function callInstructions(base, { mode, ownerName, greeting, aiName, booking, calendly, auto, gender }) {
   return `${base}
 
 === LIVE ${mode === 'video' ? 'VIDEO' : 'VOICE'} CALL — these rules override anything above ===
@@ -77,7 +78,7 @@ function callInstructions(base, { mode, ownerName, greeting, aiName, booking, ge
 - Never read out web links, markers like [[...]] or long numbers digit by digit unless asked. Say "it's on the card" for links, projects, products and photos.
 - Language: speak Hinglish by default, the natural mix of Hindi and English Indians use on calls (for example: "Haan ji, bilkul! Aap kis cheez ke baare mein jaanna chahte hain?"). If the caller speaks only English, reply in simple Indian English; if only Hindi, reply in Hindi. Switch when they switch. Pronounce Hindi words naturally, like a native Indian speaker, and say numbers and prices the Indian way (for example "do hazaar rupaye").
 - Keep each reply short (one or two sentences) so the call feels quick, and stop as soon as the caller starts speaking.
-${meetingRules(ownerName, { booking, spoken: true })}
+${meetingRules(ownerName, { booking, spoken: true, calendly, auto })}
 ${whatsappRules(ownerName, { spoken: true })}
 - If they want to buy or talk to ${ownerName} personally right now, tell them how to reach ${ownerName} (the contact details above) and offer to answer anything else.
 - If the caller is silent or unclear, ask one short question. If they say bye, say a short goodbye.${mode === 'video' ? `
@@ -126,12 +127,16 @@ router.post('/:username/start', aiCallLimiter, async (req, res) => {
     const ownerName = card.personalInfo?.name || owner.name || 'the card owner';
     // The voice matches the owner unless they picked one (male name -> male voice).
     const { voice, gender } = await voiceFor(persona, ownerName);
+    // Calendly connected: the AI looks up free times and books them itself.
+    const auto = !!(await calendlyAuto(card, persona));
     const instructions = callInstructions(buildSystemPrompt(persona, card, products, portfolio, testimonials, gallery, customSections), {
       mode,
       ownerName,
       greeting: persona.greeting,
       aiName: persona.aiName,
       booking: !!cleanBookingUrl(persona.bookingUrl),
+      calendly: !!calendlyOf(persona),
+      auto,
       gender,
     });
     const model = MODELS[mode];
@@ -150,11 +155,13 @@ router.post('/:username/start', aiCallLimiter, async (req, res) => {
               // Phones and laptops on speaker: filter room noise and the AI's own echo, and only
               // treat clear speech as the caller talking (so the AI isn't cut off by noise).
               noise_reduction: { type: 'far_field' },
-              turn_detection: { type: 'server_vad', threshold: 0.7, prefix_padding_ms: 300, silence_duration_ms: 650, create_response: true, interrupt_response: true },
+              // Semantic turn-taking: the AI answers when the caller has finished a thought and isn't
+              // cut off by its own voice echoing from a speaker or by room noise (calls used to stall).
+              turn_detection: { type: 'semantic_vad', eagerness: 'auto', create_response: true, interrupt_response: true },
             },
             output: { voice },
           },
-          tools: [MEETING_TOOL, WHATSAPP_TOOL],
+          tools: [MEETING_TOOL, WHATSAPP_TOOL, ...(auto ? [calendlySvc.SLOTS_TOOL] : [])],
           tool_choice: 'auto',
         },
       }),
@@ -188,14 +195,40 @@ router.post('/:username/meeting', aiCallLimiter, async (req, res) => {
 
     const parsed = parseMeeting(req.body);
     if (parsed.error) return res.status(400).json({ msg: parsed.error });
-    const persona = (await AiPersona.findOne({ vcardId: card._id }).select('bookingUrl').lean()) || {};
-    const out = await recordMeeting({ req, card, persona, m: parsed.m, source: `${call.mode} call`, cohort: call.cohort });
+    const persona = (await AiPersona.findOne({ vcardId: card._id }).select('bookingUrl calendly').lean()) || {};
+    let out;
+    try {
+      out = await recordMeeting({ req, card, persona, m: parsed.m, source: `${call.mode} call`, cohort: call.cohort });
+    } catch (err) {
+      if (err.status === 400) return res.status(400).json({ msg: err.message });
+      throw err;
+    }
     call.meetings.push(parsed.m);
     await call.save();
     res.json({ ok: true, ...out });
   } catch (err) {
     logEvent(req, 'ai.call.meeting.error', err.message, { level: 'error' });
     res.status(500).json({ msg: 'Could not save the meeting.' });
+  }
+});
+
+// POST /api/ai-call/:username/slots  { callId, date, part_of_day } → free Calendly times (the call AI
+// asked with find_meeting_times).
+router.post('/:username/slots', aiCallLimiter, async (req, res) => {
+  try {
+    const id = String(req.body.callId || '');
+    if (!/^[a-f0-9]{24}$/.test(id)) return res.status(400).json({ msg: 'Bad call id' });
+    const card = await vCard.findOne({ username: req.params.username }).select('_id userId username');
+    const call = card && (await AiCall.findOne({ _id: id, vcardId: card._id }).select('createdAt').lean());
+    if (!call || Date.now() - new Date(call.createdAt).getTime() > 2 * 3600 * 1000) return res.status(404).json({ msg: 'Call not found' });
+    const persona = (await AiPersona.findOne({ vcardId: card._id }).select('calendly').lean()) || {};
+    const cfg = await calendlyAuto(card, persona);
+    if (!cfg) return res.status(400).json({ msg: 'Calendly is not connected.' });
+    const times = await calendlySvc.freeSlots(cfg, { date: String(req.body.date || ''), partOfDay: String(req.body.part_of_day || '') });
+    res.json({ times });
+  } catch (err) {
+    logEvent(req, 'ai.call.slots.error', err.message, { level: 'warn' });
+    res.status(502).json({ msg: `Calendly could not be reached (${String(err.message).slice(0, 120)}).` });
   }
 });
 

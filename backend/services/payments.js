@@ -20,6 +20,8 @@ async function markCompleted(txn) {
   );
   if (!claimed) return false;
   txn = claimed;
+  // A coupon used on this payment counts one use.
+  await require('./coupons').countUse(txn).catch(() => {});
 
   // Renewing the same plan early adds to the time left instead of restarting it.
   const user = await User.findById(txn.userId).select('plan planExpiry');

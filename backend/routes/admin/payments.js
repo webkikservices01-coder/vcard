@@ -1,4 +1,4 @@
-// /api/admin/payments: card orders (Razorpay 24h links) and plan purchases (Cashfree), with
+// /api/admin/payments: card orders (Cashfree 24h links) and plan purchases (Cashfree), with
 // resend / regenerate link and resend card.
 const express = require('express');
 const CardOrder = require('../../models/CardOrder');
@@ -37,7 +37,7 @@ async function orderFilter({ q, status, delivery, from, to }) {
   if (q) {
     const re = new RegExp(escapeRegex(q), 'i');
     const users = await User.find({ $or: [{ name: re }, { email: re }, { phone: re }] }).select('_id').limit(500).lean();
-    const or = [{ email: re }, { phone: re }, { razorpayPaymentId: re }, { paymentLinkId: re }, { user: { $in: users.map((u) => u._id) } }];
+    const or = [{ email: re }, { phone: re }, { paymentId: re }, { razorpayPaymentId: re }, { paymentLinkId: re }, { cfOrderId: re }, { user: { $in: users.map((u) => u._id) } }];
     if (f.$or) {
       f.$and = [{ $or: f.$or }, { $or: or }];
       delete f.$or;
@@ -93,7 +93,7 @@ router.get('/card-orders/export', requirePermission('export.csv'), exportReason,
     { header: 'Link sent', value: (o) => fmt(o.linkSentAt) },
     { header: 'Link expires', value: (o) => fmt(o.expiresAt) },
     { header: 'Paid at', value: (o) => fmt(o.paidAt) },
-    { header: 'Razorpay payment ID', value: (o) => o.razorpayPaymentId },
+    { header: 'Payment ID', value: (o) => o.paymentId || o.razorpayPaymentId },
     { header: 'Delivery', value: (o) => o.delivery?.status },
     { header: 'Delivered at', value: (o) => fmt(o.delivery?.deliveredAt) },
   ]);

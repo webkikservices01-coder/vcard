@@ -1,4 +1,3 @@
-import axios from 'axios';
 
 // Template Studio data (card + public payload + AI persona), kept in sessionStorage so the
 // Theme page opens instantly. The dashboard warms it up in the background.
@@ -44,6 +43,8 @@ export const clearThemeCache = () => {
 
 // Loads everything the studio shows. Returns { card, payload, aiPersona } (payload null when no card).
 export async function loadThemeStudio() {
+  // axios loads with the dashboard, not with every page (this file is in the app's main bundle).
+  const { default: axios } = await import('axios');
   const headers = { 'x-auth-token': localStorage.getItem('token') };
   const { data: card } = await axios.get(`${API}/api/vcard/me`, { headers });
   let payload = { card };

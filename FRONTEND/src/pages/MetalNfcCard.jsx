@@ -7,11 +7,13 @@ import PublicFooter, { COMPANY } from '../components/PublicFooter';
 import { MetalCardVisual, METAL_COPY, METAL_POINTS } from '../components/MetalCardSection';
 import HOME_SCHEMA from '../data/homeSchema.json';
 import MetalOrderForm from '../components/MetalOrderForm';
+import { useSiteSettings } from '../utils/siteSettings';
 
 // /metal-nfc-card: product page for the premium metal NFC card. Price is by quote (finish,
 // quantity, engraving); orders come in through the form below, WhatsApp or a call.
-// When a fixed starting price is decided, set METAL_FROM_PRICE (e.g. 1499) to show it.
-const METAL_FROM_PRICE = Number(import.meta.env.VITE_METAL_FROM_PRICE) || 0;
+// The starting price comes from the admin panel (Settings → Website); VITE_METAL_FROM_PRICE is the
+// fallback before it loads. 0 = "Price on quote".
+const ENV_PRICE = Number(import.meta.env.VITE_METAL_FROM_PRICE) || 0;
 const ORDER_TEXT = encodeURIComponent("Hi Aicardly, I'd like to order a premium metal NFC business card.");
 const WHATSAPP_URL = `https://wa.me/${COMPANY.whatsapp}?text=${ORDER_TEXT}`;
 
@@ -31,6 +33,8 @@ const btnSecondary =
   'inline-flex items-center gap-2 rounded-full border px-7 py-3.5 text-sm font-bold transition-all hover:-translate-y-0.5';
 
 export default function MetalNfcCard() {
+  const site = useSiteSettings();
+  const METAL_FROM_PRICE = Number(site?.metalCardPrice) || ENV_PRICE;
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ background: 'var(--surface-bg)' }}>
       <MeshBackground fixed className="opacity-50" />

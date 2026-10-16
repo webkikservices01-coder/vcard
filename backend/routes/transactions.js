@@ -9,6 +9,7 @@ const { priceFor } = require('../constants/plans');
 const { logEvent } = require('../utils/logger');
 const { markCompleted } = require('../services/payments');
 const cashfree = require('../services/cashfree');
+const { applyCoupon } = require('../services/coupons');
 
 // Where Cashfree sends the buyer back: the site they paid from, if it's one of ours.
 const RETURN_ORIGINS = /^https:\/\/(www\.)?aicardly\.com$|^http:\/\/localhost:\d+$/;
@@ -42,13 +43,16 @@ router.get('/:id/invoice', auth, async (req, res) => {
 });
 
 // A checkout order for a plan. Shared by the plans page and the no-login upgrade page.
-async function startOrder(req, user, { planId, billing, returnPath, source }) {
-    // The price comes from the server's catalog, never from the request.
-    const price = priceFor(planId, billing);
-    if (!price) return { status: 400, body: { msg: 'Please choose a valid plan.' } };
+async function startOrder(req, user, { planId, billing, returnPath, source, coupon }) {
+    // The price comes from the server's catalog, never from the request (a coupon is checked here too).
+    const listPrice = priceFor(planId, billing);
+    if (!listPrice) return { status: 400, body: { msg: 'Please choose a valid plan.' } };
+    const c = await applyCoupon(coupon, { planId, billing, price: listPrice, userId: user._id });
+    if (c.error) return { status: 400, body: { msg: c.error, code: 'COUPON' } };
+    const price = c.price;
     const { name: plan, amount, base, gst, days: expireDays, billingType } = price;
 
-    const txn = await Transaction.create({ userId: user._id, plan, amount, base, gst, billingType, expireDays, status: 'pending', source });
+    const txn = await Transaction.create({ userId: user._id, plan, amount, base, gst, billingType, expireDays, status: 'pending', source, couponCode: c.code || '', discount: c.discount || 0 });
     try {
         const data = await cashfree.createOrder({
             orderId: `order_${txn._id}`,
@@ -93,9 +97,25 @@ async function checkOrder(userId, orderId) {
 router.post('/create-order', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
-        const out = await startOrder(req, user, { planId: req.body.planId, billing: req.body.billing, returnPath: '/dashboard/plans', source: 'plans' });
+        const out = await startOrder(req, user, { planId: req.body.planId, billing: req.body.billing, returnPath: '/dashboard/plans', source: 'plans', coupon: req.body.coupon });
         res.status(out.status).json(out.body);
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }
+});
+
+// POST /coupon { code, planId, billing } → the price with the coupon (checked again at checkout).
+async function couponQuote(user, body) {
+    const listPrice = priceFor(body.planId, body.billing);
+    if (!listPrice) return { status: 400, body: { msg: 'Please choose a valid plan.' } };
+    const c = await applyCoupon(String(body.code || '').slice(0, 40), { planId: body.planId, billing: body.billing, price: listPrice, userId: user?._id });
+    if (c.error) return { status: 400, body: { msg: c.error } };
+    if (!c.code) return { status: 400, body: { msg: 'Please type a coupon code.' } };
+    return { status: 200, body: { code: c.code, discount: c.discount, base: c.price.base, gst: c.price.gst, amount: c.price.amount, listAmount: listPrice.amount, msg: `Coupon ${c.code} applied: ₹${c.discount} off.` } };
+}
+router.post('/coupon', auth, async (req, res) => {
+    try {
+        const out = await couponQuote(await User.findById(req.user.userId).select('_id'), req.body || {});
+        res.status(out.status).json(out.body);
+    } catch (err) { console.error(err); res.status(500).json({ msg: 'Could not check the coupon.' }); }
 });
 
 // Cashfree: verify payment (server-to-server order status check)
@@ -136,7 +156,7 @@ router.post('/webhook', async (req, res) => {
         // Payment links report as PAYMENT_LINK_EVENT with data.link_id.
         const linkId = event?.data?.link_id;
         if (linkId) {
-            if (event?.data?.link_status === 'PAID') await settleLink(linkId);
+            if (event?.data?.link_status === 'PAID' && !(await settleLink(linkId))) await require('../services/cardOrders').settleCardLink(linkId);
             return res.status(200).send('ok');
         }
 
@@ -145,8 +165,13 @@ router.post('/webhook', async (req, res) => {
         if (orderId && (orderStatus === 'PAID' || event?.data?.payment?.payment_status === 'SUCCESS')) {
             const txn = await Transaction.findOne({ cfOrderId: orderId });
             if (txn) await markCompleted(txn);
+            // "Get my card" orders are checkout orders named card_<id>.
+            else if (orderId.startsWith('card_')) await require('../services/cardOrders').settleCardOrder(orderId);
             // An order made by a payment link carries the link's id in its tags.
-            else if (event?.data?.order?.order_tags?.link_id) await settleLink(event.data.order.order_tags.link_id);
+            else if (event?.data?.order?.order_tags?.link_id) {
+                const lid = event.data.order.order_tags.link_id;
+                if (!(await settleLink(lid))) await require('../services/cardOrders').settleCardLink(lid);
+            }
         }
         res.status(200).send('ok');
     } catch (err) { console.error(err); res.status(500).send('Server Error'); }

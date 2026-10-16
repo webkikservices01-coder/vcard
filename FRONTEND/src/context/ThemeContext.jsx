@@ -2,27 +2,38 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext();
 
+// The site always opens in the light (white) theme. Only a visitor who taps the theme button
+// gets dark, and only that choice is remembered (THEME_KEY). The old 'app-theme' value was saved
+// automatically for everyone, so it is ignored.
+export const THEME_KEY = 'aicardly-theme-choice';
+const readChoice = () => {
+  try {
+    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+};
+
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    // 'dark' when prerendering the homepage at build time (no browser storage there).
-    if (typeof window === 'undefined') return 'dark';
-    return localStorage.getItem('app-theme') || 'dark';
-  });
+  // 'light' when prerendering the homepage at build time (no browser there).
+  const [theme, setTheme] = useState(() => (typeof window === 'undefined' ? 'light' : readChoice()));
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('app-theme', theme);
+    root.classList.toggle('dark', theme === 'dark');
+    root.classList.toggle('light', theme !== 'dark');
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem(THEME_KEY, next);
+      } catch {
+        /* storage blocked: the choice lasts for this visit */
+      }
+      return next;
+    });
   };
 
   return (

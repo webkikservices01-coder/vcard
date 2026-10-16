@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CoverImage, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -548,7 +548,7 @@ export function DevTerminal(props) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: '8px', marginTop: '14px' }}>
                       {(V.stats || []).map((st, $index) => (
                         <React.Fragment key={$index}>
-                          <div style={{ padding: '10px', borderRadius: '8px', background: '#161B22', border: '1px solid #30363D' }}>
+                          <div {...statLink(st)} style={{ padding: '10px', borderRadius: '8px', background: '#161B22', border: '1px solid #30363D' }}>
                             <div
                               style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '20px', fontWeight: '700', color: '#3FB950' }}
                             >

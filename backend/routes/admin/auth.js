@@ -16,6 +16,11 @@ const { permissionsOf } = require('../../constants/adminPermissions');
 const { startSession, rotateSession, endSession, revokeAllSessions, setCsrfCookie, clearAuthCookies } = require('../../services/admin/session');
 const { audit } = require('../../services/admin/audit');
 const { clientIp } = require('../../utils/logger');
+const AdminAuditLog = require('../../models/AdminAuditLog');
+const AdminSession = require('../../models/AdminSession');
+const { sha256 } = require('../../utils/adminCrypto');
+const { newCaptcha, checkCaptcha } = require('../../utils/adminCaptcha');
+const { getSettings } = require('../../services/siteSettings');
 
 const router = express.Router();
 
@@ -38,7 +43,11 @@ let dummyHash = null;
 const DUMMY_HASH = () => (dummyHash = dummyHash || bcrypt.hashSync(randomToken(), 12));
 const GENERIC = 'Invalid email or password.';
 
-const me = (admin) => ({ admin: toSafeAdmin(admin), permissions: permissionsOf(admin.role) });
+const me = (admin) => ({ admin: toSafeAdmin(admin), permissions: permissionsOf(admin) });
+
+// Failed sign-ins from this IP in the last 15 minutes (from the audit log).
+const recentFailures = (req) =>
+  AdminAuditLog.countDocuments({ action: { $in: ['auth.login.failed', 'auth.2fa.failed'] }, ip: clientIp(req), createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) } });
 
 async function recordFailure(admin) {
   const cfg = adminConfig();
@@ -68,8 +77,15 @@ router.get('/csrf', (req, res) => {
 });
 
 // POST /login { email, password } → signed in, or { twoFactorRequired, challenge }.
-router.post('/login', loginLimiter, validate({ body: z.object({ email, password: z.string().min(1).max(128) }) }), async (req, res) => {
-  const { email: mail, password: pass } = req.v.body;
+router.post('/login', loginLimiter, validate({ body: z.object({ email, password: z.string().min(1).max(128), captchaToken: z.string().max(2000).optional().default(''), captcha: z.string().trim().max(12).optional().default('') }) }), async (req, res) => {
+  const { email: mail, password: pass, captchaToken, captcha } = req.v.body;
+  // After a few failed attempts from this IP, a picture check comes first.
+  const security = await getSettings('security');
+  if (security.captchaAfter > 0 && (await recentFailures(req)) >= security.captchaAfter) {
+    if (!checkCaptcha(captchaToken, captcha)) {
+      return res.status(400).json({ msg: captchaToken ? "The letters didn't match. Please try the new picture." : 'Please type the letters in the picture.', code: 'ADMIN_CAPTCHA', captcha: newCaptcha() });
+    }
+  }
   const admin = await Admin.findOne({ email: mail }).select('+passwordHash');
   if (!admin) {
     await bcrypt.compare(pass, DUMMY_HASH());
@@ -169,8 +185,16 @@ router.post('/logout', async (req, res) => {
 
 router.get('/me', requireAdmin, async (req, res) => {
   const admin = await Admin.findById(req.admin.id);
-  res.json(me(admin));
+  // When this sign-in ends (the refresh session), how long the panel waits on an idle screen,
+  // and whether 2FA is required (the panel then sends them to their account page).
+  const token = req.cookies?.[COOKIES.refresh];
+  const session = token ? await AdminSession.findOne({ tokenHash: sha256(token) }).select('expiresAt').lean() : null;
+  const security = await getSettings('security');
+  res.json({ ...me(admin), session: { expiresAt: session?.expiresAt || null, idleMinutes: security.idleMinutes, require2fa: !!security.require2fa && !admin.totpEnabled } });
 });
+
+// GET /captcha → a new picture (the "new picture" link on the sign-in page).
+router.get('/captcha', (req, res) => res.json({ captcha: newCaptcha() }));
 
 // POST /password { currentPassword, newPassword } → signs out every other session.
 router.post('/password', requireAdmin, validate({ body: z.object({ currentPassword: z.string().min(1).max(128), newPassword: password }) }), async (req, res) => {

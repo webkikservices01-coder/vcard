@@ -9,13 +9,32 @@ const { validate, z, idParams } = require('../../middleware/admin/validate');
 const { revokeAllSessions } = require('../../services/admin/session');
 const { audit } = require('../../services/admin/audit');
 const { passwordSchema } = require('./auth');
+const { CATALOG, ALL_PERMISSIONS, permissionsOf } = require('../../constants/adminPermissions');
 
 const router = express.Router();
 router.use(requirePermission('admins.manage'));
 
 router.get('/', async (req, res) => {
   const admins = await Admin.find().sort({ createdAt: 1 }).lean();
-  res.json({ admins: admins.map(toSafeAdmin), roles: ROLES });
+  // The permission list (grouped, with labels) and what each role has, for the Permissions editor.
+  const roleDefaults = Object.fromEntries(ROLES.map((r) => [r, permissionsOf(r)]));
+  res.json({ admins: admins.map(toSafeAdmin), roles: ROLES, catalog: CATALOG, roleDefaults });
+});
+
+// PUT /:id/permissions { extra: [...], removed: [...] } → custom permissions on top of the role.
+router.put('/:id/permissions', validate({ params: idParams, body: z.object({ extra: z.array(z.string().max(60)).max(80), removed: z.array(z.string().max(60)).max(80) }) }), async (req, res) => {
+  const admin = await Admin.findById(req.v.params.id);
+  if (!admin) return res.status(404).json({ msg: 'Admin not found.' });
+  const base = new Set(permissionsOf(admin.role));
+  const extra = [...new Set(req.v.body.extra)].filter((p) => ALL_PERMISSIONS.has(p) && !base.has(p));
+  const removed = [...new Set(req.v.body.removed)].filter((p) => ALL_PERMISSIONS.has(p) && base.has(p));
+  if (String(admin._id) === req.admin.id && removed.includes('admins.manage')) return res.status(400).json({ msg: "You can't take admin management away from yourself." });
+  const before = { extra: admin.extraPermissions || [], removed: admin.removedPermissions || [] };
+  admin.extraPermissions = extra;
+  admin.removedPermissions = removed;
+  await admin.save();
+  await audit(req, 'admin.permissions', { targetType: 'admin', targetId: admin._id, summary: `Permissions of ${admin.email}: ${extra.length} added, ${removed.length} taken away`, meta: { before, after: { extra, removed } } });
+  res.json({ admin: toSafeAdmin(admin) });
 });
 
 router.post('/', validate({ body: z.object({ name: z.string().trim().min(2).max(80), email: z.string().trim().toLowerCase().email().max(200), role: z.enum(ROLES), password: passwordSchema }) }), async (req, res) => {

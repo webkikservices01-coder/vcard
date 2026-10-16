@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, CreditCard, IdCard, Layers, ShieldCheck, ScrollText, LifeBuoy, Activity, UserCog, LogOut, Menu, X, Inbox, Search, Sun, Moon, ExternalLink, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, IdCard, Layers, ShieldCheck, ScrollText, LifeBuoy, Activity, UserCog, LogOut, Menu, X, Inbox, Search, Sun, Moon, ExternalLink, ShieldAlert, Truck, TicketPercent, MessageSquareQuote, PartyPopper, Settings as SettingsIcon, Clock } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useDebounced } from '../lib/hooks';
 import { useAuth } from '../lib/auth';
@@ -16,14 +17,21 @@ const NAV = [
       { to: '/cards', label: 'Cards', icon: IdCard, perm: 'cards.view' },
       { to: '/leads', label: 'Leads & enquiries', icon: Inbox, perm: 'leads.view' },
       { to: '/support', label: 'Support', icon: LifeBuoy, perm: 'support.view' },
+      { to: '/invites', label: 'Digital invites', icon: PartyPopper, perm: 'invites.view' },
     ],
   },
   {
     title: 'Money',
     items: [
       { to: '/payments', label: 'Payments', icon: CreditCard, perm: 'payments.view' },
+      { to: '/orders', label: 'NFC card orders', icon: Truck, perm: 'orders.view' },
       { to: '/plans', label: 'Plans', icon: Layers, perm: 'plans.view' },
+      { to: '/coupons', label: 'Coupons', icon: TicketPercent, perm: 'coupons.view' },
     ],
+  },
+  {
+    title: 'Content',
+    items: [{ to: '/content', label: 'Testimonials', icon: MessageSquareQuote, perm: 'content.view' }],
   },
   {
     title: 'System',
@@ -31,6 +39,7 @@ const NAV = [
       { to: '/logs', label: 'App logs & AI', icon: Activity, perm: 'logs.view' },
       { to: '/audit', label: 'Audit log', icon: ScrollText, perm: 'audit.view' },
       { to: '/admins', label: 'Admins', icon: ShieldCheck, perm: 'admins.manage' },
+      { to: '/settings', label: 'Settings', icon: SettingsIcon, perm: ['settings.manage', 'ai.settings', 'emails.manage'] },
     ],
   },
 ];
@@ -56,7 +65,7 @@ function Nav({ onNavigate }) {
   return (
     <nav className="scroll-thin flex-1 space-y-5 overflow-y-auto px-3 py-5" aria-label="Admin">
       {NAV.map((group) => {
-        const items = group.items.filter((n) => can(n.perm));
+        const items = group.items.filter((n) => (Array.isArray(n.perm) ? n.perm.some(can) : can(n.perm)));
         if (!items.length) return null;
         return (
           <div key={group.title}>
@@ -201,10 +210,43 @@ function QuickSearch() {
   );
 }
 
+// Signs the admin out after the idle time set in Settings → Security (a warning shows a minute
+// before), and shows when this sign-in ends.
+function useIdleSignOut(minutes, logout) {
+  const [left, setLeft] = useState(null); // seconds left, while the warning shows
+  const last = useRef(Date.now());
+  useEffect(() => {
+    if (!minutes) return undefined;
+    const touch = () => {
+      last.current = Date.now();
+    };
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
+    events.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    const id = setInterval(() => {
+      const idle = (Date.now() - last.current) / 1000;
+      const limit = minutes * 60;
+      if (idle >= limit) {
+        clearInterval(id);
+        logout();
+      } else setLeft(idle >= limit - 60 ? Math.ceil(limit - idle) : null);
+    }, 1000);
+    return () => {
+      clearInterval(id);
+      events.forEach((e) => window.removeEventListener(e, touch));
+    };
+  }, [minutes, logout]);
+  return [left, () => { last.current = Date.now(); setLeft(null); }];
+}
+
+const clockTime = (d) => new Date(d).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' });
+
 export default function Layout() {
-  const { admin, logout } = useAuth();
+  const { admin, logout, session } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const [idleLeft, stillHere] = useIdleSignOut(session?.idleMinutes, logout);
+  // Settings → "Every admin must use 2FA": only the account page until they switch it on.
+  if (session?.require2fa && location.pathname !== '/account') return <Navigate to="/account" replace />;
 
   const sidebar = (
     <div className="flex h-full flex-col">
@@ -224,6 +266,12 @@ export default function Layout() {
           </span>
           <UserCog className="h-4 w-4 text-slate-400" aria-hidden="true" />
         </NavLink>
+        {session?.idleMinutes && (
+          <p className="flex items-start gap-1.5 px-3 pt-1 text-[11px] leading-snug text-slate-500">
+            <Clock className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>Signs out after {session.idleMinutes} min without activity{session.expiresAt ? `; this sign-in lasts until ${clockTime(session.expiresAt)} (renews while you work)` : ''}.</span>
+          </p>
+        )}
         <button type="button" onClick={logout} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700">
           <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
         </button>
@@ -262,7 +310,13 @@ export default function Layout() {
           </div>
         </header>
         <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {admin && !admin.totpEnabled && (
+          {session?.require2fa && (
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span><b>Two-step sign-in (2FA) is required.</b> Switch it on below to use the rest of the panel.</span>
+            </div>
+          )}
+          {admin && !admin.totpEnabled && !session?.require2fa && (
             <NavLink to="/account" className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:brightness-110">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
@@ -272,6 +326,19 @@ export default function Layout() {
           )}
           <Outlet />
         </main>
+        {idleLeft !== null && (
+          <div className="fixed inset-0 z-[60] grid place-items-center bg-black/60 p-4" role="alertdialog" aria-modal="true" aria-label="Still there?">
+            <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-surface p-6 text-center shadow-2xl">
+              <Clock className="mx-auto h-8 w-8 text-brand-500" aria-hidden="true" />
+              <p className="mt-3 text-base font-semibold text-slate-950">Still there?</p>
+              <p className="mt-1 text-sm text-slate-600">You'll be signed out in <b>{idleLeft}</b> seconds because there was no activity.</p>
+              <div className="mt-5 flex justify-center gap-2">
+                <button type="button" onClick={logout} className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700">Sign out</button>
+                <button type="button" onClick={stillHere} className="h-10 rounded-xl bg-brand-gradient px-4 text-sm font-semibold text-white shadow-brand">Keep me signed in</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

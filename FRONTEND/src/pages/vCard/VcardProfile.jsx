@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePlan, hasVoiceFill } from '../../utils/plan';
 import MeshBackground from '../../components/ui/MeshBackground';
 import LiveCardPreview from '../../components/LiveCardPreview';
+import ScanCard from '../../components/ScanCard';
 import { useTheme } from '../../context/ThemeContext';
 import { useUsernameCheck, toUsername } from '../../utils/username';
 
@@ -72,6 +73,10 @@ const VcardProfile = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showVoiceFill, setShowVoiceFill] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Autosave state (see the effect below the data load).
+  const loaded = useRef(false);
+  const lastSaved = useRef('');
+  const [autoState, setAutoState] = useState('idle'); // idle | saving | saved | error
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -101,11 +106,40 @@ const VcardProfile = () => {
         console.error("Error fetching data", error);
       }
     };
-    fetchProfileData();
+    fetchProfileData().then(() => {
+      loaded.current = true;
+    });
 
-    window.addEventListener('vcard:data-changed', fetchProfileData);
-    return () => window.removeEventListener('vcard:data-changed', fetchProfileData);
+    // Our own autosave also announces a change (for the live preview); don't reload over typing.
+    const onChanged = (e) => e?.detail?.from !== 'profile' && fetchProfileData();
+    window.addEventListener('vcard:data-changed', onChanged);
+    return () => window.removeEventListener('vcard:data-changed', onChanged);
   }, []);
+
+  // Autosave: name, designation and bio save by themselves a moment after typing stops.
+  // (Username and pictures still save with "Save & Deploy", since they need a check / upload.)
+  useEffect(() => {
+    if (!loaded.current) return undefined;
+    const body = { title: formData.title, designation: formData.subTitle, bio: formData.description };
+    const sig = JSON.stringify(body);
+    if (!lastSaved.current) {
+      lastSaved.current = sig; // first values from the server: nothing to save
+      return undefined;
+    }
+    if (sig === lastSaved.current) return undefined;
+    const t = setTimeout(async () => {
+      setAutoState('saving');
+      try {
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/vcard`, body, { headers: { 'x-auth-token': localStorage.getItem('token') } });
+        lastSaved.current = sig;
+        setAutoState('saved');
+        window.dispatchEvent(new CustomEvent('vcard:data-changed', { detail: { from: 'profile' } }));
+      } catch {
+        setAutoState('error');
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [formData.title, formData.subTitle, formData.description]);
 
   const getImageUrl = (url) => {
     if (!url || url.trim() === '') return null;
@@ -336,6 +370,10 @@ const VcardProfile = () => {
           <div className="lg:col-span-7">
             <div className="clean-glass rounded-3xl p-6 sm:p-8 shadow-xl">
               <form onSubmit={handleSubmit} className="space-y-6">
+                <ScanCard compact />
+                <p className="-mt-3 text-[11px]" style={{ color: 'var(--surface-text-2)' }} aria-live="polite">
+                  {autoState === 'saving' ? 'Saving…' : autoState === 'saved' ? '✓ Name, designation and bio saved automatically' : autoState === 'error' ? 'Could not save automatically. Use Save & Deploy.' : 'Name, designation and bio save automatically as you type.'}
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className={`p-4 rounded-2xl border ${isDark ? 'bg-white/[0.02] border-white/10' : 'bg-pink-50/40 border-pink-100'}`}>
                     <label className={`block text-xs font-bold uppercase tracking-wider mb-3 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>

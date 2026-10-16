@@ -6,7 +6,7 @@ const fs = require('fs');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { adminEnabled, ipAllowlist, adminHelmet, adminCors, noStore, csrfProtect } = require('../../middleware/admin/security');
-const { requireAdmin } = require('../../middleware/admin/auth');
+const { requireAdmin, require2faSetup } = require('../../middleware/admin/auth');
 const { logEvent } = require('../../utils/logger');
 
 function createAdminApi() {
@@ -17,6 +17,7 @@ function createAdminApi() {
 
   // Everything below needs a signed-in admin; each route also checks its permission.
   router.use(requireAdmin);
+  router.use(require2faSetup);
   router.use(require('../../middleware/admin/mask').maskForSupport);
   router.use('/dashboard', require('./dashboard'));
   router.use('/users', require('./users'));
@@ -26,6 +27,11 @@ function createAdminApi() {
   router.use('/admins', require('./admins'));
   router.use('/leads', require('./leads'));
   router.use('/search', require('./search'));
+  router.use('/orders', require('./orders'));
+  router.use('/coupons', require('./coupons'));
+  router.use('/content', require('./content'));
+  router.use('/invites', require('./invites'));
+  router.use('/settings', require('./settings'));
   router.use('/', require('./activity'));
 
   router.use((req, res) => res.status(404).json({ msg: 'Not found' }));

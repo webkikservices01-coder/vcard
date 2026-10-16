@@ -18,7 +18,7 @@ const { validate, z } = require('../../middleware/admin/validate');
 const { can } = require('../../constants/adminPermissions');
 const { isMailConfigured } = require('../../utils/mailer');
 const { isWhatsAppConfigured } = require('../../utils/whatsapp');
-const { isRazorpayConfigured } = require('../../utils/razorpay');
+const { isCashfreeConfigured } = require('../../services/cashfree');
 const { activeByTier } = require('../../services/admin/planSync');
 const { activePlan } = require('../../constants/plans');
 
@@ -118,7 +118,7 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
     User.find(notRemoved).sort({ createdAt: -1 }).limit(6).select('name email phone plan planExpiry createdAt').lean(),
     CardOrder.find({ status: 'PAID' }).sort({ paidAt: -1 }).limit(6).populate('user', 'name email').lean(),
     Transaction.find({ status: 'completed' }).sort({ updatedAt: -1 }).limit(6).populate('userId', 'name email').lean(),
-    can(req.admin.role, 'audit.view') ? AdminAuditLog.find().sort({ createdAt: -1 }).limit(8).lean() : [],
+    can(req.admin, 'audit.view') ? AdminAuditLog.find().sort({ createdAt: -1 }).limit(8).lean() : [],
     // Funnel, all time: each step counts people (not orders).
     // Only accounts that still exist (not removed): a card of a deleted account isn't a signup.
     vCard.distinct('userId').then((ids) => User.countDocuments({ _id: { $in: ids }, deletedAt: null })),
@@ -211,7 +211,7 @@ router.get('/', requirePermission('dashboard.view'), validate({ query: z.object(
     health: {
       email: isMailConfigured(),
       whatsapp: isWhatsAppConfigured(),
-      payments: isRazorpayConfigured(),
+      payments: isCashfreeConfigured(),
       cashfree: require('../../services/cashfree').isCashfreeConfigured(),
       // Cashfree refused to create payment links in the last 7 days (product not enabled).
       paymentLinksIssue: (await AppLog.findOne({ type: 'cashfree.links.disabled', createdAt: { $gte: new Date(Date.now() - 7 * DAY) } }).sort({ createdAt: -1 }).select('message createdAt').lean()) || null,

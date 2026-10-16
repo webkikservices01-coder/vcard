@@ -13,7 +13,7 @@ const DEFAULTS = { q: '', payment: '', delivered: '', owner: '', visibility: '',
 
 // Template ids as names.
 const TEMPLATE = {
-  'webkik-signature': 'Webkik Signature', 'aurora-ai': 'Aurora AI', 'minimal-pro': 'Minimal Pro', 'luxe-noir': 'Luxe Noir', 'split-hero-corporate': 'Split Hero',
+  'webkik-signature': 'Aicardly Signature', 'aurora-ai': 'Aurora AI', 'minimal-pro': 'Minimal Pro', 'luxe-noir': 'Luxe Noir', 'split-hero-corporate': 'Split Hero',
   'neo-brutal': 'Neo Brutal', 'soft-bento-wellness': 'Soft Bento', 'creator-reel': 'Creator Reel', 'dev-terminal': 'Dev Terminal', 'editorial-architect': 'Editorial',
 };
 const templateName = (id) => TEMPLATE[id] || id || '—';

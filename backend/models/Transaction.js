@@ -12,6 +12,8 @@ const transactionSchema = new mongoose.Schema({
     paymentSessionId: { type: String, default: '' },
     cfLinkId:    { type: String, default: '', index: true }, // Cashfree payment link
     source:      { type: String, default: '' },              // plans | upgrade-page | sms-link
+    couponCode:  { type: String, default: '' },              // coupon used at checkout (admin → Coupons)
+    discount:    { type: Number, default: 0 },               // ₹ off the plan price, before GST
     status:      { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
     invoiceNumber: { type: String, default: '' },
     refrensInvoiceId: { type: String, default: '' },

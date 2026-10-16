@@ -67,6 +67,7 @@ export default function PricingPage() {
                 )}
                 <h2 className="text-lg font-black tracking-wide" style={{ color: 'var(--surface-text)' }}>{p.name}</h2>
                 <p className="text-sm" style={{ color: 'var(--surface-text-2)' }}>{p.tagline}</p>
+                {p.bestFor && <p className="mt-1 text-xs font-semibold text-[#E70C65]">{p.bestFor}</p>}
                 <p className="mt-5 text-4xl font-black" style={{ color: 'var(--surface-text)' }}>
                   ₹{price.toLocaleString('en-IN')}
                   <span className="text-sm font-medium" style={{ color: 'var(--surface-text-2)' }}> / {billing === 'yearly' ? 'year' : 'month'} + GST</span>
@@ -94,6 +95,10 @@ export default function PricingPage() {
                 >
                   Get started <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
+                <p className="mt-3 text-center text-[11px]" style={{ color: 'var(--surface-text-2)' }}>
+                  24-hour free trial first. Pay by UPI, card or net banking (Cashfree) · GST invoice ·{' '}
+                  <Link to="/refund-policy" className="underline">refund policy</Link>
+                </p>
               </motion.article>
             );
           })}

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import GoogleSignIn from '../components/GoogleSignIn';
 import { setImpersonating } from '../utils/impersonation';
 import { clearThemeCache } from '../utils/themeStudioCache';
 import AuthBrandPanel from '../components/AuthBrandPanel';
@@ -308,6 +309,7 @@ export const Login = () => {
                 </button>
               </motion.div>
             </form>
+            <GoogleSignIn isDark={isDark} mode="signin" onError={setError} onSignedIn={() => { setImpersonating(null); clearThemeCache(); }} />
 
             {/* 6. Sign Up Redirect Link */}
             <motion.div variants={slideFromBottom} className="mt-6 text-center text-xs">

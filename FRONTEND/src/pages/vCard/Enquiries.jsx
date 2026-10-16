@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Inbox, Search, Trash2, Phone, Mail, MessageCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { Inbox, Search, Trash2, Phone, Mail, MessageCircle, ExternalLink, RefreshCw, Download } from 'lucide-react';
 import GlassCard from '../../components/ui/GlassCard';
 import MeshBackground from '../../components/ui/MeshBackground';
 import IconButton from '../../components/ui/IconButton';
@@ -88,6 +88,20 @@ const Enquiries = () => {
     );
   }, [items, search, filter]);
 
+  // Leads as a CSV file: opens in Excel / Google Sheets and imports into any CRM (Zoho, HubSpot…).
+  const exportCsv = () => {
+    const cell = (v) => {
+      const t = String(v ?? '');
+      return `"${(/^[=+\-@]/.test(t) ? `'${t}` : t).replace(/"/g, '""')}"`;
+    };
+    const rows = [['Date', 'Name', 'Phone', 'Email', 'Message', 'Read'], ...items.map((e) => [new Date(e.createdAt).toLocaleString('en-IN'), e.name, e.mobile, e.email, e.message, e.read ? 'Yes' : 'No'])];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = `aicardly-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    toast.success(`${items.length} leads downloaded`);
+  };
+
   return (
     <div className="space-y-5 relative">
       <motion.div {...fadeUp(0)} className="relative bg-gradient-to-br from-brand-600 to-rose-600 rounded-2xl px-6 py-5 overflow-hidden">
@@ -133,6 +147,9 @@ const Enquiries = () => {
             </button>
           ))}
         </div>
+        <IconButton variant="ghost" title="Download all as a spreadsheet (CSV) for Excel, Google Sheets or your CRM" onClick={exportCsv} disabled={!items.length}>
+          <Download className="w-4 h-4" />
+        </IconButton>
         <IconButton variant="ghost" title="Refresh" onClick={() => load()}>
           <RefreshCw className="w-4 h-4" />
         </IconButton>

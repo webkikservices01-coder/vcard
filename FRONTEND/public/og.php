@@ -23,8 +23,13 @@ if ($index === false) {
   exit;
 }
 header('Content-Type: text/html; charset=utf-8');
-// Same as index.html: always fresh, so a new upload is picked up at once.
-header('Cache-Control: no-cache, must-revalidate');
+// Same as index.html: always fresh, so a new upload is picked up at once. The homepage is the same
+// for everyone, so a CDN may keep it for 10 minutes (faster for visitors far from the server);
+// browsers still check it every time.
+$reqPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
+header(($reqPath === '' || $reqPath === '/index.html')
+  ? 'Cache-Control: public, max-age=0, s-maxage=600, must-revalidate'
+  : 'Cache-Control: no-cache, must-revalidate');
 
 $isBot = (bool) preg_match('/bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|meta-externalagent|whatsapp|linkedin|telegram|discord|pinterest|skypeuripreview|embedly|iframely|vkshare|snapchat|lighthouse|screaming frog|ahrefs|semrush|inspectiontool/i', $_SERVER['HTTP_USER_AGENT'] ?? '');
 
@@ -72,24 +77,30 @@ function noindex($title) {
 
 // Card tags from the backend, cached on disk for 10 minutes. Without $wait, only the cache is
 // used (null on a miss), so people opening a card never wait for the backend.
-function fetch_card($username, $wait, $kind = '') {
+// For a card ($kind ''), $body gets the card drawn on the server (HTML, '' if none), so it shows
+// before the app's JavaScript has loaded.
+function fetch_card($username, $wait, $kind = '', &$body = null) {
+  $body = '';
   $cacheFile = sys_get_temp_dir() . '/aicardly-og-' . ($kind ? $kind . '-' : '') . $username . '.json';
   if (is_file($cacheFile) && time() - filemtime($cacheFile) < 600) {
     $cached = json_decode(@file_get_contents($cacheFile), true);
-    if (is_array($cached) && isset($cached['status'])) return $cached['status'] === 404 ? 404 : $cached['head'];
+    if (is_array($cached) && isset($cached['status'])) {
+      $body = (string) ($cached['body'] ?? '');
+      return $cached['status'] === 404 ? 404 : $cached['head'];
+    }
   }
   if (!$wait) return null;
-  $url = BACKEND . '/api/og/' . ($kind ? $kind . '/' : '') . rawurlencode($username);
+  $url = BACKEND . '/api/og/' . ($kind ? $kind . '/' : '') . rawurlencode($username) . ($kind ? '' : '?body=1');
   $body = false;
   $status = 0;
   if (function_exists('curl_init')) {
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_FOLLOWLOCATION => true]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_FOLLOWLOCATION => true]);
     $body = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
   } elseif (ini_get('allow_url_fopen')) {
-    $ctx = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => true]]);
+    $ctx = stream_context_create(['http' => ['timeout' => 10, 'ignore_errors' => true]]);
     $body = @file_get_contents($url, false, $ctx);
     if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) $status = (int) $m[1];
   }
@@ -100,12 +111,14 @@ function fetch_card($username, $wait, $kind = '') {
   if ($status !== 200 || !$body) return null;
   $data = json_decode($body, true);
   if (!is_array($data) || empty($data['head'])) return null;
-  @file_put_contents($cacheFile, json_encode(['status' => 200, 'head' => $data['head']]));
+  $body = is_string($data['body'] ?? null) ? $data['body'] : '';
+  @file_put_contents($cacheFile, json_encode(['status' => 200, 'head' => $data['head'], 'body' => $body]));
   return $data['head'];
 }
 
 $head = null;
 $warmCard = null;
+$cardBody = '';
 $isPrivate = false;
 foreach (($seo['privatePrefixes'] ?? []) as $p) {
   if ($path === $p || strpos($path, $p . '/') === 0) $isPrivate = true;
@@ -140,7 +153,7 @@ if ($isPrivate) {
 } elseif ($path === '/wedding-preview') {
   $head = noindex('Invitation preview | Aicardly');
 } elseif (preg_match('#^/(?:c/)?([A-Za-z0-9-]{3,30})$#', $path, $m)) {
-  $card = fetch_card(strtolower($m[1]), $isBot);
+  $card = fetch_card(strtolower($m[1]), $isBot, '', $cardBody);
   if ($card === null && !$isBot) $warmCard = strtolower($m[1]);
   if ($card === 404) {
     http_response_code(404);
@@ -169,6 +182,25 @@ if ($path !== '/') {
   // The prerendered homepage markup (scripts/prerender.mjs) is only for "/"; other pages start
   // from an empty root.
   $index = preg_replace('/<!-- home:start -->.*?<!-- home:end -->/s', '<div id="root"></div>', $index, 1);
+}
+// A card drawn on the server: shown at once over the (still empty) app, which removes it once it has
+// drawn the same card itself (src/pages/PublicVcard.jsx). Plus the card stylesheet it needs.
+if ($cardBody !== '' && http_response_code() === 200 && preg_match('/<!-- card-css:(\/assets\/[A-Za-z0-9_.-]+\.css) -->/', $index, $cssm)) {
+  // Inline (no extra request before the card can show); a link if the file can't be read.
+  $cardCss = @file_get_contents(__DIR__ . $cssm[1]);
+  $cssTag = ($cardCss !== false && strlen($cardCss) < 60000 && stripos($cardCss, '</style') === false)
+    ? '<style>' . $cardCss . '</style>'
+    : '<link rel="stylesheet" href="' . e($cssm[1]) . '" />';
+  $index = str_replace('</head>', $cssTag . "\n  </head>", $index);
+  $pos = strpos($index, '<div id="root"></div>');
+  if ($pos !== false) {
+    // A tap on a button of this copy before the app is ready is remembered (where in the card it
+    // was) and replayed on the app's own copy (PublicVcard.jsx). Plain links work as they are.
+    $tap = '<script>(function(){var s=document.getElementById("ssr-card");if(!s)return;s.addEventListener("click",function(e){'
+      . 'var el=e.target.closest(`button,[role=button],[role=link],a[href^="#"],a:not([href]),input,textarea,select`);var w=s.querySelector(".wc-root");if(!el||!w||!w.contains(el))return;'
+      . 'e.preventDefault();var p=[],n=el;while(n&&n!==w){p.unshift([].indexOf.call(n.parentNode.children,n));n=n.parentNode;}window.__ssrTap=p;},true);})();</script>';
+    $index = substr_replace($index, '<div id="root"></div><div id="ssr-card" style="position:absolute;top:0;left:0;width:100%;z-index:50">' . $cardBody . '</div>' . $tap, $pos, strlen('<div id="root"></div>'));
+  }
 }
 echo $index;
 

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 import {
   Smartphone,
   QrCode,
@@ -45,14 +44,20 @@ import HOME_SCHEMA from "../data/homeSchema.json";
 import MetalCardSection from "../components/MetalCardSection";
 import HomeExplainer from "../components/HomeExplainer";
 import TryYourCard from "../components/TryYourCard";
+import CustomerStories from "../components/CustomerStories";
 import { PRICING_ENABLED } from "../utils/plan";
 import { useTheme } from "../context/ThemeContext";
+import { onFirstInteraction } from "../utils/firstInteraction";
 import blobTopDark from "../assets/blobs/top-dark.webp";
 import blobTopLight from "../assets/blobs/top-light.webp";
 import blobMiddleDark from "../assets/blobs/middle-dark.webp";
 import blobMiddleLight from "../assets/blobs/middle-light.webp";
 import blobBottomDark from "../assets/blobs/bottom-dark.webp";
 import blobBottomLight from "../assets/blobs/bottom-light.webp";
+// Hashed file names, so they can be cached for a year (public/ files can't be).
+import profileImg from "../assets/home/profile.webp";
+import demoPoster from "../assets/home/aicardly-demo-poster.webp";
+import demoVideo from "../assets/home/aicardly-demo.mp4";
 
 /* -------- Premium AI Cyber-Rose Mesh Background -------- */
 // The blobs were radial gradients under filter: blur(120px); moving a blurred layer made phones and
@@ -154,55 +159,30 @@ function Logo() {
   );
 }
 
-function TypewriterText({ text, speed = 45, delay = 700 }) {
+function TypewriterText({ text }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-
-  const [displayedText, setDisplayedText] = useState("");
-  const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
-    let interval;
-    const startTimeout = setTimeout(() => {
-      let index = 0;
-      interval = setInterval(() => {
-        if (index < text.length) {
-          setDisplayedText(text.slice(0, index + 1));
-          index++;
-        } else {
-          setIsTypingComplete(true);
-          clearInterval(interval);
-        }
-      }, speed);
-    }, delay);
-
-    return () => {
-      clearTimeout(startTimeout);
-      clearInterval(interval);
-    };
-  }, [text, speed, delay]);
+    const t = setTimeout(() => setShowCursor(false), 2600);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className={`relative mt-6 max-w-lg overflow-hidden rounded-2xl p-4 shadow-lg backdrop-blur-xl transition-all duration-500 border ${
-      isDark 
-        ? "border-white/[0.08] bg-white/[0.03] hover:border-[#E70C65]/30" 
+      isDark
+        ? "border-white/[0.08] bg-white/[0.03] hover:border-[#E70C65]/30"
         : "border-pink-100 bg-white/90 shadow-pink-100/50 hover:border-[#E70C65]/40"
     }`}>
       <div className="pointer-events-none absolute -left-10 -top-10 h-28 w-28 rounded-full bg-[#E70C65]/20 blur-xl" />
       <p className={`relative z-10 text-base leading-relaxed sm:text-lg ${
         isDark ? "text-slate-200" : "text-slate-700 font-medium"
       }`}>
-        {/* The full text is laid out invisibly so the box has its final height from the first
-            paint; the typed text sits on top. Without this the box grows while typing and pushes
-            the video below it down (layout shift). */}
-        <span className="invisible" aria-hidden="true">{text}</span>
-        <span className="absolute inset-0">
-          <span className="sr-only">{text}</span>
-          <span aria-hidden="true">{displayedText}</span>
-          {!isTypingComplete && (
-            <span aria-hidden="true" className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
-          )}
-        </span>
+        {text}
+        {showCursor && (
+          <span aria-hidden="true" className="inline-block ml-1 h-4 w-[2px] bg-[#E70C65] shadow-[0_0_8px_#E70C65] animate-pulse align-middle" />
+        )}
       </p>
     </div>
   );
@@ -362,7 +342,7 @@ function DesignMock() {
         >
           <div className="flex items-center gap-3">
             <img 
-              src="/profile.png" 
+              src={profileImg}
               alt="Shubham Khurana" 
               className="h-10 w-10 rounded-xl object-cover ring-1 ring-white/40 shadow-inner"
               onError={(e) => { e.target.style.display = 'none'; }}
@@ -718,12 +698,24 @@ export function LandingPage() {
   const [isPricingVisible, setIsPricingVisible] = useState(false);
   const [isHowItWorksVisible, setIsHowItWorksVisible] = useState(false);
 
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 140,
-    damping: 30,
-    restDelta: 0.001
-  });
+  // Scroll progress bar at the top: one transform per frame, no animation library.
+  const progressRef = useRef(null);
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -747,23 +739,40 @@ export function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-  // The poster shows straight away; the video itself is fetched only after the page has loaded,
-  // so it doesn't compete with the page's own code and fonts on a phone connection.
+  // The poster shows straight away. The video (1.8 MB) is fetched only once the page has loaded
+  // and settled (3 s), the visitor is active on the page (first mouse move / scroll / tap) and it
+  // is on screen (on phones it sits below the hero text), so it never competes with the page
+  // itself on a phone connection. Tapping play starts it at once.
   useEffect(() => {
     const video = heroVideoRef.current;
     if (!video) return;
+    let started = false;
+    let visible = false;
+    let settled = false;
     const start = () => {
-      video.src = "/aicardly-demo.mp4";
+      if (started) return;
+      started = true;
+      video.src = demoVideo;
       video.muted = true;
       video.play().catch(() => {});
     };
+    let active = false;
+    const maybeStart = () => { if (visible && settled && active) start(); };
+    const cancelActive = onFirstInteraction(() => { active = true; maybeStart(); });
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; maybeStart(); }, { rootMargin: "100px 0px" });
+    io.observe(video);
     let timer;
-    const onLoad = () => { timer = setTimeout(start, 0); };
+    const onLoad = () => { timer = setTimeout(() => { settled = true; maybeStart(); }, 3000); };
     if (document.readyState === "complete") onLoad();
     else window.addEventListener("load", onLoad, { once: true });
+    const onPlay = () => start();
+    video.addEventListener("play", onPlay);
     return () => {
+      io.disconnect();
+      cancelActive();
       clearTimeout(timer);
       window.removeEventListener("load", onLoad);
+      video.removeEventListener("play", onPlay);
     };
   }, []);
 
@@ -906,6 +915,10 @@ export function LandingPage() {
           animation: borderSpin 5s linear infinite;
         }
 
+        @keyframes siteMenuIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: none; }
+        }
         .marquee-track {
           display: flex;
           width: max-content;
@@ -917,9 +930,10 @@ export function LandingPage() {
       `}</style>
 
       {/* Top Scroll Laser Indicator */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#E70C65] via-[#ff6b9d] to-[#6366f1] origin-left z-[9999] shadow-[0_0_14px_rgba(231,12,101,0.9),0_0_25px_rgba(99,102,241,0.6)]"
-        style={{ scaleX }}
+      <div
+        ref={progressRef}
+        className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#E70C65] via-[#ff6b9d] to-[#6366f1] origin-left z-[9999] shadow-[0_0_14px_rgba(231,12,101,0.9),0_0_25px_rgba(99,102,241,0.6)] transition-transform duration-150 ease-out will-change-transform"
+        style={{ transform: "scaleX(0)" }}
       />
 
       {/* Morphing Navbar in Dual Theme */}
@@ -1044,14 +1058,10 @@ export function LandingPage() {
           </nav>
 
           {/* Menu for phones */}
-          <AnimatePresence>
-            {menuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
+          {menuOpen && (
+              <div
                 data-site-menu
+                style={{ animation: "siteMenuIn 200ms ease-out" }}
                 className={`mt-2 rounded-2xl border p-2 shadow-2xl lg:hidden ${
                   isDark ? "border-white/10 bg-slate-950/95 text-white" : "border-pink-100 bg-white text-slate-900"
                 }`}
@@ -1084,13 +1094,12 @@ export function LandingPage() {
                     Theme <ThemeToggle />
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+          )}
         </div>
       </header>
 
-      <main>
+      <main id="main" tabIndex={-1} className="outline-none">
       {/* ── 1. Hero Section (Dedicated Live Video Demo) ────── */}
       <section 
         ref={heroSectionRef} 
@@ -1124,8 +1133,6 @@ export function LandingPage() {
 
               <TypewriterText 
                 text="Create a stunning AI digital business card and share it instantly with a QR code, an NFC tap, or one custom link. Your AI assistant greets visitors, answers questions, and handles follow-ups 24/7. Built for professionals who care about first impressions." 
-                speed={45}
-                delay={700}
               />
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -1189,7 +1196,7 @@ export function LandingPage() {
 
                   <video
                     ref={heroVideoRef}
-                    poster="/aicardly-demo.webp"
+                    poster={demoPoster}
                     preload="none"
                     loop
                     playsInline
@@ -1205,11 +1212,11 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── 1b. What it is / how it works / where / benefits ── */}
-      <HomeExplainer />
-
-      {/* ── 1c. Try it free: live preview card ── */}
+      {/* ── 1b. Try it free: live preview card (right under the hero: the strongest proof) ── */}
       <TryYourCard />
+
+      {/* ── 1c. What it is / how it works / where / benefits ── */}
+      <HomeExplainer />
 
       {/* ── 2. NEW DEDICATED 3D EXECUTIVE NFC SHOWCASE SECTION ── */}
       <section 
@@ -1250,7 +1257,7 @@ export function LandingPage() {
                     name="SHUBHAM KHURANA"
                     designation="Founder & CEO"
                     slug="shubham"
-                    photoUrl="/profile.png"
+                    photoUrl={profileImg}
                     isDark={isDark} 
                   />
                 </div>
@@ -1571,6 +1578,9 @@ export function LandingPage() {
       )}
 
       {/* ── 7. Use Cases Section ──────────────────────────────── */}
+      {/* ── 7a. Real customers: live cards and stories added in the admin panel ── */}
+      <CustomerStories />
+
       <section id="stories" className="cv-auto scroll-mt-20 relative py-24 overflow-hidden">
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[350px] w-3/4 max-w-4xl rounded-full bg-gradient-to-r from-[#E70C65]/15 via-[#6366f1]/15 to-[#9F1C44]/15 blur-[120px] opacity-75" />
 

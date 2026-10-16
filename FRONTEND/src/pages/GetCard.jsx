@@ -86,7 +86,7 @@ const GetCard = () => {
     load().catch(() => setError('Could not load your order. Please refresh.'));
   }, [load]);
 
-  // Back from the Razorpay page (?order=…): ask Razorpay now, then follow until the card is sent.
+  // Back from the Cashfree payment page (?order=…): ask Cashfree now, then follow until the card is sent.
   const checked = useRef(false);
   useEffect(() => {
     const id = params.get('order');
@@ -101,11 +101,8 @@ const GetCard = () => {
         /* the webhook will still update it */
       }
       params.delete('order');
-      params.delete('razorpay_payment_link_id');
-      params.delete('razorpay_payment_link_reference_id');
-      params.delete('razorpay_payment_link_status');
-      params.delete('razorpay_payment_id');
-      params.delete('razorpay_signature');
+      // Cashfree adds its own details to the return address; keep only ours.
+      ['cf_link_id', 'link_id', 'link_status', 'order_id', 'cf_id'].forEach((k) => params.delete(k));
       setParams(params, { replace: true });
     })();
   }, [params, setParams]);
@@ -306,7 +303,7 @@ const GetCard = () => {
                 {busy !== 'create' && <CreditCard className="h-4 w-4" />} Get my card – Pay {price}
               </Btn>
               <p className="flex items-center gap-1.5 text-xs" style={muted}>
-                <ShieldCheck className="h-3.5 w-3.5" /> Secure payment by Razorpay (UPI, cards, net banking). The link is valid for {cfg.linkHours} hours.
+                <ShieldCheck className="h-3.5 w-3.5" /> Secure payment by Cashfree (UPI, cards, net banking). The link is valid for {cfg.linkHours} hours.
               </p>
             </div>
           )}

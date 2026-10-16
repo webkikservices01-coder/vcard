@@ -6,6 +6,7 @@ import { Bot, Plus, Trash2, Save, Lock, Sparkles, Check, Video, Copy, ExternalLi
 import { Link } from 'react-router-dom';
 import { hasCardAi, PRICING_ENABLED } from '../../utils/plan';
 import FreePlanNotice from '../../components/FreePlanNotice';
+import CalendlyConnect from '../../components/CalendlyConnect';
 import { getVideoRoomUrl } from '../../utils/videoRoom';
 import GlassCard from '../../components/ui/GlassCard';
 import Toggle from '../../components/ui/Toggle';
@@ -586,7 +587,7 @@ const AiPersona = () => {
       <GlassCard {...fadeUp(0.18)} className="p-5">
         <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--surface-text)' }}><Target className="w-4 h-4 text-brand-600" />Meeting booking link</p>
         <p className="text-xs mt-1" style={{ color: 'var(--surface-text-2)' }}>
-          When a visitor asks for a meeting in the chat or on an AI call, the AI takes their name, WhatsApp and email and sends them this link to pick a time. You get an email with their details, and they get the link by email too. Paste your Calendly or Google Calendar booking page.
+          When a visitor asks for a meeting in the chat or on an AI voice or video call, the AI takes their name, WhatsApp, email and the day they want. Paste your Calendly link and that's it: the AI checks your real free times in your Calendly, offers them, and opens the time the visitor picks with their details filled in. They tap “Schedule Event” and Calendly sends the invite to both of you. You also get an email with their details. (A Calendly link anywhere on your card works too. Google Calendar booking pages also work.)
         </p>
         <input
           type="url"
@@ -598,9 +599,12 @@ const AiPersona = () => {
           style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-border)', color: 'var(--surface-text)' }}
         />
         <p className="text-xs mt-1.5" style={{ color: 'var(--surface-text-2)' }}>
-          No link yet? Make a free one at <a href="https://calendly.com/signup" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-brand-600">calendly.com</a>. Without a link, the AI shares a free video-meeting room and you confirm the time on WhatsApp.
+          No link yet? Make a free one at <a href="https://calendly.com/signup" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-brand-600">calendly.com</a>. Without a link, the AI still fixes the day and time and emails you both the meeting link with a calendar invite.
         </p>
       </GlassCard>
+
+      {/* Calendly connected: the AI books meetings itself */}
+      <CalendlyConnect />
 
       {/* Live AI calls on the card */}
       <GlassCard {...fadeUp(0.18)} className="p-5">

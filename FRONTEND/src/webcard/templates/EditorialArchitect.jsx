@@ -1,7 +1,7 @@
 import React from 'react';
 import W from '../webcard-shared.js';
 import { CARD } from '../cardData.js';
-import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides } from '../dc-runtime.jsx';
+import { DCLogic, useDC, useLive, liveFrame, ImageSlot, CardQR, EnquiryForm, CustomSections, downloadQR, openLink, saveContact, shareCard, scrollToSection, ReelMedia, useChat, ChatCallButtons, ChatThread, ChatText, SwipeRow, ChatMic, ServiceSlides, ProductCatalog, PhotoSlides, TestimonialSlides , statLink } from '../dc-runtime.jsx';
 import { themeTree } from '../theme/themeTree.js';
 
 class Logic extends DCLogic {
@@ -227,25 +227,6 @@ export function EditorialArchitect(props) {
             <span dangerouslySetInnerHTML={V.icS?.badge} style={{ display: 'flex' }}></span>
             {'Verified'}
           </span>
-          {CARD.ai.enabled ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                height: '24px',
-                padding: '0 8px',
-                borderRadius: '2px',
-                fontSize: '11.5px',
-                fontWeight: '600',
-                border: '1px solid transparent',
-                background: 'linear-gradient(#F4F1EC,#F4F1EC) padding-box, linear-gradient(90deg,#B5573B,#D9A35E) border-box',
-              }}
-            >
-              <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI-enabled'}
-            </span>
-          ) : null}
         </div>
         {V.bio2 ? (
           <p
@@ -308,7 +289,7 @@ export function EditorialArchitect(props) {
               className="dcp-e1"
             >
               <span dangerouslySetInnerHTML={V.spark} style={{ display: 'flex' }}></span>
-              {'AI Summary'}
+              {'AI Powered'}
             </span>
           ) : null}
         </div>
@@ -482,7 +463,7 @@ export function EditorialArchitect(props) {
                 >
                   {(V.stats || []).map((st, $index) => (
                     <React.Fragment key={$index}>
-                      <div style={{ padding: '12px 0 0' }}>
+                      <div {...statLink(st)} style={{ padding: '12px 0 0' }}>
                         <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: '34px', lineHeight: '1' }}>{st?.v}</div>
                         <div
                           style={{

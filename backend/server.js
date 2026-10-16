@@ -29,6 +29,8 @@ app.use((req, res, next) => {
         return next();
     }
     express.json({
+        // A scanned visiting card arrives as a photo (data URL); everything else stays small.
+        limit: req.path.startsWith('/api/ai/scan-card') ? '6mb' : '100kb',
         verify: (req, res, buf) => { req.rawBody = buf.toString('utf8'); },
     })(req, res, next);
 });
@@ -104,6 +106,7 @@ app.use('/api/upgrade',         require('./routes/upgrade'));
 app.use('/api/ai',              require('./routes/ai'));
 app.use('/api/ai-call',         require('./routes/aiCall'));
 app.use('/api/geo',             require('./routes/geo'));
+app.use('/api/site',            require('./routes/site'));
 // Only while moving secrets to AWS (deploy/aws/push-secrets.mjs creates and deletes this file).
 if (fs.existsSync(path.join(__dirname, 'routes', '_migrateEnv.js'))) app.use('/api/_migrate', require('./routes/_migrateEnv'));
 app.use('/api/admin',           createAdminApi());

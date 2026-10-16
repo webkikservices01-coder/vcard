@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 
 function getInitials(fullName) {
   if (!fullName || typeof fullName !== 'string') return 'AI';

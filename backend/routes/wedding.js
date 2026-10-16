@@ -46,7 +46,7 @@ const inviteBody = z.object({
   mapUrl: httpUrl.optional().default(''),
   story: text(2000).optional().default(''),
   hashtag: text(60).optional().default(''),
-  ceremonies: z.array(z.object({ icon: text(8).optional().default(''), hi: text(40).optional().default(''), name: text(60), date: text(60).optional().default(''), time: text(40).optional().default(''), venue: text(160).optional().default('') })).max(12).optional(),
+  ceremonies: z.array(z.object({ icon: text(8).optional().default(''), hi: text(40).optional().default(''), name: text(60), date: text(60).optional().default(''), time: text(40).optional().default(''), venue: text(160).optional().default(''), dress: text(80).optional().default('') })).max(12).optional(),
   timeline: z.array(z.object({ y: text(20).optional().default(''), h: text(60), t: text(200).optional().default('') })).max(6).optional(),
   image: httpUrl.optional().default(''),
   photos: z.array(httpUrl).max(12).optional().default([]),
@@ -59,6 +59,8 @@ const inviteBody = z.object({
   aiChat: z.boolean().optional().default(true),
   opening: z.enum(WEDDING_OPENINGS).optional().default(''),
   coupleArt: z.enum(WEDDING_COUPLE_ART).optional().default(''),
+  palette: z.coerce.number().int().min(0).max(2).optional().default(0),
+  venueNote: text(200).optional().default(''),
 });
 
 const parse = (schema, body) => {
@@ -79,7 +81,7 @@ const validId = (id) => /^[a-f0-9]{24}$/i.test(String(id || ''));
 router.get('/mine', auth, async (req, res) => {
   const invites = await WeddingInvite.find({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
   const counts = await WeddingRsvp.aggregate([
-    { $match: { inviteId: { $in: invites.map((i) => i._id) } } },
+    { $match: { inviteId: { $in: invites.map((i) => i._id) }, wish: { $ne: true } } }, // wishes-wall posts are not replies
     { $group: { _id: '$inviteId', replies: { $sum: 1 }, yes: { $sum: { $cond: [{ $eq: ['$attending', 'yes'] }, 1, 0] } }, guests: { $sum: { $cond: [{ $eq: ['$attending', 'yes'] }, '$guests', 0] } } } },
   ]);
   const by = Object.fromEntries(counts.map((c) => [String(c._id), c]));
@@ -187,11 +189,12 @@ router.delete('/:id/rsvps/:rid', auth, async (req, res) => {
 });
 
 // ── Public (/invite/<link>) ─────────────────────────────────────────────────
-const PUBLIC_FIELDS = 'link template coupleOne coupleTwo amp script tagline date eventDate venueName venueAddress mapUrl story hashtag ceremonies timeline image photos music video hostPhone rsvpOpen showWishes aiChat opening coupleArt userId published updatedAt';
+const PUBLIC_FIELDS = 'link template coupleOne coupleTwo amp script tagline date eventDate venueName venueAddress mapUrl story hashtag ceremonies timeline image photos music video hostPhone rsvpOpen showWishes aiChat opening coupleArt palette venueNote userId published adminHidden updatedAt';
 
 async function publicInvite(link) {
   const invite = await WeddingInvite.findOne({ link: String(link || '').toLowerCase() }).select(PUBLIC_FIELDS).lean();
-  if (!invite || !invite.published) return null;
+  // adminHidden: taken offline by the team (admin panel → Digital invites).
+  if (!invite || !invite.published || invite.adminHidden) return null;
   const status = await accountStatus(invite.userId);
   if (status === 'removed' || status === 'blocked') return null;
   return invite;
@@ -204,7 +207,7 @@ router.get('/public/:link', async (req, res) => {
     const wishes = invite.showWishes
       ? await WeddingRsvp.find({ inviteId: invite._id, hidden: false, message: { $ne: '' } }).select('name message createdAt').sort({ createdAt: -1 }).limit(12).lean()
       : [];
-    const { userId, published, ...rest } = invite;
+    const { userId, published, adminHidden, ...rest } = invite;
     res.set('Cache-Control', 'no-store');
     res.json({ ...rest, wishes: wishes.map((w) => ({ n: w.name, w: w.message })) });
   } catch (err) {
@@ -226,6 +229,8 @@ const rsvpBody = z.object({
   guests: z.coerce.number().int().min(1).max(20).optional().default(1),
   attending: z.enum(['yes', 'no', 'maybe']).optional().default('yes'),
   message: text(500).optional().default(''),
+  meal: text(30).optional().default(''),
+  functions: z.array(text(60)).max(12).optional().default([]),
 });
 
 router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
@@ -245,16 +250,20 @@ router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
       if (!owner?.email) return;
       const esc = (v) => String(v || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       const label = { yes: 'Will attend', no: "Can't attend", maybe: 'Maybe' }[data.attending];
+      const extra = [data.functions.length ? `Functions: ${data.functions.join(', ')}` : '', data.meal ? `Meal: ${data.meal}` : ''].filter(Boolean);
+      const t = await require('../services/emailTemplates').emailText('rsvp', { guest: data.name, answer: label });
+      if (!t.enabled) return;
       await sendMail({
         to: owner.email,
         replyTo: data.email || undefined,
-        subject: `New RSVP from ${data.name}: ${label}`,
-        text: `${data.name} replied to your ${o.invite} (${SITE}/invite/${invite.link}).\n\n${label} · Guests: ${data.guests}\nPhone: ${data.phone || '—'}\nEmail: ${data.email || '—'}\n${data.message ? `\nMessage: ${data.message}\n` : ''}\nAll replies: ${SITE}/dashboard/invites`,
+        subject: t.subject,
+        text: `${data.name} replied to your ${o.invite} (${SITE}/invite/${invite.link}).\n\n${label} · Guests: ${data.guests}\nPhone: ${data.phone || '—'}\nEmail: ${data.email || '—'}\n${extra.map((x) => `${x}\n`).join('')}${data.message ? `\nMessage: ${data.message}\n` : ''}\nAll replies: ${SITE}/dashboard/invites`,
         html: emailHtml({
-          heading: `${esc(data.name)}: ${label}`,
+          heading: t.heading ? esc(t.heading) : `${esc(data.name)}: ${label}`,
           paragraphs: [
+            t.intro,
             `New reply on your ${o.invite} <a href="${SITE}/invite/${esc(invite.link)}" style="color:#E70C65">aicardly.com/invite/${esc(invite.link)}</a>.`,
-            `<b>Guests:</b> ${data.guests}<br><b>Phone:</b> ${esc(data.phone) || '—'}<br><b>Email:</b> ${esc(data.email) || '—'}`,
+            `<b>Guests:</b> ${data.guests}<br><b>Phone:</b> ${esc(data.phone) || '—'}<br><b>Email:</b> ${esc(data.email) || '—'}${extra.map((x) => `<br>${esc(x)}`).join('')}`,
             data.message ? `<b>Message:</b><br>${esc(data.message).replace(/\n/g, '<br>')}` : '',
           ].filter(Boolean),
           button: { label: 'See all replies', url: `${SITE}/dashboard/invites` },
@@ -264,6 +273,23 @@ router.post('/public/:link/rsvp', rsvpLimiter, async (req, res) => {
   } catch (err) {
     console.error('Wedding RSVP error:', err.message);
     res.status(500).json({ msg: 'Could not send your reply. Please try again.' });
+  }
+});
+
+// A blessing for the wishes wall (Invite Studio designs): just a name and a message, no RSVP.
+const wishBody = z.object({ name: text(80).min(2, 'please enter your name'), message: text(300).min(2, 'please write a wish') });
+router.post('/public/:link/wish', rsvpLimiter, async (req, res) => {
+  try {
+    const invite = await publicInvite(req.params.link);
+    if (!invite) return res.status(404).json({ msg: 'Invitation not found' });
+    if (!invite.showWishes) return res.status(400).json({ msg: 'The wishes wall is switched off for this invitation.' });
+    const { data, error } = parse(wishBody, req.body);
+    if (error) return res.status(400).json({ msg: error.replace(/^[^:]+: /, '') });
+    await WeddingRsvp.create({ inviteId: invite._id, name: data.name, message: data.message, wish: true, attending: 'maybe' });
+    res.json({ msg: 'Your wish is on the wall. Thank you!' });
+  } catch (err) {
+    console.error('Wedding wish error:', err.message);
+    res.status(500).json({ msg: 'Could not post your wish. Please try again.' });
   }
 });
 
